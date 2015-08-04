@@ -1,0 +1,30 @@
+# Initialize this environment by executing:
+#
+#   $ source use
+#
+export PROJECT=firebase-sam
+export TOOLS_DIR="$(unset CDPATH; cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
+source $TOOLS_DIR/usefuncs
+
+#
+# Add build tools to PATH
+#
+PATH="$PROJ_DIR/bin:$(cd $PROJ_DIR; npm bin):$PATH"
+
+#
+# Non-interactive shells - exit here.
+#
+# Allow bash scripts to use source $TOOLS_DIR/use to assign environment
+# variables only via:
+#
+# TOOLS_DIR="$(unset CDPATH; cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
+# source $TOOLS_DIR/use
+#
+if [ -z "$PS1" ]; then
+   return
+fi
+
+# Interactive shells - show help message.
+if [ -n "$PS1" ]; then
+   show-commands
+fi

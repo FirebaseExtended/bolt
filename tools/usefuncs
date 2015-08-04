@@ -1,0 +1,145 @@
+# Helper script for setting up a project-specific environment
+# and commands.
+#
+# Sourced from a 'use' script containing:
+#
+# export PROJECT=<project-name>
+# export TOOLS_DIR="$(unset CDPATH; cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
+# source $TOOLS_DIR/usefuncs
+# add_alias <alias-name> "<command>"
+# ...
+# show-commands
+#
+# Executables in this directory should have a header commment formated like:
+#
+# <command-name> --- <Description of the command>
+
+export PROJ_DIR="$(dirname $TOOLS_DIR)"
+export PATH
+
+ENV_ALIASES=""
+
+reuse () {
+    source "$TOOLS_DIR/use"
+}
+
+add_alias () {
+    a="$1"; shift
+    d="$1"; shift
+    ENV_ALIASES="$ENV_ALIASES $a"
+    alias $a="$d"
+}
+
+unuse () {
+    unset -f reuse
+    unset -f add_alias
+    unset -f unuse
+    unset -f display-command
+    unset -f show-commands
+    unset -f show-dirs
+
+    unset PROJECT
+
+    if [[ "$_OLD_CDPATH" != "NONE" ]] ; then
+        # Don't export CDPATH to child processes.
+        CDPATH="$_OLD_CDPATH"
+    else
+        unset CDPATH
+    fi
+    unset _OLD_CDPATH
+
+    if [ -n "$_OLD_PATH" ] ; then
+        PATH="$_OLD_PATH"
+        unset _OLD_PATH
+    fi
+
+    if [[ "$ENV_ALIASES" != "" ]]; then
+        unalias $ENV_ALIASES
+    fi
+    unset ENV_ALIASES
+}
+
+display-command () {
+    command=$1; shift
+    description=$1; shift
+    if [[ "$description" == "" ]]; then
+        return
+    fi
+    echo "$(printf "%-20s" "$command") $description"
+}
+
+show-commands () {
+    echo "Commands available in the $PROJECT project:"
+    echo
+
+    for a in $ENV_ALIASES; do
+        HELP=$(alias $a | sed -e 's/^.*=.//' | sed -e 's/.$//')
+        display-command "$a" "$HELP"
+    done
+
+    echo
+
+    display-command reuse "Re-read the current project environment files."
+    display-command unuse "Deactivate this project environment."
+    display-command show-commands "Show this helpful message."
+
+    echo
+
+    for prog in $(find $TOOLS_DIR -maxdepth 1 -perm +111 -type f | sort); do
+        HELP=$(grep '^#.*\-\-\-' $prog | sed 's/^.*\-\-\- //')
+
+        display-command "$(basename $prog)" "$HELP"
+    done
+
+    echo
+    echo "Project directories available by CDPATH:"
+
+    show-dirs
+}
+
+show-dirs () {
+    # Split CDPATH up on colons and for each item within the project directory,
+    # show its contents as an available command
+    (
+        IFS=":"
+        for entry in ${CDPATH}; do
+            # If this entry isn't inside $PROJ_DIR, disregard it
+            if [[ "${entry##$PROJ_DIR}" != "${entry}" ]]; then
+                find "${entry}" -mindepth 1 -maxdepth 1 -type d
+            fi
+        done
+    ) | sed "
+        # Convert to a literal variable reference
+        s,$PROJ_DIR,\$PROJ_DIR,;
+
+        # Prepend the last path segment to the whole command
+        s,.*/\\(.*\\),\\1 &,;
+
+        # Discard path segments that start with dot (i.e. ignore .git)
+        /^\\./ d;
+    " | sort -u | while read line; do
+        command="$(echo "${line}" | sed 's/ .*//')"
+        help="$(echo "${line}" | sed 's/[^ ]* //')"
+        display-command "cd ${command}" "cd ${help}"
+    done
+}
+
+if [ -z "$_OLD_CDPATH" ]; then
+   if [ -n "$CDPATH" ]; then
+       _OLD_CDPATH="$CDPATH"
+   else
+       _OLD_CDPATH="NONE"
+   fi
+fi
+
+CDPATH=".:$PROJ_DIR"
+if [[ "$_OLD_CDPATH" != "NONE" ]]; then
+    CDPATH="$CDPATH:$_OLD_CDPATH"
+fi
+
+if [ -z "$_OLD_PATH" ]; then
+    _OLD_PATH="$PATH"
+fi
+PATH="$TOOLS_DIR:$_OLD_PATH"
+
+add_alias cd-home "cd \$PROJ_DIR"

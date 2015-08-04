@@ -1,0 +1,6 @@
+#!/bin/bash
+# build-sam --- Build the Firebase SAM parser from the PEG grammar.
+
+cd $PROJ_DIR
+
+pegjs --export-var "namespace.module('firebase.rules').parser" src/rules-parser.pegjs lib/rules-parser.js

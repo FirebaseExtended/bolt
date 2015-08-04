@@ -1,0 +1,203 @@
+#!/bin/bash
+# web-server --- Manage a web server on the current directory.
+set -e
+
+TOOLS_DIR="$(unset CDPATH; cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
+
+VAR_DIR="$HOME/var"
+
+ALL_COMMANDS="start stop stopall restart status logs"
+start_help="Start a web server."
+stop_help="Stop a web server."
+stopall_help="Stop all web servers."
+restart_help="Stop and then restart a web server."
+status_help="Show information about running web servers."
+logs_help="Show tail lines from log file."
+
+START_PORT="8000"
+MAX_NAME=30
+PID_COLUMNS="pid,%cpu,pmem,start,time,command"
+
+usage () {
+    local flag command service
+
+    echo "Manage local web server on the current directory."
+    usage_helper
+    sep="["
+    for command in $ALL_COMMANDS; do
+        echo -n "${sep}$command"
+        sep="|"
+    done
+    echo -n "] "
+
+    echo "[server_name] "
+
+    show_help "  --" $ALL_FLAGS
+    echo
+    show_help "  " $ALL_COMMANDS
+}
+
+source $TOOLS_DIR/bash-helper
+
+web_server () {
+    local PORT=$1; shift
+    local LOG_FILE=$1; shift
+
+    # Was:
+    #   nohup python -m SimpleHTTPServer $port 2>&1 > $VAR_DIR/logs/$service.log &
+    # But see security issue:
+    #   https://scott.mn/2014/01/05/simplehttpserver_considered_harmful/
+    nohup http-server -a localhost -p $PORT 2>&1 > $LOG_FILE &
+}
+
+mkdir -p "$VAR_DIR/pids"
+mkdir -p "$VAR_DIR/logs"
+mkdir -p "$VAR_DIR/ports"
+
+if [ -z "$1" ]; then
+    COMMAND=status
+else
+    if is_in_list $1 $ALL_COMMANDS; then
+        COMMAND="$1"; shift
+    else
+        echo "Invalid command: $1"
+        usage
+        exit 1
+    fi
+fi
+
+rel_path () {
+    local to="$1"; shift
+    local from="$1"; shift
+
+    python -c "import os.path; print os.path.relpath('$to', '$from')"
+}
+
+path_to_name () {
+    local path="$1"; shift
+
+    path="$(rel_path $path $HOME)"
+    path="${path//\//-}"
+    path="${path//\./_}"
+    echo $path
+}
+
+if [ -n "$1" ]; then
+    SERVERS="$1"; shift
+else
+    if [[ $COMMAND == status || $COMMAND == logs || $COMMAND == stopall ]]; then
+        SERVERS="$(ls $VAR_DIR/ports)"
+        SERVERS=${SERVERS//.port/}
+    else
+        SERVERS="$(path_to_name $(pwd))"
+    fi
+fi
+
+get_pid () {
+    local pid_file="$VAR_DIR/pids/$1.pid"; shift
+    if [[ -f $pid_file ]]; then
+        local pid="$(cat $pid_file)"
+        if ps -p $pid > /dev/null; then
+            echo "$pid"
+            return
+        fi
+
+        rm $pid_file
+    fi
+}
+
+get_port () {
+    local port_file="$VAR_DIR/ports/$1.port"; shift
+    if [[ -f $port_file ]]; then
+        local port="$(cat $port_file)"
+        echo $port
+    fi
+}
+
+stop_pid () {
+    local service="$1"; shift
+
+    local pidfile="$VAR_DIR/pids/$service.pid"
+    local portfile="$VAR_DIR/ports/$service.port"
+    echo "Stopping $service on port $(get_port $service)..."
+    kill $(get_pid $service)
+    rm $pidfile
+    rm $portfile
+}
+
+start_webserver () {
+    local service="$1"; shift
+    local port="$START_PORT"
+    local known_ports="$(cat $VAR_DIR/ports/*.port 2>/dev/null)"
+    while true; do
+        if is_in_list $port "$known_ports"; then
+            port=$((port + 1))
+            continue
+        fi
+        echo -n "Starting $service on port $port..."
+        web_server $port $VAR_DIR/logs/$service.log
+        echo $! > $VAR_DIR/pids/$service.pid
+        sleep 1
+        if [ -z "$(get_pid $service)" ]; then
+            echo  "already in use..."
+            port=$((port + 1))
+        else
+            echo "connected!"
+            break
+        fi
+    done
+    echo $port > $VAR_DIR/ports/$service.port
+}
+
+open_browser () {
+    local port="$1"; shift
+    python -m webbrowser -t http://localhost:${port}/test/parser-test.html
+}
+
+# Print heading over all the ps status's echoed below.
+if [[ $COMMAND == "status" ]]; then
+    status="$(ps -p 999 -o $PID_COLUMNS | head -n 1)"
+    echo "$(printf "%-${MAX_NAME}s" "Root") $status"
+fi
+
+for service in $SERVERS; do
+    pid="$(get_pid $service)"
+    case $COMMAND in
+        start)
+            if [ -n "$pid" ]; then
+                echo "$service is already started on port $(get_port $service)."
+            else
+                start_webserver $service
+            fi
+            open_browser $(get_port $service)
+            ;;
+        stop | stopall)
+            if [ -z "$pid" ]; then
+                echo "$service is not running."
+            else
+                stop_pid $service
+            fi
+            ;;
+        restart)
+            if [ -n "$pid" ]; then
+                stop_pid $service
+            fi
+            start_webserver $service
+            open_browser $(get_port $service)
+            ;;
+        status)
+            if [ -n "$pid" ]; then
+                status="$(ps -p $pid -o $PID_COLUMNS | tail -n +2)"
+            else
+                status="=== NOT RUNNING ==="
+            fi
+            echo "$(printf "%-${MAX_NAME}s" $service) $status"
+            ;;
+        logs)
+            echo "======================="
+            echo "$service logs: ($VAR_DIR/logs/$service.log)"
+            echo "======================="
+            tail -n 20 $VAR_DIR/logs/$service.log || true
+            ;;
+    esac
+done

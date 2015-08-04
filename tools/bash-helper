@@ -1,0 +1,76 @@
+# bash-helper --- Helper for bash scripting with command line flags (utililty).
+# (source this file from your bash script)
+#
+# Adds --help flag and calls your usage function (and exits).
+#
+# Example usage:
+#
+# ALL_FLAGS="list of flags"
+# list_help="Help text for list flag."
+# of_help="Help for 'of' flag."
+# flags_help="Help for 'flags' flag."
+# usage () {
+#   echo "My command description."
+#   usage_helper
+#   echo "extra command args"
+#   show_help "  --" $ALL_FLAGS
+#
+# }
+# source $TOOLS_DIR/bash-helper
+#
+# On return, list_flag is "true" if set in command line.
+# All flags must precede all non-flags (and args are consumed).
+
+ALL_FLAGS="$ALL_FLAGS help"
+help_help="Display this helpful message."
+
+show_help () {
+    local prefix="$1"; shift
+    local items="$@"
+    local item
+    local help_text
+
+    for item in $items; do
+        help_text="$(eval echo \$${item}_help)"
+        if [[ $help_text != "" ]]; then
+            echo -e "${prefix}${item} - $help_text"
+        fi
+    done
+}
+
+usage_helper () {
+    echo -n "Usage: $(basename $0) "
+    for flag in $ALL_FLAGS; do
+        echo -n "--$flag "
+    done
+}
+
+is_in_list () {
+    local word="$1"; shift
+    local list="$@"
+
+    for test in $list; do
+        if [[ $test == $word ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+#
+# Parse all the flags and consume the arguments.
+#
+while [[ $1 == "--"* ]]; do
+    flag=${1:2}
+    if ! is_in_list $flag $ALL_FLAGS; then
+        echo "Unknown flag $1"
+        usage
+        exit 1
+    fi
+    eval "${1:2}_flag=true"; shift
+done
+
+if [ $help_flag ]; then
+    usage
+    exit 0
+fi

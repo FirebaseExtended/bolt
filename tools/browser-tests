@@ -1,0 +1,5 @@
+#!/bin/bash
+# browser-tests --- Run unit tests in a browser environment.
+
+cd $PROJ_DIR
+web-server start

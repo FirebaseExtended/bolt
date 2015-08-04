@@ -1,0 +1,8 @@
+#!/bin/bash
+# configure-project --- Configure repository dependencies for building and tests.
+set -e
+
+cd $PROJ_DIR
+
+npm install
+bower install

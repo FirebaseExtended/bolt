@@ -1,0 +1,17 @@
+{
+  "name": "firebase-sam",
+  "version": "0.1.0",
+  "description": "Firebase Security and Modeling Language",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "qunit": "~1.18.0"
+  }
+}

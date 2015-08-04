@@ -1,0 +1,33 @@
+{
+  "name": "firebase-sam",
+  "version": "0.1.0",
+  "description": "Firebase Security and Modeling Language",
+  "main": "lib/sam.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/firebase/sam.git"
+  },
+  "keywords": [
+    "firebase",
+    "security",
+    "rules",
+    "schema",
+    "models"
+  ],
+  "author": "Firebase <support@firebase.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/firebase/sam/issues"
+  },
+  "homepage": "https://github.com/firebase/sam",
+  "devDependencies": {
+    "chai": "^3.2.0",
+    "gulp": "^3.9.0",
+    "http-server": "^0.8.0",
+    "mocha": "^2.2.5",
+    "pegjs": "^0.8.0"
+  }
+}
