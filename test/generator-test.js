@@ -276,7 +276,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     var gen = new generator.Generator(symbols);
     var types = ['string', 'number', 'boolean'];
     assert.equal(gen.getExpressionText(symbols.functions['@validator@object'].body),
-                 'newData.hasChildren()', 'object');
+                 'newData.val() == null || newData.hasChildren()', 'object');
     assert.equal(gen.getExpressionText(symbols.functions['@validator@null'].body),
                  'newData.val() == null', 'object');
     for (var i = 0; i < types.length; i++) {
@@ -289,22 +289,23 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   test("Schema Validation", function() {
     var tests = [
       { s:"type Simple {}", v: "this instanceof Simple", x: "newData.val() == null || newData.hasChildren()" },
+      { s:"type Simple extends string {}", v: "this instanceof Simple", x: "newData.isString()" },
       { s:"type Simple {n: number}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && newData.child(\"n\").isNumber()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"n\").isNumber()" },
       { s:"type Simple {s: string}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && newData.child(\"s\").isString()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"s\").isString()" },
       { s:"type Simple {b: boolean}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && newData.child(\"b\").isBoolean()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"b\").isBoolean()" },
       { s:"type Simple {x: object}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && newData.child(\"x\").hasChildren()" },
+        x: "(newData.val() == null || newData.hasChildren()) && (newData.child(\"x\").val() == null || newData.child(\"x\").hasChildren())" },
       { s:"type Simple {x: number|string}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && (newData.child(\"x\").isNumber() || newData.child(\"x\").isString())" },
+        x: "(newData.val() == null || newData.hasChildren()) && (newData.child(\"x\").isNumber() || newData.child(\"x\").isString())" },
       { s:"type Simple {a: number, b: string}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && newData.child(\"a\").isNumber() && newData.child(\"b\").isString()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"a\").isNumber() && newData.child(\"b\").isString()" },
       { s:"type Simple {x: number|null}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && (newData.child(\"x\").isNumber() || newData.child(\"x\").val() == null)" },
+        x: "(newData.val() == null || newData.hasChildren()) && (newData.child(\"x\").isNumber() || newData.child(\"x\").val() == null)" },
       { s:"type Simple {n: number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
-        x: "newData.val() == null || newData.hasChildren() && newData.child(\"n\").isNumber() && newData.child(\"n\").val() < 7" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"n\").isNumber() && newData.child(\"n\").val() < 7" },
     ];
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].s + " path /x { validate() { return " + tests[i].v + "; }}");
