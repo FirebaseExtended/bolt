@@ -1,8 +1,12 @@
 {
   "name": "firebase-sam",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Firebase Security and Modeling Language",
-  "main": "lib/sam.js",
+  "main": "lib/rules-generator.js",
+  "preferGlobal": true,
+  "bin": {
+    "firebase-sam": "bin/firebase-sam"
+  },
   "scripts": {
     "test": "gulp test"
   },
