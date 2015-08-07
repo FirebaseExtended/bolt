@@ -3,11 +3,11 @@
 type Document extends object {}
 
 type Date extends string {
-  validate() { return isISODate(this); }
+  // validate() { return isISODate(this); }
 }
 
 type Userid extends string {
-  validate() { return userExists(this); }
+  // validate() { return userExists(this); }
 }
 
 type Docid extends string {}
@@ -90,8 +90,7 @@ function docIsOwnedBy(docid, userid) {
 
 function isISODate(date) {
   // TODO: Use .match instead - needs specific translator for string->regexp in language.
-  // return date.beginsWith('2015-');
-  return true;
+  return beginsWith(date, '2015-');
 }
 
 function userExists(userid) {

@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "users": {
+      "$userid": {
+        "inbox": {
+          "$msg": {
+            ".read": "auth.username == $userid",
+            ".write": "(newData.val() == null || newData.hasChildren()) && newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && newData.child('from').val() == auth.username && (newData.exists() && !data.exists()) && auth.username == newData.child('from').val() || data.exists() && !newData.exists() && auth.username == $userid"
+          }
+        },
+        "outbox": {
+          "$msg": {
+            ".read": "auth.username == $userid",
+            ".write": "((newData.val() == null || newData.hasChildren()) && newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && newData.child('from').val() == auth.username && (newData.exists() && !data.exists()) || data.exists() && !newData.exists()) && auth.username == $userid && (newData.exists() && !data.exists() || data.exists() && !newData.exists())"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+// functionally similar rules to https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
+
+
+function isLoggedIn() {
+  return auth != null;
+}
+function createOnly() {
+  return newData.exists() && !data.exists();
+}
+function deleteOnly() {
+  return data.exists() && !newData.exists();
+}
+function createOrDelete() {
+  return createOnly() || deleteOnly();
+}
+
+type Message {
+  from: string
+  to: string
+  message: string
+  validate() {
+    return this.from == auth.username;
+  }
+  extensible(prop) { return false; }
+}
+
+
+//The inbox is someones incoming mail
+path /users/$userid/inbox/$msg {
+  //anyone can send a message to anybody by posting in the users inbox, as long as they have the correct sender field
+  write() { return (this instanceof Message &&
+                    createOnly() &&
+                    auth.username == this.from
+                   ) || (
+                     deleteOnly() && auth.username == $userid
+                   );
+          }
+
+  //users can read their own inbox
+  read() { return auth.username == $userid;}
+}
+
+//the outbox is for recording what has been sent by a user
+path /users/$userid/outbox/$msg {
+  write() { return ((this instanceof Message && createOnly()) || deleteOnly()) && auth.username == $userid && createOrDelete();}
+  read() { return auth.username == $userid;}
+}
