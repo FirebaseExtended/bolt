@@ -147,7 +147,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
             assert.ok('rules' in json, response.url + " has rules");
             return helpers.readURL(response.url.replace('.sam', '.json'))
               .then(function(response) {
-                assert.deepEqual(json, JSON.parse(response.content), "Generated JSON matches " + response.url);
+                assert.deepEqual(json, JSON.parse(response.content), "Generated JSON should match " + response.url);
               });
           })
           .catch(function(error) {
