@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+
+require('../lib/namespace-node');
+require('../lib/namespace-plus');
+require('../lib/ast');
+require('../lib/rules-parser');
+require('../lib/rules-generator');
+
+parser = namespace.firebase.rules.parser;
+generator = namespace.firebase.rules.generator;
+
+var input = "";
+
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {
+  input += chunk;
+});
+
+process.stdin.on('end', function() {
+  try {
+    var symbols = parser.parse(input);
+  } catch(e) {
+    console.log(e);
+    return;
+  }
+  // console.log(JSON.stringify(symbols, null, 2));
+  var gen = new generator.Generator(symbols);
+  var rules = gen.generateRules();
+  console.log(JSON.stringify(rules, null, 2));
+});
