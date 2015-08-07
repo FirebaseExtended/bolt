@@ -59,7 +59,11 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     assert.ok(false, msg || "Fail.");
   }
 
-  QUnit.module("Rules Generator Tests");
+  QUnit.module("Rules Generator Tests", {
+    beforeEach: function() {
+      QUnit.dump.maxDepth = 20;
+    }
+  });
 
   test("Empty file", function(assert) {
     var result = parse("");
