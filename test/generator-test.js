@@ -134,29 +134,30 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      var filename = 'samples/' + files[i] + '.sam';
-      console.log("Reading " + filename + "...");
-      completed.push(
-        helpers.readURL(filename)
-          .then(function(response) {
-            console.log("Read " + response.url + "...");
-            var result = parse(response.content);
-            assert.ok(result, response.url);
-            var gen = new generator.Generator(result);
-            var json = gen.generateRules();
-            assert.ok('rules' in json, response.url + " has rules");
-            return helpers.readURL(response.url.replace('.sam', '.json'))
-              .then(function(response) {
-                assert.deepEqual(json, JSON.parse(response.content), "Generated JSON should match " + response.url);
-              });
-          })
-          .catch(function(error) {
-            assert.ok(false, error.message);
-          })
-      );
+      completed.push(testFileSample('samples/' + files[i] + '.sam'));
     }
     return Promise.all(completed);
   });
+
+  function testFileSample(filename) {
+    console.log("Generating from " + filename + "...");
+    return helpers.readURL(filename)
+      .then(function(response) {
+        console.log("Read " + response.url + "...");
+        var result = parse(response.content);
+        assert.ok(result, response.url);
+        var gen = new generator.Generator(result);
+        var json = gen.generateRules();
+        assert.ok('rules' in json, response.url + " has rules");
+        return helpers.readURL(response.url.replace('.sam', '.json'))
+          .then(function(response) {
+            assert.deepEqual(json, JSON.parse(response.content), "Generated JSON should match " + response.url);
+          });
+      })
+      .catch(function(error) {
+        assert.ok(false, error.message);
+      });
+  }
 
   test("Expression decoding.", function() {
     var tests = [
@@ -270,7 +271,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("Builtin validation functions", function() {
-    var symbols = new parse("");
+    var symbols = parse("");
     var gen = new generator.Generator(symbols);
     var types = ['string', 'number', 'boolean'];
     assert.equal(gen.getExpressionText(symbols.functions['@validator@object'].body),

@@ -301,17 +301,19 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      var filename = 'samples/' + files[i] + '.sam';
-      console.log("Reading " + filename + "...");
-      completed.push(helpers.readURL(filename)
-                     .then(function(resp) {
-                       var result = parse(resp.content);
-                       assert.ok(result, resp.url);
-                       return true;
-                     })
-                    );
+      completed.push(testFile('samples/' + files[i] + '.sam'));
     }
     return Promise.all(completed);
   });
+
+  function testFile(filename) {
+    console.log("Reading " + filename + "...");
+    return helpers.readURL(filename)
+      .then(function(response) {
+        var result = parse(response.content);
+        assert.ok(result, response.url);
+        return true;
+      });
+  }
 
 });
