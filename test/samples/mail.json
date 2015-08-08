@@ -1,18 +1,17 @@
 {
   "rules": {
     "users": {
-      "$userid": {
+      "$ownerid": {
+        ".read": "auth.username == $ownerid",
         "inbox": {
           "$msg": {
-            ".read": "auth.username == $userid",
-            ".write": "data.val() == null || data.val() != null && auth.username == $userid",
-            ".validate": "newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && auth.username == newData.child('from').val()"
+            ".write": "data.val() == null && auth != null || newData.val() == null && auth.username == $owerid",
+            ".validate": "newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && auth.username == newData.child('from').val() && newData.child('to').val() == $ownerid"
           }
         },
         "outbox": {
           "$msg": {
-            ".read": "auth.username == $userid",
-            ".write": "data.val() == null || data.val() != null && auth.username == $userid",
+            ".write": "auth.username == $ownerid && (data.val() == null || newData.val() == null)",
             ".validate": "newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && auth.username == newData.child('from').val()"
           }
         }

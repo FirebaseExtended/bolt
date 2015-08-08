@@ -6,53 +6,33 @@ type Message {
   to: string
   message: string
 
-  validate() {
-    return isCurrentUser(this.from);
-  }
-
   extensible(prop) { return false; }
 }
 
+path /users/$ownerid {
+  read() { return isCurrentUser($ownerid); }
+}
+
 // The inbox is someone's incoming mail.
-path /users/$userid/inbox/$msg {
-  validate() { return this instanceof Message; }
+path /users/$ownerid/inbox/$msg {
+  validate() { return this instanceof Message && isCurrentUser(this.from) && this.to == $ownerid; }
 
-  // Users can read their own inbox
-  read() { return isCurrentUser($userid); }
-
-  // Anyone can send a message to anybody by posting in the users inbox, as long as they have
-  // the correct sender field.
-  write() {
-    return isCreating(data) ||
-      isUpdating(data) && isCurrentUser($userid);
-  }
-
+  // Anyone can add, owner can delete (no one can modify).
+  write() { return data == null && isLoggedIn() || this == null && isCurrentUser($owerid); }
 }
 
 // The outbox is for recording what has been sent by a user.
-path /users/$userid/outbox/$msg {
-  validate() { return this instanceof Message; }
+path /users/$ownerid/outbox/$msg {
+  validate() { return this instanceof Message && isCurrentUser(this.from); }
 
-  read() { return isCurrentUser($userid); }
-
-  write() {
-    return isCreating(data) ||
-      isUpdating(data) && isCurrentUser($userid);
-  }
-}
-
-function isCreating(old) {
-  return old == null;
-}
-
-function isUpdating(old) {
-  return old != null;
+  // Owner can add or delete (not modify).
+  write() { return isCurrentUser($ownerid) && (data == null || this == null); }
 }
 
 function isCurrentUser(userid) {
-  return currentUser() == userid;
+  return auth.username == userid;
 }
 
-function currentUser() {
-  return auth.username;
+function isLoggedIn() {
+  return auth != null;
 }
