@@ -1,0 +1,58 @@
+// Functionally similar rules to
+// https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
+
+type Message {
+  from: string
+  to: string
+  message: string
+
+  validate() {
+    return isCurrentUser(this.from);
+  }
+
+  extensible(prop) { return false; }
+}
+
+// The inbox is someone's incoming mail.
+path /users/$userid/inbox/$msg {
+  validate() { return this instanceof Message; }
+
+  // Users can read their own inbox
+  read() { return isCurrentUser($userid); }
+
+  // Anyone can send a message to anybody by posting in the users inbox, as long as they have
+  // the correct sender field.
+  write() {
+    return isCreating(data) ||
+      isUpdating(data) && isCurrentUser($userid);
+  }
+
+}
+
+// The outbox is for recording what has been sent by a user.
+path /users/$userid/outbox/$msg {
+  validate() { return this instanceof Message; }
+
+  read() { return isCurrentUser($userid); }
+
+  write() {
+    return isCreating(data) ||
+      isUpdating(data) && isCurrentUser($userid);
+  }
+}
+
+function isCreating(old) {
+  return old == null;
+}
+
+function isUpdating(old) {
+  return old != null;
+}
+
+function isCurrentUser(userid) {
+  return currentUser() == userid;
+}
+
+function currentUser() {
+  return auth.username;
+}
