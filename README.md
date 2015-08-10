@@ -10,12 +10,12 @@ Setup shell environment and build:
 
     $ source tools/use
     $ configure-project
-    $ build-sam
+    $ build-parser
 
-# Run SAM Tests in Browser
+# Run Tests in Browser
 
     $ browser-tests
 
-You can also execute a CLI version of the Rules parser:
+You can execute a CLI version of the compiler:
 
-    $ firebase-sam < <rules-file> > <json-file>
+    $ firebase-bolt < <rules-file> > <json-file>

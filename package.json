@@ -1,14 +1,14 @@
 {
-  "name": "firebase-sam",
+  "name": "firebase-bolt",
   "version": "0.1.0",
   "description": "Firebase Security and Modeling Language",
-  "main": "lib/sam.js",
+  "main": "lib/rules-parser.js",
   "scripts": {
     "test": "gulp test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/firebase/sam.git"
+    "url": "https://github.com/firebase/bolt.git"
   },
   "keywords": [
     "firebase",
@@ -20,9 +20,9 @@
   "author": "Firebase <support@firebase.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/firebase/sam/issues"
+    "url": "https://github.com/firebase/bolt/issues"
   },
-  "homepage": "https://github.com/firebase/sam",
+  "homepage": "https://github.com/firebase/bolt",
   "devDependencies": {
     "chai": "^3.2.0",
     "gulp": "^3.9.0",

@@ -2,7 +2,7 @@
 #
 #   $ source use
 #
-export PROJECT=firebase-sam
+export PROJECT=firebase-bolt
 export TOOLS_DIR="$(unset CDPATH; cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
 source $TOOLS_DIR/usefuncs
 
