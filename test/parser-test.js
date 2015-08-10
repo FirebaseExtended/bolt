@@ -1,10 +1,12 @@
 namespace.module('firebase.rules-parser.test', function(exports, require) {
   "use strict";
 
+  require('namespace.funcs').patch();
+
   var rules = require('firebase.rules');
   var ast = require('firebase.rules.ast');
   var types = require('namespace.types');
-  require('namespace.funcs').patch();
+  var helpers = require('firebase.test.helpers');
 
   var parse;
   var assert = QUnit.assert;
@@ -45,28 +47,6 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
 
   function functionExpression(name, exp) {
     return "function " + name + "() { return " + exp + "; }";
-  }
-
-  function readURL(url) {
-    return new Promise(function(resolve, reject) {
-      var req = new XMLHttpRequest();
-
-      req.open('GET', url);
-
-      req.onload = function() {
-        if (req.status == 200) {
-          resolve({content: req.responseText, url:url});
-        } else {
-          reject(new Error(req.statusText));
-        }
-      };
-
-      req.onerror = function() {
-        reject(new Error("Network Error"));
-      };
-
-      req.send();
-    });
   }
 
   QUnit.module("Rules Parser Tests");
@@ -316,21 +296,24 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
   test("Sample files", function() {
     var files = [
       "all_access",
-      "userdoc"
+      "userdoc",
+      "mail"
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      var filename = 'samples/' + files[i] + '.rules';
-      console.log("Reading " + filename + "...");
-      completed.push(readURL(filename)
-                     .then(function(resp) {
-                       var result = parse(resp.content);
-                       assert.ok(result, resp.url);
-                       return true;
-                     })
-                    );
+      completed.push(testFile('samples/' + files[i] + '.sam'));
     }
     return Promise.all(completed);
   });
+
+  function testFile(filename) {
+    console.log("Reading " + filename + "...");
+    return helpers.readURL(filename)
+      .then(function(response) {
+        var result = parse(response.content);
+        assert.ok(result, response.url);
+        return true;
+      });
+  }
 
 });

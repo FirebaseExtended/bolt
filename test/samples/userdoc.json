@@ -1,0 +1,35 @@
+{
+  "rules": {
+    "documents": {
+      "$userid": {
+        "$docid": {
+          ".read": "auth.uid == $userid || root.child('permissions').child(auth.uid + '|' + $docid).child('read').val() == true",
+          ".write": "auth.uid == $userid || root.child('permissions').child(auth.uid + '|' + $docid).child('write').val() == true",
+          ".validate": "newData.val() == null || newData.hasChildren()"
+        }
+      }
+    },
+    "metadata": {
+      "$userid": {
+        ".read": "auth.uid == $userid",
+        "$docid": {
+          ".read": "root.child('permissions').child(auth.uid + '|' + $docid).child('read').val() == true",
+          ".write": "auth.uid == $userid || root.child('permissions').child(auth.uid + '|' + $docid).child('write').val() == true",
+          ".validate": "(newData.val() == null || newData.hasChildren()) && newData.child('created').isString() && newData.child('modified').isString() && newData.child('title').isString()"
+        }
+      }
+    },
+    "permissions": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "grantor",
+        "grantee",
+        "docid"
+      ],
+      "$key": {
+        ".write": "newData.val() == null && auth.uid == data.child('grantor').val() || newData.val() != null && root.child('documents').child(auth.uid).child(newData.child('docid').val()).val() != null",
+        ".validate": "(newData.val() == null || newData.hasChildren()) && newData.child('grantor').isString() && newData.child('grantee').isString() && newData.child('docid').isString() && $key == newData.child('grantee').val() + '|' + newData.child('docid').val() && newData.child('grantor').val() == auth.uid"
+      }
+    }
+  }
+}
