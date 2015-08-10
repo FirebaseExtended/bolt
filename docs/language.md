@@ -1,7 +1,7 @@
 # Firebase Security and Modeling Language
 
 This experimental Security and Rules language is meant to be used a
-convenient front-end to the existing JSON-based rules language.
+convenient front-end to the existing Firebase JSON-based rules language.
 
 It has similarities to the [Blaze Compiler](https://github.com/firebase/blaze_compiler)
 but diverges in some respects:
@@ -12,16 +12,16 @@ but diverges in some respects:
   - Schema are divorced from their storage path locations - you can specify, and name, any object
     type, and then employ that definition in a path rule (called access rule in Blaze).
 
-# SAM File Structure
+# File Structure
 
-A sam file consists of a sequence of 3 types of statements:
+A bolt file consists of a sequence of 3 types of statements:
 
   - Types: Definition of an object schema.
   - Paths: Definition of storage locations, and what type of accesses are allowed there.
   - Functions: Global function expressions which can be called from other expressions
     to be used as helpers.
 
-A sam file can also contain JavaScript-style comments:
+A bolt file can also contain JavaScript-style comments:
 
     // Single line comment
 
