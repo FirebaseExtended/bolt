@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "users": {
+      "$userid": {
+        "inbox": {
+          "$msg": {
+            ".read": "auth.username == $userid",
+            ".write": "data.val() == null || data.val() != null && auth.username == $userid",
+            ".validate": "(newData.val() == null || newData.hasChildren()) && newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && auth.username == newData.child('from').val()"
+          }
+        },
+        "outbox": {
+          "$msg": {
+            ".read": "auth.username == $userid",
+            ".write": "data.val() == null || data.val() != null && auth.username == $userid",
+            ".validate": "(newData.val() == null || newData.hasChildren()) && newData.child('from').isString() && newData.child('to').isString() && newData.child('message').isString() && auth.username == newData.child('from').val()"
+          }
+        }
+      }
+    }
+  }
+}

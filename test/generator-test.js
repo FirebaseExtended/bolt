@@ -1,10 +1,12 @@
 namespace.module('firebase.rules-generator.test', function(exports, require) {
   "use strict";
 
+  require('namespace.funcs').patch();
+
   var rules = require('firebase.rules');
   var generator = require('firebase.rules.generator');
   var types = require('namespace.types');
-  require('namespace.funcs').patch();
+  var helpers = require('firebase.test.helpers');
 
   // Hack - shold be passed in to test function - throws functions breaks...
   var assert = QUnit.assert;
@@ -28,28 +30,6 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
 
   function init() {
     parse = rules.parser.parse;
-  }
-
-  function readURL(url) {
-    return new Promise(function(resolve, reject) {
-      var req = new XMLHttpRequest();
-
-      req.open('GET', url);
-
-      req.onload = function() {
-        if (req.status == 200) {
-          resolve(req.responseText);
-        } else {
-          reject(new Error(req.statusText));
-        }
-      };
-
-      req.onerror = function() {
-        reject(new Error("Network Error"));
-      };
-
-      req.send();
-    });
   }
 
   // Enable error message matchin (not in Qunit)
@@ -79,7 +59,11 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     assert.ok(false, msg || "Fail.");
   }
 
-  QUnit.module("Rules Generator Tests");
+  QUnit.module("Rules Generator Tests", {
+    beforeEach: function() {
+      QUnit.dump.maxDepth = 20;
+    }
+  });
 
   test("Empty file", function(assert) {
     var result = parse("");
@@ -143,25 +127,37 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("Sample files", function() {
-    var files = ["all_access"];
+    var files = [
+      "all_access",
+      "userdoc",
+      "mail"
+    ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      var filename = 'samples/' + files[i] + '.rules';
-      console.log("Reading " + filename + "...");
-      completed.push(readURL(filename)
-        .then(function(contents) {
-          console.log("Read " + filename + "...");
-          var result = parse(contents);
-          assert.ok(result, filename);
-          var gen = new generator.Generator(result);
-          var json = gen.generateRules();
-          assert.ok(json);
-          assert.ok('rules' in json, "has rules");
-          return true;
-      }));
+      completed.push(testFileSample('samples/' + files[i] + '.sam'));
     }
     return Promise.all(completed);
   });
+
+  function testFileSample(filename) {
+    console.log("Generating from " + filename + "...");
+    return helpers.readURL(filename)
+      .then(function(response) {
+        console.log("Read " + response.url + "...");
+        var result = parse(response.content);
+        assert.ok(result, response.url);
+        var gen = new generator.Generator(result);
+        var json = gen.generateRules();
+        assert.ok('rules' in json, response.url + " has rules");
+        return helpers.readURL(response.url.replace('.sam', '.json'))
+          .then(function(response) {
+            assert.deepEqual(json, JSON.parse(response.content), "Generated JSON should match " + response.url);
+          });
+      })
+      .catch(function(error) {
+        assert.ok(false, error.message);
+      });
+  }
 
   test("Expression decoding.", function() {
     var tests = [
@@ -172,11 +168,14 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
       [ "+3" , "3"],
       [ "-3" ],
       [ "0x2", "2" ],
-      [ "\"string\"" ],
-      [ "'string'", "\"string\"" ],
+      [ "\"string\"", "'string'" ],
+      [ "'string'" ],
+      [ "'st\\'ring'"],
+      [ "'st\\ring'" ],
+      [ "'\\u000d'", "'\\r'" ],
       [ "a" ],
       [ "a.b" ],
-      [ "a['b']", "a[\"b\"]" ],
+      [ "a['b']" ],
       [ "a[b]" ],
       [ "a.b[c]" ],
       [ "(a.b)[c]", "a.b[c]" ],
@@ -240,12 +239,12 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
       { f: "function f(a) { return a + 1; }", x: "g(1, 2)", e: "g(1, 2)" },
       { f: "function f(a) { return a + 1; }", x: "a[f(123)]", e: "a[123 + 1]" },
       { f: "", x: "this", e: "newData.val() == true" },
-      { f: "", x: "this.foo", e: "newData.child(\"foo\").val() == true" },
-      { f: "", x: "this.foo || this.bar", e: "newData.child(\"foo\").val() == true || newData.child(\"bar\").val() == true"},
+      { f: "", x: "this.foo", e: "newData.child('foo').val() == true" },
+      { f: "", x: "this.foo || this.bar", e: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
       // Don't use child on built-in method names.
       { f: "", x: "this.isString", e: "newData.isString" },
-      { f: "function f(a) { return a == '123'; }", x: "f(this)", e: "newData.val() == \"123\"" },
-      { f: "function f(a) { return a == '123'; }", x: "f(this.foo)", e: "newData.child(\"foo\").val() == \"123\"" },
+      { f: "function f(a) { return a == '123'; }", x: "f(this)", e: "newData.val() == '123'" },
+      { f: "function f(a) { return a == '123'; }", x: "f(this.foo)", e: "newData.child('foo').val() == '123'" },
     ];
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].f + " path /x { read() { return " + tests[i].x + "; }}");
@@ -272,7 +271,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("Builtin validation functions", function() {
-    var symbols = new parse("");
+    var symbols = parse("");
     var gen = new generator.Generator(symbols);
     var types = ['string', 'number', 'boolean'];
     assert.equal(gen.getExpressionText(symbols.functions['@validator@object'].body),
@@ -291,21 +290,21 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
       { s:"type Simple {}", v: "this instanceof Simple", x: "newData.val() == null || newData.hasChildren()" },
       { s:"type Simple extends string {}", v: "this instanceof Simple", x: "newData.isString()" },
       { s:"type Simple {n: number}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"n\").isNumber()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child('n').isNumber()" },
       { s:"type Simple {s: string}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"s\").isString()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child('s').isString()" },
       { s:"type Simple {b: boolean}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"b\").isBoolean()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child('b').isBoolean()" },
       { s:"type Simple {x: object}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && (newData.child(\"x\").val() == null || newData.child(\"x\").hasChildren())" },
+        x: "(newData.val() == null || newData.hasChildren()) && (newData.child('x').val() == null || newData.child('x').hasChildren())" },
       { s:"type Simple {x: number|string}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && (newData.child(\"x\").isNumber() || newData.child(\"x\").isString())" },
+        x: "(newData.val() == null || newData.hasChildren()) && (newData.child('x').isNumber() || newData.child('x').isString())" },
       { s:"type Simple {a: number, b: string}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"a\").isNumber() && newData.child(\"b\").isString()" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child('a').isNumber() && newData.child('b').isString()" },
       { s:"type Simple {x: number|null}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && (newData.child(\"x\").isNumber() || newData.child(\"x\").val() == null)" },
+        x: "(newData.val() == null || newData.hasChildren()) && (newData.child('x').isNumber() || newData.child('x').val() == null)" },
       { s:"type Simple {n: number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
-        x: "(newData.val() == null || newData.hasChildren()) && newData.child(\"n\").isNumber() && newData.child(\"n\").val() < 7" },
+        x: "(newData.val() == null || newData.hasChildren()) && newData.child('n').isNumber() && newData.child('n').val() < 7" },
     ];
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].s + " path /x { validate() { return " + tests[i].v + "; }}");
