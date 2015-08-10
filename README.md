@@ -1,4 +1,4 @@
-# Firebase Security and Modeling Language (Firebase SAM)
+# Firebase Security and Modeling Language
 
 # Language Definition
 
