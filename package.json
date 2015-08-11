@@ -1,8 +1,12 @@
 {
   "name": "firebase-bolt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Firebase Security and Modeling Language",
-  "main": "lib/rules-parser.js",
+  "main": "lib/rules-generator.js",
+  "preferGlobal": true,
+  "bin": {
+    "firebase-bolt": "bin/firebase-bolt"
+  },
   "scripts": {
     "test": "gulp test"
   },
