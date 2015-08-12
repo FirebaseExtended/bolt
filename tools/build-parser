@@ -1,6 +1,0 @@
-#!/bin/bash
-# build-parser --- Build the Firebase Bolt language parser from the PEG grammar.
-
-cd $PROJ_DIR
-
-pegjs --export-var "namespace.module('firebase.rules').parser" src/rules-parser.pegjs lib/rules-parser.js

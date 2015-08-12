@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
+var parser = require('../lib/rules-parser');
+
 require('../lib/namespace-node');
 require('../lib/namespace-plus');
 require('../lib/ast');
-require('../lib/rules-parser');
 require('../lib/rules-generator');
 
-parser = namespace.firebase.rules.parser;
 generator = namespace.firebase.rules.generator;
 
 var input = "";
