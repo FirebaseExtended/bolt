@@ -5,7 +5,6 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
 
   var rules = require('firebase.rules');
   var ast = require('firebase.rules.ast');
-  var types = require('namespace.types');
   var helpers = require('firebase.test.helpers');
 
   var parse;
@@ -75,7 +74,7 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
 
   test("Two functions", function() {
     var result = parse(fn + "/* sep */" + functionExpression('g', 'true'));
-    assert.deepEqual(result.functions, {f:fnAST(), g:fnAST()});
+    assert.deepEqual(result.functions, {f: fnAST(), g: fnAST()});
   });
 
   test("Literals", function() {
@@ -315,5 +314,4 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
         return true;
       });
   }
-
 });

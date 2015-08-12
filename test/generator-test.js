@@ -12,7 +12,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   var assert = QUnit.assert;
 
   var test = QUnit.test;
-  var skip = QUnit.skip;
+  // var skip = QUnit.skip;
 
   var parse;
 
@@ -66,13 +66,13 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("All Access", function() {
-    var test = "\
+    var data = "\
       path / {\
       read() { return true; }\
       write() { return true; }\
       }\
       ";
-    var result = parse(test);
+    var result = parse(data);
     assert.ok(result);
     var gen = new generator.Generator(result);
     var json = gen.generateRules();
@@ -80,12 +80,12 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("Read only", function() {
-    var test = "\
+    var data = "\
       path / {\
       read() { return true; }\
       }\
       ";
-    var result = parse(test);
+    var result = parse(data);
     assert.ok(result);
     var gen = new generator.Generator(result);
     var json = gen.generateRules();
@@ -93,12 +93,12 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("Read none", function() {
-    var test = "\
+    var data = "\
       path / {\
       read() { return false; }\
       }\
       ";
-    var result = parse(test);
+    var result = parse(data);
     assert.ok(result);
     var gen = new generator.Generator(result);
     var json = gen.generateRules();
@@ -106,12 +106,12 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
   });
 
   test("Indexed", function() {
-    var test = "\
+    var data = "\
       path / {\
       index() { return ['a', 'b']; }\
       }\
       ";
-    var result = parse(test);
+    var result = parse(data);
     assert.ok(result);
     var gen = new generator.Generator(result);
     var json = gen.generateRules();
@@ -142,8 +142,9 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
         var json = gen.generateRules();
         assert.ok('rules' in json, response.url + " has rules");
         return helpers.readURL(response.url.replace('.sam', '.json'))
-          .then(function(response) {
-            assert.deepEqual(json, JSON.parse(response.content), "Generated JSON should match " + response.url);
+          .then(function(response2) {
+            assert.deepEqual(json, JSON.parse(response2.content),
+                             "Generated JSON should match " + response2.url);
           });
       })
       .catch(function(error) {
@@ -157,7 +158,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
       [ "false" ],
       [ "1" ],
       [ "1.1" ],
-      [ "+3" , "3"],
+      [ "+3", "3"],
       [ "-3" ],
       [ "0x2", "2" ],
       [ "\"string\"", "'string'" ],
@@ -223,20 +224,26 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
       { f: "function f(a) { return a + 3; }", x: "f(1 * 2)", e: "1 * 2 + 3" },
       { f: "function f(a) { return a * 3; }", x: "f(1 + 2)", e: "(1 + 2) * 3" },
       { f: "function f(a) { return a + 1; }", x: "f(a + a)", e: "a + a + 1" },
-      { f: "function f(a) { return g(a); } function g(a) { return a == true; }", x: "f(123)", e: "123 == true" },
-      { f: "function f(a, b) { return g(a) == g(b); } function g(a) { return a == true; }", x: "f(1, 2)", e: "1 == true == (2 == true)" },
+      { f: "function f(a) { return g(a); } function g(a) { return a == true; }",
+        x: "f(123)", e: "123 == true" },
+      { f: "function f(a, b) { return g(a) == g(b); } function g(a) { return a == true; }",
+        x: "f(1, 2)", e: "1 == true == (2 == true)" },
       // Highler level function works as long as returns a constant function
-      { f: "function f() { return g; } function g(a) { return a == true; }", x: "f()(123)", e: "123 == true" },
+      { f: "function f() { return g; } function g(a) { return a == true; }",
+        x: "f()(123)", e: "123 == true" },
       // Undefined function - should just leave function defintion.
       { f: "function f(a) { return a + 1; }", x: "g(1, 2)", e: "g(1, 2)" },
       { f: "function f(a) { return a + 1; }", x: "a[f(123)]", e: "a[123 + 1]" },
       { f: "", x: "this", e: "newData.val() == true" },
       { f: "", x: "this.foo", e: "newData.child('foo').val() == true" },
-      { f: "", x: "this.foo || this.bar", e: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
+      { f: "",
+        x: "this.foo || this.bar",
+        e: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
       // Don't use child on built-in method names.
       { f: "", x: "this.isString", e: "newData.isString" },
       { f: "function f(a) { return a == '123'; }", x: "f(this)", e: "newData.val() == '123'" },
-      { f: "function f(a) { return a == '123'; }", x: "f(this.foo)", e: "newData.child('foo').val() == '123'" },
+      { f: "function f(a) { return a == '123'; }",
+        x: "f(this.foo)", e: "newData.child('foo').val() == '123'" },
     ];
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].f + " path /x { read() { return " + tests[i].x + "; }}");
@@ -246,32 +253,34 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     }
   });
 
-  test("Function expansion errors", function(assert) {
+  test("Function expansion errors", function() {
     var tests = [
       { p: "a", f: "f(a)", x: "f(1)" },
     ];
+    function getExpressionText(gen, exp) {
+      gen.getExpressionText(exp);
+    }
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse("\
         function f(" + tests[i].p + ") { return " + tests[i].f + "; }\
         path /x { read() { return " + tests[i].x + "; }}\
       ");
       var gen = new generator.Generator(symbols);
-      assertThrows(function() {
-        gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      }, "Recursive");
+      assertThrows(getExpressionText.bind(undefined, gen, symbols.paths['/x'].methods.read.body),
+                   "Recursive");
     }
   });
 
   test("Builtin validation functions", function() {
     var symbols = parse("");
     var gen = new generator.Generator(symbols);
-    var types = ['string', 'number', 'boolean'];
+    var baseTypes = ['string', 'number', 'boolean'];
     assert.equal(gen.getExpressionText(symbols.functions['@validator@object'].body),
                  'newData.hasChildren()', 'object');
     assert.equal(gen.getExpressionText(symbols.functions['@validator@null'].body),
                  'newData.val() == null', 'object');
-    for (var i = 0; i < types.length; i++) {
-      var type = types[i];
+    for (var i = 0; i < baseTypes.length; i++) {
+      var type = baseTypes[i];
       assert.equal(gen.getExpressionText(symbols.functions['@validator@' + type].body),
                    'newData.is' + type.toUpperCase()[0] + type.slice(1) + '()', type);
     }
@@ -279,24 +288,24 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
 
   test("Schema Validation", function() {
     var tests = [
-      { s:"type Simple {}", v: "this instanceof Simple",
+      { s: "type Simple {}", v: "this instanceof Simple",
         x: "newData.hasChildren()" },
-      { s:"type Simple extends string {}", v: "this instanceof Simple", x: "newData.isString()" },
-      { s:"type Simple {n: number}", v: "this instanceof Simple",
+      { s: "type Simple extends string {}", v: "this instanceof Simple", x: "newData.isString()" },
+      { s: "type Simple {n: number}", v: "this instanceof Simple",
         x: "newData.child('n').isNumber()" },
-      { s:"type Simple {s: string}", v: "this instanceof Simple",
+      { s: "type Simple {s: string}", v: "this instanceof Simple",
         x: "newData.child('s').isString()" },
-      { s:"type Simple {b: boolean}", v: "this instanceof Simple",
+      { s: "type Simple {b: boolean}", v: "this instanceof Simple",
         x: "newData.child('b').isBoolean()" },
-      { s:"type Simple {x: object}", v: "this instanceof Simple",
+      { s: "type Simple {x: object}", v: "this instanceof Simple",
         x: "newData.child('x').hasChildren()" },
-      { s:"type Simple {x: number|string}", v: "this instanceof Simple",
+      { s: "type Simple {x: number|string}", v: "this instanceof Simple",
         x: "newData.child('x').isNumber() || newData.child('x').isString()" },
-      { s:"type Simple {a: number, b: string}", v: "this instanceof Simple",
+      { s: "type Simple {a: number, b: string}", v: "this instanceof Simple",
         x: "newData.child('a').isNumber() && newData.child('b').isString()" },
-      { s:"type Simple {x: number|null}", v: "this instanceof Simple",
+      { s: "type Simple {x: number|null}", v: "this instanceof Simple",
         x: "newData.child('x').isNumber() || newData.child('x').val() == null" },
-      { s:"type Simple {n: number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
+      { s: "type Simple {n: number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
         x: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
     ];
     for (var i = 0; i < tests.length; i++) {
@@ -311,17 +320,21 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     var tests = [
       { s: "",
         e: "at least one path" },
-      { s:"type Simple extends string {a: string} path /x {} ",
+      { s: "type Simple extends string {a: string} path /x {} ",
         e: /properties.*extend/ },
-      { s:"path /y { index() { return 1; }}",
+      { s: "path /y { index() { return 1; }}",
         e: /index.*string/i },
     ];
+
+    function generateRules(symbols) {
+      var gen = new generator.Generator(symbols);
+      gen.generateRules();
+    }
+
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].s);
-      assertThrows(function() {
-        var gen = new generator.Generator(symbols);
-        gen.generateRules();
-      }, tests[i].e);
+      assertThrows(generateRules.bind(undefined, symbols),
+                   tests[i].e);
     }
   });
 });

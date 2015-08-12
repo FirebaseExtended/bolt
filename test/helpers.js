@@ -1,4 +1,7 @@
 namespace.module('firebase.test.helpers', function(exports, require) {
+  // For eslint
+  require;
+
   exports.extend({
     'readURL': readURL
   });
@@ -11,7 +14,7 @@ namespace.module('firebase.test.helpers', function(exports, require) {
 
       req.onload = function() {
         if (req.status == 200) {
-          resolve({content: req.responseText, url:url});
+          resolve({content: req.responseText, url: url});
         } else {
           reject(new Error(url + " " + req.statusText));
         }
@@ -24,5 +27,4 @@ namespace.module('firebase.test.helpers', function(exports, require) {
       req.send();
     });
   }
-
 });

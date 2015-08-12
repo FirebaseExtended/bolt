@@ -17,8 +17,9 @@ process.stdin.on('data', function(chunk) {
 });
 
 process.stdin.on('end', function() {
+  var symbols;
   try {
-    var symbols = parser.parse(input);
+    symbols = parser.parse(input);
   } catch(e) {
     console.log(e);
     return;
