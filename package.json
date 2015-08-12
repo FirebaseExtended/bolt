@@ -20,7 +20,7 @@
     "url": "https://github.com/firebase/bolt/issues",
     "email": "support@firebase.com"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "firebase",
     "security",
