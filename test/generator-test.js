@@ -34,33 +34,6 @@ var defaultRules = {
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
 
-// Enable error message matchin (not in Qunit)
-function assertThrows(fn, match, message) {
-  try {
-    fn();
-  } catch (e) {
-    var expected = true;
-    if (match) {
-      if (util.isType(match, 'regexp')) {
-        if (!match.test(e.message)) {
-          expected = false;
-        }
-      } else {
-        if (e.message.indexOf(match) == -1) {
-          expected = false;
-        }
-      }
-    }
-    assert.ok(expected, message || "Assertion was: " + e.message);
-    return;
-  }
-  fail(message || "Expected assertion not thrown.");
-}
-
-function fail(msg) {
-  assert.ok(false, msg || "Fail.");
-}
-
 suite("Rules Generator Tests", function() {
   test("All Access", function() {
     var data = "\
@@ -261,8 +234,9 @@ function f(" + tests[i].p + ") { return " + tests[i].f + "; }\
 path /x { read() { return " + tests[i].x + "; }}\
 ");
       var gen = new bolt.Generator(symbols);
-      assertThrows(getExpressionText.bind(undefined, gen, symbols.paths['/x'].methods.read.body),
-                   "Recursive");
+      assert.throws(getExpressionText.bind(undefined, gen, symbols.paths['/x'].methods.read.body),
+                    Error,
+                    "Recursive");
     }
   });
 
@@ -328,8 +302,9 @@ path /x { read() { return " + tests[i].x + "; }}\
 
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].s);
-      assertThrows(generateRules.bind(undefined, symbols),
-                   tests[i].e);
+      assert.throws(generateRules.bind(undefined, symbols),
+                    Error,
+                    tests[i].e);
     }
   });
 });
