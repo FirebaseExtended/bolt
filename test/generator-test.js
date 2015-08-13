@@ -129,10 +129,8 @@ index() { return ['a', 'b']; }\
   });
 
   function testFileSample(filename) {
-    console.log("Generating from " + filename + "...");
     return helpers.readFile(filename)
       .then(function(response) {
-        console.log("Read " + response.url + "...");
         var result = parse(response.content);
         assert.ok(result, response.url);
         var gen = new bolt.Generator(result);

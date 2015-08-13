@@ -301,7 +301,6 @@ return true;\
   });
 
   function testFile(filename) {
-    console.log("Reading " + filename + "...");
     return helpers.readFile(filename)
       .then(function(response) {
         var result = parse(response.content);
