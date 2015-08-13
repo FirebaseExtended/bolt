@@ -8,16 +8,32 @@
 
 You should have node.js and npm installed to use this repository.
 
-Setup shell environment and build:
+Setup command line environment and lint, build, test.
 
     $ source tools/use
     $ configure-project
+    $ gulp
+
+# Useful commands
+
+Check JavaScript source files for required formatting conventions:
+
+    $ gulp lint
+
+Build Bolt parser from PEG grammar:
+
     $ gulp build
 
-# Run Tests in Browser
+Run command line tests:
+
+    $ gulp test
+
+Run browser-based tests:
 
     $ browser-tests
 
-# You can execute a CLI version of the compiler:
+Execute a Bolt compiler from the command line:
 
-    $ firebase-bolt < <rules-file> > <json-file>
+    $ firebase-bolt < <bolt-file>
+
+A Firebase JSON file is sent to standard output.

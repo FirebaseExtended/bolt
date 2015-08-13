@@ -45,29 +45,30 @@ gulp.task('build', function() {
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify-bolt', function() {
+gulp.task('browserify-bolt', ['build'], function() {
   return browserifyToDist('lib/bolt');
 });
 
-gulp.task('browserify-parser-test', function() {
+gulp.task('browserify-parser-test', ['build'], function() {
   return browserifyToDist('test/parser-test');
 });
 
-gulp.task('browserify-generator-test', function() {
+gulp.task('browserify-generator-test', ['build'], function() {
   return browserifyToDist('test/generator-test');
 });
 
-gulp.task('browser-test', ['browserify-parser-test', 'browserify-generator-test'], function() {
-});
+gulp.task('browserify',
+          ['browserify-parser-test',
+           'browserify-generator-test',
+           'browserify-bolt']);
 
 // Runs the Mocha test suite
-gulp.task('test', function() {
+gulp.task('test', ['build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
 
-gulp.task('default', ['lint', 'build', 'test'], function() {
-});
+gulp.task('default', ['lint', 'build', 'test']);
 
 function browserifyToDist(entry) {
   return browserify({ entries: [entry] })
