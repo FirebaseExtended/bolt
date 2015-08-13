@@ -5,4 +5,3 @@ set -e
 cd $PROJ_DIR
 
 npm install
-bower install

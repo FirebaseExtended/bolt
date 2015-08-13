@@ -13,122 +13,77 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace.module('firebase.rules-generator.test', function(exports, require) {
-  "use strict";
+"use strict";
 
-  require('namespace.funcs').patch();
+var bolt = require('../lib/bolt');
+var parse = bolt.parse;
+var util = require('../lib/util');
+var Promise = require('promise');
 
-  var rules = require('firebase.rules');
-  var generator = require('firebase.rules.generator');
-  var types = require('namespace.types');
-  var helpers = require('firebase.test.helpers');
+var helpers = require('./helpers');
+var assert = require('chai').assert;
 
-  // Hack - shold be passed in to test function - throws functions breaks...
-  var assert = QUnit.assert;
 
-  var test = QUnit.test;
-  // var skip = QUnit.skip;
-
-  var parse;
-
-  var defaultRules = {
-    rules: {
-      ".read": "true",
-      ".write": "true"
-    }
-  };
-
-  // TODO: Test duplicated function, and schema definitions.
-  // TODO: Test other parser errors - appropriate messages (exceptions).
-
-  window.addEventListener('load', init);
-
-  function init() {
-    parse = rules.parser.parse;
+var defaultRules = {
+  rules: {
+    ".read": "true",
+    ".write": "true"
   }
+};
 
-  // Enable error message matchin (not in Qunit)
-  function assertThrows(fn, match, message) {
-    try {
-      fn();
-    } catch (e) {
-      var expected = true;
-      if (match) {
-        if (types.isType(match, 'regexp')) {
-          if (!match.test(e.message)) {
-            expected = false;
-          }
-        } else {
-          if (e.message.indexOf(match) == -1) {
-            expected = false;
-          }
-        }
-      }
-      assert.ok(expected, message || "Assertion was: " + e.message);
-      return;
-    }
-    fail(message || "Expected assertion not thrown.");
-  }
+// TODO: Test duplicated function, and schema definitions.
+// TODO: Test other parser errors - appropriate messages (exceptions).
 
-  function fail(msg) {
-    assert.ok(false, msg || "Fail.");
-  }
-
-  QUnit.module("Rules Generator Tests", {
-    beforeEach: function() {
-      QUnit.dump.maxDepth = 20;
-    }
-  });
-
+suite("Rules Generator Tests", function() {
   test("All Access", function() {
     var data = "\
-      path / {\
-      read() { return true; }\
-      write() { return true; }\
-      }\
-      ";
+path / {\
+read() { return true; }\
+write() { return true; }\
+}\
+";
     var result = parse(data);
     assert.ok(result);
-    var gen = new generator.Generator(result);
+    var gen = new bolt.Generator(result);
     var json = gen.generateRules();
     assert.deepEqual(json, defaultRules);
   });
 
   test("Read only", function() {
     var data = "\
-      path / {\
-      read() { return true; }\
-      }\
-      ";
+path / {\
+read() { return true; }\
+}\
+";
     var result = parse(data);
     assert.ok(result);
-    var gen = new generator.Generator(result);
+    var gen = new bolt.Generator(result);
     var json = gen.generateRules();
     assert.deepEqual(json, {rules: {".read": "true"}});
   });
 
   test("Read none", function() {
     var data = "\
-      path / {\
-      read() { return false; }\
-      }\
-      ";
+path / {\
+read() { return false; }\
+}\
+";
     var result = parse(data);
     assert.ok(result);
-    var gen = new generator.Generator(result);
+    var gen = new bolt.Generator(result);
     var json = gen.generateRules();
     assert.deepEqual(json, {rules: {".read": "false"}});
   });
 
   test("Indexed", function() {
     var data = "\
-      path / {\
-      index() { return ['a', 'b']; }\
-      }\
-      ";
+path / {\
+index() { return ['a', 'b']; }\
+}\
+";
     var result = parse(data);
     assert.ok(result);
-    var gen = new generator.Generator(result);
+    var gen = new bolt.Generator(result);
     var json = gen.generateRules();
     assert.deepEqual(json, {rules: {".indexOn": ["a", "b"]}});
   });
@@ -141,22 +96,20 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      completed.push(testFileSample('samples/' + files[i] + '.sam'));
+      completed.push(testFileSample('test/samples/' + files[i] + bolt.EXTENSION));
     }
     return Promise.all(completed);
   });
 
   function testFileSample(filename) {
-    console.log("Generating from " + filename + "...");
-    return helpers.readURL(filename)
+    return helpers.readFile(filename)
       .then(function(response) {
-        console.log("Read " + response.url + "...");
         var result = parse(response.content);
         assert.ok(result, response.url);
-        var gen = new generator.Generator(result);
+        var gen = new bolt.Generator(result);
         var json = gen.generateRules();
         assert.ok('rules' in json, response.url + " has rules");
-        return helpers.readURL(response.url.replace('.sam', '.json'))
+        return helpers.readFile(response.url.replace(bolt.EXTENSION, '.json'))
           .then(function(response2) {
             assert.deepEqual(json, JSON.parse(response2.content),
                              "Generated JSON should match " + response2.url);
@@ -225,7 +178,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     for (var i = 0; i < tests.length; i++) {
       var result = parse('function f() {return ' + tests[i][0] + ';}');
       var ast = result.functions.f.body;
-      var decode = generator.decodeExpression(ast);
+      var decode = bolt.decodeExpression(ast);
       var expected = tests[i][1] || tests[i][0];
       assert.deepEqual(decode, expected, tests[i][0] + " {" + ast.type + "}");
     }
@@ -262,7 +215,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     ];
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].f + " path /x { read() { return " + tests[i].x + "; }}");
-      var gen = new generator.Generator(symbols);
+      var gen = new bolt.Generator(symbols);
       var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
       assert.equal(decode, tests[i].e, tests[i].e);
     }
@@ -277,18 +230,19 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     }
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse("\
-        function f(" + tests[i].p + ") { return " + tests[i].f + "; }\
-        path /x { read() { return " + tests[i].x + "; }}\
-      ");
-      var gen = new generator.Generator(symbols);
-      assertThrows(getExpressionText.bind(undefined, gen, symbols.paths['/x'].methods.read.body),
-                   "Recursive");
+function f(" + tests[i].p + ") { return " + tests[i].f + "; }\
+path /x { read() { return " + tests[i].x + "; }}\
+");
+      var gen = new bolt.Generator(symbols);
+      assert.throws(getExpressionText.bind(undefined, gen, symbols.paths['/x'].methods.read.body),
+                    Error,
+                    "Recursive");
     }
   });
 
   test("Builtin validation functions", function() {
     var symbols = parse("");
-    var gen = new generator.Generator(symbols);
+    var gen = new bolt.Generator(symbols);
     var baseTypes = ['string', 'number', 'boolean'];
     assert.equal(gen.getExpressionText(symbols.functions['@validator@object'].body),
                  'newData.hasChildren()', 'object');
@@ -325,7 +279,7 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     ];
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].s + " path /x { validate() { return " + tests[i].v + "; }}");
-      var gen = new generator.Generator(symbols);
+      var gen = new bolt.Generator(symbols);
       var decode = gen.getExpressionText(symbols.paths['/x'].methods.validate.body);
       assert.equal(decode, tests[i].x, tests[i].x);
     }
@@ -342,14 +296,15 @@ namespace.module('firebase.rules-generator.test', function(exports, require) {
     ];
 
     function generateRules(symbols) {
-      var gen = new generator.Generator(symbols);
+      var gen = new bolt.Generator(symbols);
       gen.generateRules();
     }
 
     for (var i = 0; i < tests.length; i++) {
       var symbols = parse(tests[i].s);
-      assertThrows(generateRules.bind(undefined, symbols),
-                   tests[i].e);
+      assert.throws(generateRules.bind(undefined, symbols),
+                    Error,
+                    tests[i].e);
     }
   });
 });

@@ -2,4 +2,5 @@
 # browser-tests --- Run unit tests in a browser environment.
 
 cd $PROJ_DIR
+gulp browserify
 web-server start

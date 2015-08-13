@@ -13,33 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace.module('firebase.test.helpers', function(exports, require) {
-  // For eslint
-  require;
+"use strict";
 
-  exports.extend({
-    'readURL': readURL
-  });
+var Promise = require('promise');
+var fs = require('fs');
 
-  function readURL(url) {
-    return new Promise(function(resolve, reject) {
-      var req = new XMLHttpRequest();
+module.exports = {
+  'readFile': readFile
+};
 
-      req.open('GET', url);
+function readFile(path) {
+  return readURL(path) || readFS(path);
+}
 
-      req.onload = function() {
-        if (req.status == 200) {
-          resolve({content: req.responseText, url: url});
-        } else {
-          reject(new Error(url + " " + req.statusText));
-        }
-      };
-
-      req.onerror = function() {
-        reject(new Error(url + " Network Error"));
-      };
-
-      req.send();
-    });
+function readURL(url) {
+  if (!global.XMLHttpRequest) {
+    return undefined;
   }
-});
+
+  return new Promise(function(resolve, reject) {
+    var req = new XMLHttpRequest();
+
+    req.open('GET', '/' + url);
+
+    req.onload = function() {
+      if (req.status == 200) {
+        resolve({content: req.responseText, url: url});
+      } else {
+        reject(new Error(url + " " + req.statusText));
+      }
+    };
+
+    req.onerror = function() {
+      reject(new Error(url + " Network Error"));
+    };
+
+    req.send();
+  });
+}
+
+
+function readFS(path) {
+  return new Promise(function(resolve, reject) {
+    fs.readFile(path, {encoding: 'utf8'}, function(error, data) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve({url: path, content: data});
+    });
+  });
+}

@@ -17,17 +17,23 @@
 
 var gulp = require('gulp');
 var eslint = require('gulp-eslint');
+var browserify = require('browserify');
+var source = require('vinyl-source-stream');
+
 var mocha = require('gulp-mocha');
+var gutil = require('gulp-util');
 
 var peg = require('gulp-peg');
 
 var JS_SOURCES = ['gulpfile.js',
-                  'lib/rules-generator.js', 'lib/ast.js',
+                  'lib/*.js',
                   'bin/firebase-bolt',
                   'test/*.js'];
 
+var TEST_FILES = ['test/*-test.js'];
+
 gulp.task('lint', function() {
-  return gulp.src(JS_SOURCES)
+  return gulp.src(JS_SOURCES.concat(['!lib/rules-parser.js']))
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
@@ -39,14 +45,40 @@ gulp.task('build', function() {
     .pipe(gulp.dest('lib'));
 });
 
-// Runs the Mocha test suite
-gulp.task('test', function() {
-  gulp.src(paths.testFiles)
-    .pipe(mocha({
-      reporter: 'spec',
-      timeout: 5000
-    }));
+gulp.task('browserify-bolt', ['build'], function() {
+  return browserifyToDist('lib/bolt');
 });
 
-gulp.task('default', ['lint', 'build', 'test'], function() {
+gulp.task('browserify-parser-test', ['build'], function() {
+  return browserifyToDist('test/parser-test');
 });
+
+gulp.task('browserify-generator-test', ['build'], function() {
+  return browserifyToDist('test/generator-test');
+});
+
+gulp.task('browserify',
+          ['browserify-parser-test',
+           'browserify-generator-test',
+           'browserify-bolt']);
+
+// Runs the Mocha test suite
+gulp.task('test', ['build'], function() {
+  return gulp.src(TEST_FILES)
+    .pipe(mocha({ui: 'tdd'}));
+});
+
+gulp.task('default', ['lint', 'build', 'test']);
+
+function browserifyToDist(entry) {
+  return browserify({ entries: [entry] })
+    .bundle()
+    .pipe(source(basename(entry) + '-bundle.js'))
+    .on('error', gutil.log)
+    .pipe(gulp.dest('dist'));
+}
+
+function basename(path) {
+  var parts = path.split('/');
+  return parts.slice(-1)[0];
+}

@@ -13,58 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace.module('firebase.rules-parser.test', function(exports, require) {
-  "use strict";
+"use strict";
 
-  require('namespace.funcs').patch();
+var assert = require('chai').assert;
+var helpers = require('./helpers');
+var Promise = require('promise');
 
-  var rules = require('firebase.rules');
-  var ast = require('firebase.rules.ast');
-  var helpers = require('firebase.test.helpers');
+var ast = require('../lib/ast');
+var parse = require('../lib/rules-parser').parse;
+var BOLT_EXTENSION = require('../lib/bolt').EXTENSION;
 
-  var parse;
-  var assert = QUnit.assert;
-  var test = QUnit.test;
+// TODO: Test duplicated function, and schema definitions.
+// TODO: Test other parser errors - appropriate messages (exceptions).
 
-  // TODO: Test duplicated function, and schema definitions.
-  // TODO: Test other parser errors - appropriate messages (exceptions).
-
-  window.addEventListener('load', init);
-
-  function init() {
-    parse = rules.parser.parse;
-  }
-
-  var fn = functionExpression('f', 'true');
-  function fnAST() {
-    return {
-      params: [],
-      body: {
-        type: 'boolean',
-        value: true
-      }
-    };
-  }
-
-  var path = "path /p {}";
-  var pathAST = {
-    parts: ['p'],
-    methods: {}
+var fn = functionExpression('f', 'true');
+function fnAST() {
+  return {
+    params: [],
+    body: {
+      type: 'boolean',
+      value: true
+    }
   };
+}
 
-  var schema = "type Foo { a: number }";
-  var schemaAST = {
-    derivedFrom: 'object',
-    properties: { "a": { types: ['number'] } },
-    methods: {}
-  };
+var path = "path /p {}";
+var pathAST = {
+  parts: ['p'],
+  methods: {}
+};
 
-  function functionExpression(name, exp) {
-    return "function " + name + "() { return " + exp + "; }";
-  }
+var schema = "type Foo { a: number }";
+var schemaAST = {
+  derivedFrom: 'object',
+  properties: { "a": { types: ['number'] } },
+  methods: {}
+};
 
-  QUnit.module("Rules Parser Tests");
+function functionExpression(name, exp) {
+  return "function " + name + "() { return " + exp + "; }";
+}
 
+suite("Rules Parser Tests", function() {
   test("Empty input", function() {
     var result = parse("");
     assert.deepEqual(result, new ast.Symbols());
@@ -77,14 +67,13 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
 
   test("Function name", function() {
     var result = parse("function longName() {return false;}");
-    assert.deepEqual(result.functions.longName,
-      {
-        params: [],
-        body: {
-          type: "boolean",
-          value: false
-        }
-      });
+    assert.deepEqual(result.functions.longName, {
+      params: [],
+      body: {
+        type: "boolean",
+        value: false
+      }
+    });
   });
 
   test("Two functions", function() {
@@ -161,7 +150,7 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
                               ast.variable('c')) ],
       // && over || precendence
       [ "a && b || c && d", ast.or(ast.and(ast.variable('a'),
-                                       ast.variable('b')),
+                                           ast.variable('b')),
                                    ast.and(ast.variable('c'),
                                            ast.variable('d'))) ],
       [ "a ? b : c", ast.ternary(ast.variable('a'), ast.variable('b'), ast.variable('c')) ],
@@ -214,12 +203,10 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
 
   test("Root Path", function() {
     var result = parse("path / {}");
-    assert.deepEqual(result.paths['/'],
-      {
-        parts: [],
-        methods: {}
-      }
-    );
+    assert.deepEqual(result.paths['/'], {
+      parts: [],
+      methods: {}
+    });
   });
 
   test("Simple Schema", function() {
@@ -229,82 +216,75 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
 
   test("Multiprop Schema", function() {
     var result = parse("\
-      type Multi {\
-        a: number,\
-        b: string\
-      }\
-    ");
-    assert.deepEqual(result.schema.Multi,
-      {
-        derivedFrom: 'object',
-        properties: {
-          "a": { types: ['number'] },
-          "b": { types: ['string'] }
-        },
-        methods: {}
-      });
+type Multi {\
+a: number,\
+b: string\
+}\
+");
+    assert.deepEqual(result.schema.Multi, {
+      derivedFrom: 'object',
+      properties: {
+        "a": { types: ['number'] },
+        "b": { types: ['string'] }
+      },
+      methods: {}
+    });
   });
 
   test("Schema extension", function() {
     var result = parse("type Foo extends Bar {}");
-    assert.deepEqual(result.schema.Foo,
-      {
-        derivedFrom: "Bar",
-        properties: {},
-        methods: {}
-      }
-    );
+    assert.deepEqual(result.schema.Foo, {
+      derivedFrom: "Bar",
+      properties: {},
+      methods: {}
+    });
   });
 
   test("Schema method", function() {
     var result = parse("\
-      type Foo {\
-      \
-      a: number,\
-      \
-      validate() {\
-        return true;\
-      }\
-    }");
-    assert.deepEqual(result.schema.Foo,
-      {
-        derivedFrom: 'object',
-        properties: { "a": { types: ['number'] }},
-        methods: {
-          "validate": {
-            params: [],
-            body: {
-              type: "boolean",
-              value: true
-            }
+type Foo {\
+\
+a: number,\
+\
+validate() {\
+return true;\
+}\
+}");
+    assert.deepEqual(result.schema.Foo, {
+      derivedFrom: 'object',
+      properties: { "a": { types: ['number'] }},
+      methods: {
+        "validate": {
+          params: [],
+          body: {
+            type: "boolean",
+            value: true
           }
         }
       }
-    );
+    });
   });
 
   test("Path method", function() {
     var result = parse("\
-      path /p/$q {\
-      \
-      validate() {\
-        return true;\
-      }\
-    }");
-    assert.deepEqual(result.paths['/p/$q'],
-      {
-        parts: ['p', '$q'],
-        methods: {
-          validate: {
-            params: [],
-            body: {
-              type: "boolean",
-              value: true
-            }
+path /p/$q {\
+\
+validate() {\
+return true;\
+}\
+}");
+    assert.deepEqual(result.paths['/p/$q'], {
+      parts: ['p', '$q'],
+      methods: {
+        validate: {
+          params: [],
+          body: {
+            type: "boolean",
+            value: true
           }
         }
       }
-    );
+    });
   });
 
   test("Sample files", function() {
@@ -315,14 +295,13 @@ namespace.module('firebase.rules-parser.test', function(exports, require) {
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      completed.push(testFile('samples/' + files[i] + '.sam'));
+      completed.push(testFile('test/samples/' + files[i] + BOLT_EXTENSION));
     }
     return Promise.all(completed);
   });
 
   function testFile(filename) {
-    console.log("Reading " + filename + "...");
-    return helpers.readURL(filename)
+    return helpers.readFile(filename)
       .then(function(response) {
         var result = parse(response.content);
         assert.ok(result, response.url);
