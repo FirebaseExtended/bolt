@@ -43,12 +43,19 @@ gulp.task('build', function() {
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify', function() {
-  return browserify({ entries: ['lib/bolt'] })
-    .bundle()
-    .pipe(source('bolt-bundle.js'))
-    .on('error', gutil.log)
-    .pipe(gulp.dest('dist'));
+gulp.task('browserify-bolt', function() {
+  return browserifyToDist('lib/bolt');
+});
+
+gulp.task('browserify-parser-test', function() {
+  return browserifyToDist('test/parser-test');
+});
+
+gulp.task('browserify-generator-test', function() {
+  return browserifyToDist('test/generator-test');
+});
+
+gulp.task('browser-test', ['browserify-parser-test', 'browserify-generator-test'], function() {
 });
 
 // Runs the Mocha test suite
@@ -62,3 +69,16 @@ gulp.task('test', function() {
 
 gulp.task('default', ['lint', 'build', 'test'], function() {
 });
+
+function browserifyToDist(entry) {
+  return browserify({ entries: [entry] })
+    .bundle()
+    .pipe(source(basename(entry) + '-bundle.js'))
+    .on('error', gutil.log)
+    .pipe(gulp.dest('dist'));
+}
+
+function basename(path) {
+  var parts = path.split('/');
+  return parts.slice(-1)[0];
+}
