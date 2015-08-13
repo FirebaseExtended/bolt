@@ -4,18 +4,20 @@
 
   - [Firebase Security and Modeling Language](docs/language.md) - Language documentation and syntax.
 
-# Using this Repo
+# Developing with this Repo
+
+You should have node.js and npm installed to use this repository.
 
 Setup shell environment and build:
 
     $ source tools/use
     $ configure-project
-    $ build-parser
+    $ gulp build
 
 # Run Tests in Browser
 
     $ browser-tests
 
-You can execute a CLI version of the compiler:
+# You can execute a CLI version of the compiler:
 
     $ firebase-bolt < <rules-file> > <json-file>

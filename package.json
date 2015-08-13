@@ -1,35 +1,48 @@
 {
   "name": "firebase-bolt",
-  "version": "0.1.1",
   "description": "Firebase Security and Modeling Language",
-  "main": "lib/rules-generator.js",
-  "preferGlobal": true,
-  "bin": {
-    "firebase-bolt": "bin/firebase-bolt"
+  "version": "0.1.1",
+  "author": {
+    "name": "Firebase",
+    "email": "support@firebase.com",
+    "url": "https://firebase.com"
   },
-  "scripts": {
-    "test": "gulp test"
-  },
+  "homepage": "https://github.com/firebase/bolt",
   "repository": {
     "type": "git",
     "url": "https://github.com/firebase/bolt.git"
   },
+  "directories": {
+    "bin": "bin",
+    "doc": "docs"
+  },
+  "bugs": {
+    "url": "https://github.com/firebase/bolt/issues",
+    "email": "support@firebase.com"
+  },
+  "license": "Apache-2.0",
   "keywords": [
     "firebase",
     "security",
     "rules",
     "schema",
-    "models"
+    "models",
+    "blaze"
   ],
-  "author": "Firebase <support@firebase.com>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/firebase/bolt/issues"
+  "preferGlobal": true,
+  "main": "lib/rules-generator.js",
+  "scripts": {
+    "test": "gulp test",
+    "travis": "gulp"
   },
-  "homepage": "https://github.com/firebase/bolt",
   "devDependencies": {
+    "browserify": "^11.0.1",
     "chai": "^3.2.0",
+    "eslint": "^1.1.0",
     "gulp": "^3.9.0",
+    "gulp-eslint": "^1.0.0",
+    "gulp-mocha": "^2.1.3",
+    "gulp-peg": "^0.1.2",
     "http-server": "^0.8.0",
     "mocha": "^2.2.5",
     "pegjs": "^0.8.0"
