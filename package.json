@@ -47,6 +47,7 @@
     "http-server": "^0.8.0",
     "mocha": "^2.2.5",
     "pegjs": "^0.8.0",
+    "promise": "^7.0.4",
     "vinyl-source-stream": "^1.1.0"
   }
 }

@@ -1,17 +1,15 @@
 {
   "name": "firebase-bolt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Firebase Security and Modeling Language",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true,
   "ignore": [
     "**/.*",
     "node_modules",
     "bower_components",
     "test",
-    "tests"
   ],
   "dependencies": {
-    "qunit": "~1.18.0"
   }
 }

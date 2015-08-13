@@ -15,15 +15,26 @@
  */
 "use strict";
 
+var Promise = require('promise');
+var fs = require('fs');
+
 module.exports = {
-  'readURL': readURL
+  'readFile': readFile
 };
 
+function readFile(path) {
+  return readURL(path) || readFS(path);
+}
+
 function readURL(url) {
+  if (!global.XMLHttpRequest) {
+    return undefined;
+  }
+
   return new Promise(function(resolve, reject) {
     var req = new XMLHttpRequest();
 
-    req.open('GET', url);
+    req.open('GET', '/' + url);
 
     req.onload = function() {
       if (req.status == 200) {
@@ -38,5 +49,18 @@ function readURL(url) {
     };
 
     req.send();
+  });
+}
+
+
+function readFS(path) {
+  return new Promise(function(resolve, reject) {
+    fs.readFile(path, {encoding: 'utf8'}, function(error, data) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve({url: path, content: data});
+    });
   });
 }

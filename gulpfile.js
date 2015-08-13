@@ -30,6 +30,8 @@ var JS_SOURCES = ['gulpfile.js',
                   'bin/firebase-bolt',
                   'test/*.js'];
 
+var TEST_FILES = ['test/*-test.js'];
+
 gulp.task('lint', function() {
   return gulp.src(JS_SOURCES.concat(['!lib/rules-parser.js']))
     .pipe(eslint())
@@ -60,11 +62,8 @@ gulp.task('browser-test', ['browserify-parser-test', 'browserify-generator-test'
 
 // Runs the Mocha test suite
 gulp.task('test', function() {
-  gulp.src(paths.testFiles)
-    .pipe(mocha({
-      reporter: 'spec',
-      timeout: 5000
-    }));
+  return gulp.src(TEST_FILES)
+    .pipe(mocha({ui: 'tdd'}));
 });
 
 gulp.task('default', ['lint', 'build', 'test'], function() {
