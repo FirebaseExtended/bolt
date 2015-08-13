@@ -22,7 +22,7 @@ var mocha = require('gulp-mocha');
 var peg = require('gulp-peg');
 
 var JS_SOURCES = ['gulpfile.js',
-                  'lib/rules-generator.js', 'lib/ast.js',
+                  'lib/*.js', '!lib/rules-parser.js',
                   'bin/firebase-bolt',
                   'test/*.js'];
 

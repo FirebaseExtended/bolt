@@ -18,7 +18,7 @@
 
 {
   "use strict";
-  var ast = namespace.firebase.rules.ast;
+  var ast = require('./ast');
 
   // Return a left-associative binary structure
   // consisting of head (exp), and tail (op, exp)*.
