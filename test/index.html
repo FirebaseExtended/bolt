@@ -4,18 +4,6 @@
   <title>Firebase Rules Parser Tests</title>
   <link rel="stylesheet" href="/bower_components/qunit/qunit/qunit.css">
   <script src="/bower_components/qunit/qunit/qunit.js"></script>
-  <script src="/lib/namespace-plus.js"></script>
-  <script src="/lib/ast.js"></script>
-  <script>
-    // Hack to convert node module to namespace module.
-    var module = {};
-  </script>
-  <script src="/lib/rules-parser.js"></script>
-  <script>
-    // Hack to convert node module to namespace module.
-    namespace.firebase.rules.parser = module.exports;
-  </script>
-  <script src="/lib/rules-generator.js"></script>
   <style>
     button {
     margin: 5px;
@@ -26,8 +14,7 @@
   <div id="qunit"></div>
   <div id="qunit-fixture"></div>
 
-  <script src="/test/helpers.js"></script>
-  <script src="/test/parser-test.js"></script>
-  <script src="/test/generator-test.js"></script>
+  <script src="/dist/parser-test-bundle.js"></script>
+  <script src="/dist/generator-test-bundle.js"></script>
 </body>
 </html>

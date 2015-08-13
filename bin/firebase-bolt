@@ -16,8 +16,7 @@
  * limitations under the License.
  */
 
-var parser = require('../lib/rules-parser');
-var generator = require('../lib/rules-generator');
+var bolt = require('../lib/bolt');
 
 var input = "";
 
@@ -29,13 +28,13 @@ process.stdin.on('data', function(chunk) {
 process.stdin.on('end', function() {
   var symbols;
   try {
-    symbols = parser.parse(input);
+    symbols = bolt.parse(input);
   } catch(e) {
     console.log(e);
     return;
   }
   // console.log(JSON.stringify(symbols, null, 2));
-  var gen = new generator.Generator(symbols);
+  var gen = new bolt.Generator(symbols);
   var rules = gen.generateRules();
   console.log(JSON.stringify(rules, null, 2));
 });
