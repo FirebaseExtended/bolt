@@ -54,7 +54,7 @@ rulesSuite("Mail test.", function(test) {
   });
 
 
-  test("Outbox tests.", function() {
+  test("Outbox tests.", function(rules) {
     rules
       .as('bill')
       .at('/users/bill/output/1')
@@ -100,7 +100,7 @@ rulesSuite("Mail test.", function(test) {
       .succeeds("Sender can delete sent mail in outbox.");
   });
 
-  test("Read permissions.", function() {
+  test("Read permissions.", function(rules) {
     rules
       .as('bill')
       .at('/users/bill/outbox/1')
