@@ -45,22 +45,9 @@ gulp.task('build', function() {
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify-bolt', ['build'], function() {
-  return browserifyToDist('lib/bolt');
+gulp.task('browserify', ['build'], function() {
+  return browserifyToDist('lib/bolt', 'bolt');
 });
-
-gulp.task('browserify-parser-test', ['build'], function() {
-  return browserifyToDist('test/parser-test');
-});
-
-gulp.task('browserify-generator-test', ['build'], function() {
-  return browserifyToDist('test/generator-test');
-});
-
-gulp.task('browserify',
-          ['browserify-parser-test',
-           'browserify-generator-test',
-           'browserify-bolt']);
 
 // Runs the Mocha test suite
 gulp.task('test', ['build'], function() {
@@ -70,8 +57,8 @@ gulp.task('test', ['build'], function() {
 
 gulp.task('default', ['lint', 'build', 'test']);
 
-function browserifyToDist(entry) {
-  return browserify({ entries: [entry] })
+function browserifyToDist(entry, exportAs) {
+  return browserify({ entries: [entry], debug: true, standalone: exportAs })
     .bundle()
     .pipe(source(basename(entry) + '-bundle.js'))
     .on('error', gutil.log)

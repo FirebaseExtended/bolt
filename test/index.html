@@ -4,12 +4,14 @@
   <title>Firebase Rules Parser Tests</title>
   <link rel="stylesheet" href="/node_modules/mocha/mocha.css">
   <script src="/node_modules/mocha/mocha.js"></script>
+  <script src="/dist/bolt-bundle.js"></script>
 </head>
 <body>
   <div id="mocha"></div>
   <script>mocha.setup('tdd')</script>
   <script src="/dist/parser-test-bundle.js"></script>
   <script src="/dist/generator-test-bundle.js"></script>
+  <script src="/dist/mail-test-bundle.js"></script>
   <script>
     mocha.checkLeaks();
     mocha.run();

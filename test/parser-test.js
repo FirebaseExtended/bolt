@@ -19,9 +19,10 @@ var assert = require('chai').assert;
 var helpers = require('./helpers');
 var Promise = require('promise');
 
-var ast = require('../lib/ast');
-var parse = require('../lib/rules-parser').parse;
-var BOLT_EXTENSION = require('../lib/bolt').EXTENSION;
+var bolt = require('bolt');
+var ast = bolt.ast;
+var parse = bolt.parse;
+var BOLT_EXTENSION = bolt.EXTENSION;
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
