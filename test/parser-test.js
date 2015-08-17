@@ -16,8 +16,8 @@
 "use strict";
 
 var assert = require('chai').assert;
-var helpers = require('./helpers');
 var Promise = require('promise');
+var readFile = require('read-file');
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var ast = bolt.ast;
@@ -302,7 +302,7 @@ return true;\
   });
 
   function testFile(filename) {
-    return helpers.readFile(filename)
+    return readFile(filename)
       .then(function(response) {
         var result = parse(response.content);
         assert.ok(result, response.url);

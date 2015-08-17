@@ -18,8 +18,8 @@
 var bolt = require('bolt');
 var parse = bolt.parse;
 var Promise = require('promise');
+var readFile = require('read-file');
 
-var helpers = require('./helpers');
 var assert = require('chai').assert;
 
 
@@ -101,14 +101,14 @@ index() { return ['a', 'b']; }\
   });
 
   function testFileSample(filename) {
-    return helpers.readFile(filename)
+    return readFile(filename)
       .then(function(response) {
         var result = parse(response.content);
         assert.ok(result, response.url);
         var gen = new bolt.Generator(result);
         var json = gen.generateRules();
         assert.ok('rules' in json, response.url + " has rules");
-        return helpers.readFile(response.url.replace(bolt.EXTENSION, '.json'))
+        return readFile(response.url.replace(bolt.EXTENSION, '.json'))
           .then(function(response2) {
             assert.deepEqual(json, JSON.parse(response2.content),
                              "Generated JSON should match " + response2.url);
