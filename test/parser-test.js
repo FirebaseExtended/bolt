@@ -19,7 +19,7 @@ var assert = require('chai').assert;
 var helpers = require('./helpers');
 var Promise = require('promise');
 
-var bolt = require('bolt');
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;
 var BOLT_EXTENSION = bolt.EXTENSION;

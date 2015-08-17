@@ -19,6 +19,7 @@ var gulp = require('gulp');
 var eslint = require('gulp-eslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
+var util = require('./lib/util');
 
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
@@ -45,9 +46,27 @@ gulp.task('build', function() {
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify', ['build'], function() {
-  return browserifyToDist('lib/bolt', 'bolt');
+gulp.task('browserify-bolt', ['build'], function() {
+  return browserifyToDist('lib/bolt', { standalone: 'bolt', debug: true });
 });
+
+// TODO: Use source to pipe glob of test files through browserify.
+gulp.task('browserify-parser-test', function() {
+  return browserifyToDist('test/parser-test', { exclude: 'bolt' });
+});
+
+gulp.task('browserify-generator-test', function() {
+  return browserifyToDist('test/generator-test', { exclude: 'bolt' });
+});
+
+gulp.task('browserify-mail-test', function() {
+  return browserifyToDist('test/mail-test', { exclude: 'bolt' });
+});
+
+gulp.task('browserify', ['browserify-bolt',
+                         'browserify-parser-test',
+                         'browserify-generator-test',
+                         'browserify-mail-test']);
 
 // Runs the Mocha test suite
 gulp.task('test', ['build'], function() {
@@ -57,8 +76,13 @@ gulp.task('test', ['build'], function() {
 
 gulp.task('default', ['lint', 'build', 'test']);
 
-function browserifyToDist(entry, exportAs) {
-  return browserify({ entries: [entry], debug: true, standalone: exportAs })
+function browserifyToDist(entry, opts) {
+  // Browserify options include:
+  //   standalone: name of exported module
+  //   exclude: Don't include namespace.
+  //   debug: Include sourcemap in output.
+  opts = util.extend({}, opts, { entries: [entry], debug: true });
+  return browserify(opts)
     .bundle()
     .pipe(source(basename(entry) + '-bundle.js'))
     .on('error', gutil.log)

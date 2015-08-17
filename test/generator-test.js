@@ -17,7 +17,6 @@
 
 var bolt = require('bolt');
 var parse = bolt.parse;
-var util = require('util');
 var Promise = require('promise');
 
 var helpers = require('./helpers');
