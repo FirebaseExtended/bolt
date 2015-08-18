@@ -1,4 +1,5 @@
-var rulesSuite = require('bolt').rulesSuite;
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
+var rulesSuite = bolt.rulesSuite;
 
 rulesSuite("Mail test.", function(test) {
   test.rules('samples/mail');

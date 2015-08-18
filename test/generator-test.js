@@ -15,10 +15,10 @@
  */
 "use strict";
 
-var bolt = require('bolt');
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var parse = bolt.parse;
 var Promise = require('promise');
-var readFile = require('read-file');
+var readFile = require('read-file').readFile;
 
 var assert = require('chai').assert;
 

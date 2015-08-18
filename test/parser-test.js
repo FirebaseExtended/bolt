@@ -17,7 +17,7 @@
 
 var assert = require('chai').assert;
 var Promise = require('promise');
-var readFile = require('read-file');
+var readFile = require('read-file').readFile;
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var ast = bolt.ast;
