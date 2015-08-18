@@ -15,6 +15,7 @@
  */
 'use strict';
 
+var path = require('path');
 var gulp = require('gulp');
 var eslint = require('gulp-eslint');
 var browserify = require('browserify');
@@ -47,7 +48,7 @@ gulp.task('build', function() {
 });
 
 gulp.task('browserify-bolt', ['build'], function() {
-  return browserifyToDist('lib/bolt', { standalone: 'bolt', debug: true });
+  return browserifyToDist('lib/bolt', { standalone: 'bolt' });
 });
 
 // TODO: Use source to pipe glob of test files through browserify.
@@ -82,14 +83,13 @@ function browserifyToDist(entry, opts) {
   //   exclude: Don't include namespace.
   //   debug: Include sourcemap in output.
   opts = util.extend({}, opts, { entries: [entry], debug: true });
-  return browserify(opts)
+  var b = browserify(opts);
+  if (opts.exclude) {
+    b.exclude(opts.exclude);
+  }
+  return b
     .bundle()
-    .pipe(source(basename(entry) + '-bundle.js'))
+    .pipe(source(path.basename(entry) + '-bundle.js'))
     .on('error', gutil.log)
     .pipe(gulp.dest('dist'));
-}
-
-function basename(path) {
-  var parts = path.split('/');
-  return parts.slice(-1)[0];
 }
