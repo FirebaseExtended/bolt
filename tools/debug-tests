@@ -1,0 +1,5 @@
+#!/bin/bash
+# debug-tests --- Run unit tests in mocha under node debugger
+
+cd $PROJ_DIR
+mocha --ui tdd debug
