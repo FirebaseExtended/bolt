@@ -17,12 +17,12 @@
 
 var assert = require('chai').assert;
 var Promise = require('promise');
-var readFile = require('read-file').readFile;
+var readFile = require('file-io').readFile;
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;
-var BOLT_EXTENSION = bolt.EXTENSION;
+var BOLT_EXTENSION = bolt.FILE_EXTENSION;
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
@@ -296,7 +296,7 @@ return true;\
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      completed.push(testFile('test/samples/' + files[i] + BOLT_EXTENSION));
+      completed.push(testFile('test/samples/' + files[i] + '.' + BOLT_EXTENSION));
     }
     return Promise.all(completed);
   });

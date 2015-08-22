@@ -2,7 +2,7 @@ var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var rulesSuite = bolt.rulesSuite;
 
 rulesSuite("Mail test.", function(test) {
-  test.rules('samples/mail');
+  test.rules('test/samples/mail');
 
   test("Inbox tests.", function(rules) {
     rules
