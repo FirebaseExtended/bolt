@@ -15,15 +15,15 @@
  */
 "use strict";
 
-var assert = require('chai').assert;
+//var assert = require('chai').assert;
 var Promise = require('promise');
 var rest = require('../lib/firebase-rest');
+var secrets = require('./auth-secrets');
 
-var TEST_APP = 'bolt-sandbox';
 var TEST_LOCATION = '/rest-test';
 
 suite("Firebase REST Tests", function() {
-  var client = new rest.Client(TEST_APP).setDebug();
+  var client = new rest.Client(secrets.APP);
 
   test("Read location", function() {
     return client.get(TEST_LOCATION);
@@ -43,23 +43,5 @@ suite("Firebase REST Tests", function() {
       results.push(client.put(TEST_LOCATION + '/types/' + t.location, t.value));
     }
     return Promise.all(results);
-  });
-
-  test("Write Rules", function() {
-    return client.put(
-      client.rulesLocation(),
-      {
-        rules: {
-          ".read": true,
-          ".write": true,
-        }
-      });
-  });
-
-  test("Read Rules", function() {
-    return client.get(client.rulesLocation())
-      .then(function(result) {
-        assert('rules' in result);
-      });
   });
 });
