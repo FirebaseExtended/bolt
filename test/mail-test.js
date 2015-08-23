@@ -17,7 +17,7 @@ var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var rulesSuite = bolt.rulesSuite;
 var secrets = require('./auth-secrets');
 
-rulesSuite("Mail test.", function(test) {
+rulesSuite("Mail", function(test) {
   test.database(secrets.APP, secrets.SECRET);
   test.rules('test/samples/mail');
 
