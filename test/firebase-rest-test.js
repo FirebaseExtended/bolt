@@ -44,4 +44,15 @@ suite("Firebase REST Tests", function() {
     }
     return Promise.all(results);
   });
+
+  test("Write rules", function() {
+    return client.uploadRules(
+      {
+        rules: {
+          ".read": true,
+          ".write": true,
+        }
+      }
+    );
+  });
 });
