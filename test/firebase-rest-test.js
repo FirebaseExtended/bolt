@@ -45,14 +45,18 @@ suite("Firebase REST Tests", function() {
     return Promise.all(results);
   });
 
-  test("Write rules", function() {
-    return client.uploadRules(
+  test("Write Rules", function() {
+    return client.put(
+      client.rulesLocation(),
       {
         rules: {
           ".read": true,
           ".write": true,
         }
-      }
-    );
+      });
+  });
+
+  test("Read Rules", function() {
+    return client.get(client.rulesLocation());
   });
 });
