@@ -25,6 +25,25 @@ var TEST_LOCATION = '/rest-test';
 suite("Firebase REST Tests", function() {
   var client = new rest.Client(secrets.APP);
 
+  suiteSetup(function() {
+    var adminClient = new rest.Client(secrets.APP, secrets.SECRET).setDebug();
+    return adminClient.put(
+      rest.RULES_LOCATION,
+      {
+        rules: {
+          ".read": true,
+          ".write": false,
+          "rest-test": {
+            ".write": true
+          }
+        }
+      });
+  });
+
+  suiteTeardown(function() {
+    console.log("Tearing down suite....");
+  });
+
   test("Read location", function() {
     return client.get(TEST_LOCATION);
   });

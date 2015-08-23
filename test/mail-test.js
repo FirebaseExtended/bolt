@@ -18,7 +18,7 @@ var rulesSuite = bolt.rulesSuite;
 var secrets = require('./auth-secrets');
 
 rulesSuite("Mail test.", function(test) {
-  test.useDatabase(secrets.APP, secrets.SECRET);
+  test.database(secrets.APP, secrets.SECRET);
   test.rules('test/samples/mail');
 
   test("Inbox tests.", function(rules) {
