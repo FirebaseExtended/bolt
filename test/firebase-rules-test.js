@@ -24,7 +24,7 @@ suite("Firebase Rules Tests", function() {
 
   test("Write Rules", function() {
     return client.put(
-      client.rulesLocation(),
+      rest.RULES_LOCATION,
       {
         rules: {
           ".read": true,
@@ -37,7 +37,7 @@ suite("Firebase Rules Tests", function() {
   });
 
   test("Read Rules", function() {
-    return client.get(client.rulesLocation())
+    return client.get(rest.RULES_LOCATION)
       .then(function(result) {
         assert('rules' in result);
       });

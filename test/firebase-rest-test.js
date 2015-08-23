@@ -36,6 +36,7 @@ suite("Firebase REST Tests", function() {
       { location: 'number', value: 123.456 },
       { location: 'boolean', value: false },
       { location: 'object', value: {this: 1, that: 'other'} },
+      { location: 'TIMESTAMP', value: rest.TIMESTAMP },
     ];
     var results = [];
     for (var i = 0; i < tests.length; i++) {
@@ -43,5 +44,12 @@ suite("Firebase REST Tests", function() {
       results.push(client.put(TEST_LOCATION + '/types/' + t.location, t.value));
     }
     return Promise.all(results);
+  });
+
+  test("Invalid location", function() {
+    return client.get('../../illegal')
+      .catch(function(error) {
+        return true;
+      });
   });
 });
