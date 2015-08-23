@@ -20,7 +20,7 @@ var rest = require('../lib/firebase-rest');
 var secrets = require('./auth-secrets');
 
 suite("Firebase Rules Tests", function() {
-  var client = new rest.Client(secrets.APP, secrets.SECRET).setDebug();
+  var client = new rest.Client(secrets.APP, secrets.SECRET);
 
   test("Write Rules", function() {
     return client.put(

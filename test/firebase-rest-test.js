@@ -26,7 +26,7 @@ suite("Firebase REST Tests", function() {
   var client = new rest.Client(secrets.APP);
 
   suiteSetup(function() {
-    var adminClient = new rest.Client(secrets.APP, secrets.SECRET).setDebug();
+    var adminClient = new rest.Client(secrets.APP, secrets.SECRET);
     return adminClient.put(
       rest.RULES_LOCATION,
       {
@@ -38,10 +38,6 @@ suite("Firebase REST Tests", function() {
           }
         }
       });
-  });
-
-  suiteTeardown(function() {
-    console.log("Tearing down suite....");
   });
 
   test("Read location", function() {
