@@ -57,6 +57,9 @@ suite("Firebase REST Tests", function() {
   });
 
   test("Read Rules", function() {
-    return client.get(client.rulesLocation());
+    return client.get(client.rulesLocation())
+      .then(function(result) {
+        assert('rules' in result);
+      });
   });
 });
