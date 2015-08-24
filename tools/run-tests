@@ -1,5 +1,7 @@
 #!/bin/bash
 # run-tests --- Run unit tests in mocha - passing commandline options.
 
+set -e
+
 cd $PROJ_DIR
 mocha --ui tdd "$@"
