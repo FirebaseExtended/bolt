@@ -49,5 +49,9 @@
     "pegjs": "^0.8.0",
     "promise": "^7.0.4",
     "vinyl-source-stream": "^1.1.0"
+  },
+  "dependencies": {
+    "firebase-token-generator": "^2.0.0",
+    "node-uuid": "^1.4.3"
   }
 }

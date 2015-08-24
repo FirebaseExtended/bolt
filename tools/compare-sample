@@ -1,0 +1,7 @@
+#!/bin/bash
+# compare-sample --- Compare output of bolt compiler with json target.
+
+set -e
+
+cd $PROJ_DIR/test/samples
+firebase-bolt < $1.bolt | diff - $1.json

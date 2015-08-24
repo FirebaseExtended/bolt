@@ -15,10 +15,12 @@
  */
 'use strict';
 
+var path = require('path');
 var gulp = require('gulp');
 var eslint = require('gulp-eslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
+var util = require('./lib/util');
 
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
@@ -46,21 +48,26 @@ gulp.task('build', function() {
 });
 
 gulp.task('browserify-bolt', ['build'], function() {
-  return browserifyToDist('lib/bolt');
+  return browserifyToDist('lib/bolt', { standalone: 'bolt' });
 });
 
-gulp.task('browserify-parser-test', ['build'], function() {
-  return browserifyToDist('test/parser-test');
+// TODO: Use source to pipe glob of test files through browserify.
+gulp.task('browserify-parser-test', function() {
+  return browserifyToDist('test/parser-test', { exclude: 'bolt' });
 });
 
-gulp.task('browserify-generator-test', ['build'], function() {
-  return browserifyToDist('test/generator-test');
+gulp.task('browserify-generator-test', function() {
+  return browserifyToDist('test/generator-test', { exclude: 'bolt' });
 });
 
-gulp.task('browserify',
-          ['browserify-parser-test',
-           'browserify-generator-test',
-           'browserify-bolt']);
+gulp.task('browserify-mail-test', function() {
+  return browserifyToDist('test/mail-test', { exclude: 'bolt' });
+});
+
+gulp.task('browserify', ['browserify-bolt',
+                         'browserify-parser-test',
+                         'browserify-generator-test',
+                         'browserify-mail-test']);
 
 // Runs the Mocha test suite
 gulp.task('test', ['build'], function() {
@@ -70,15 +77,19 @@ gulp.task('test', ['build'], function() {
 
 gulp.task('default', ['lint', 'build', 'test']);
 
-function browserifyToDist(entry) {
-  return browserify({ entries: [entry] })
+function browserifyToDist(entry, opts) {
+  // Browserify options include:
+  //   standalone: name of exported module
+  //   exclude: Don't include namespace.
+  //   debug: Include sourcemap in output.
+  opts = util.extend({}, opts, { entries: [entry], debug: true });
+  var b = browserify(opts);
+  if (opts.exclude) {
+    b.exclude(opts.exclude);
+  }
+  return b
     .bundle()
-    .pipe(source(basename(entry) + '-bundle.js'))
+    .pipe(source(path.basename(entry) + '-bundle.js'))
     .on('error', gutil.log)
     .pipe(gulp.dest('dist'));
-}
-
-function basename(path) {
-  var parts = path.split('/');
-  return parts.slice(-1)[0];
 }

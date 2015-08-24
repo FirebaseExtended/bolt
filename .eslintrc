@@ -20,7 +20,7 @@
     "no-shadow-restricted-names": 2, // http://eslint.org/docs/rules/no-shadow-restricted-names
     "no-unused-vars": [2, {          // http://eslint.org/docs/rules/no-unused-vars
       "vars": "local",
-      "args": "after-used"
+      "args": "none"
     }],
     "no-use-before-define": [2, "nofunc"], // http://eslint.org/docs/rules/no-use-before-define
 
@@ -80,7 +80,7 @@
     "no-loop-func": 2,               // http://eslint.org/docs/rules/no-loop-func
     "no-multi-str": 0,               // http://eslint.org/docs/rules/no-multi-str
     "no-native-reassign": 2,         // http://eslint.org/docs/rules/no-native-reassign
-    "no-new": 2,                     // http://eslint.org/docs/rules/no-new
+    "no-new": 0,                     // http://eslint.org/docs/rules/no-new
     "no-new-func": 2,                // http://eslint.org/docs/rules/no-new-func
     "no-new-wrappers": 2,            // http://eslint.org/docs/rules/no-new-wrappers
     "no-octal": 2,                   // http://eslint.org/docs/rules/no-octal

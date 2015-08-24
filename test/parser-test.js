@@ -16,12 +16,13 @@
 "use strict";
 
 var assert = require('chai').assert;
-var helpers = require('./helpers');
 var Promise = require('promise');
+var readFile = require('file-io').readFile;
 
-var ast = require('../lib/ast');
-var parse = require('../lib/rules-parser').parse;
-var BOLT_EXTENSION = require('../lib/bolt').EXTENSION;
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
+var ast = bolt.ast;
+var parse = bolt.parse;
+var BOLT_EXTENSION = bolt.FILE_EXTENSION;
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
@@ -295,13 +296,13 @@ return true;\
     ];
     var completed = [];
     for (var i = 0; i < files.length; i++) {
-      completed.push(testFile('test/samples/' + files[i] + BOLT_EXTENSION));
+      completed.push(testFile('test/samples/' + files[i] + '.' + BOLT_EXTENSION));
     }
     return Promise.all(completed);
   });
 
   function testFile(filename) {
-    return helpers.readFile(filename)
+    return readFile(filename)
       .then(function(response) {
         var result = parse(response.content);
         assert.ok(result, response.url);
