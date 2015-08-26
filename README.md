@@ -1,4 +1,4 @@
-# Firebase Security and Modeling Language
+# Firebase Security and Modeling Compiler
 
 Bolt is an experimental security and rules compiler for Firebase.  It is currently
 in early alpha.  There are known bugs and incomplete features in the current
