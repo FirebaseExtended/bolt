@@ -97,9 +97,10 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
   function addPart(part) {
     if ('types' in part) {
       if (result.properties[part.name]) {
-        error("Duplicate propert name: " + part.name);
+        error("Duplicate property name: " + part.name);
       }
       result.properties[part.name] = {
+        optional: part.optional,
         types: part.types
       };
     } else {
@@ -121,10 +122,11 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
 }
 
 PropertyDefinition
-  = name:Identifier _ ":" _ types:TypeExpression {
+  = name:Identifier optional:"?"? _ ":" _ types:TypeExpression {
       return {
         name:  name,
-        types: types
+        types: types,
+        optional: !!optional
       };
     }
   / Method
