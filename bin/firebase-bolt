@@ -27,6 +27,7 @@ process.stdin.on('data', function(chunk) {
 
 process.stdin.on('end', function() {
   var symbols;
+  var rules;
 
   try {
     symbols = bolt.parse(input);
@@ -37,7 +38,7 @@ process.stdin.on('end', function() {
 
   try {
     var gen = new bolt.Generator(symbols);
-      var rules = gen.generateRules();
+    rules = gen.generateRules();
   } catch(e) {
     console.error('bolt: ' + e.message);
     process.exit(2);
