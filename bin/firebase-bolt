@@ -27,14 +27,21 @@ process.stdin.on('data', function(chunk) {
 
 process.stdin.on('end', function() {
   var symbols;
+
   try {
     symbols = bolt.parse(input);
   } catch(e) {
-    console.log(e);
-    return;
+    console.error('bolt:' + e.line + ':' + e.column + ': ' + e.message);
+    process.exit(1);
   }
-  // console.log(JSON.stringify(symbols, null, 2));
-  var gen = new bolt.Generator(symbols);
-  var rules = gen.generateRules();
+
+  try {
+    var gen = new bolt.Generator(symbols);
+      var rules = gen.generateRules();
+  } catch(e) {
+    console.error('bolt: ' + e.message);
+    process.exit(2);
+  }
+
   console.log(JSON.stringify(rules, null, 2));
 });

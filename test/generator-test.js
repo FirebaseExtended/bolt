@@ -198,8 +198,6 @@ index() { return ['a', 'b']; }\
       // Highler level function works as long as returns a constant function
       { f: "function f() { return g; } function g(a) { return a == true; }",
         x: "f()(123)", e: "123 == true" },
-      // Undefined function - should just leave function defintion.
-      { f: "function f(a) { return a + 1; }", x: "g(1, 2)", e: "g(1, 2)" },
       { f: "function f(a) { return a + 1; }", x: "a[f(123)]", e: "a[123 + 1]" },
       { f: "", x: "this", e: "newData.val() == true" },
       { f: "", x: "this.foo", e: "newData.child('foo').val() == true" },
@@ -292,10 +290,13 @@ path /x { read() { return " + tests[i].x + "; }}\
         e: /properties.*extend/ },
       { s: "path /y { index() { return 1; }}",
         e: /index.*string/i },
+      { s: "path /x { validate() { return undefinedFunc(); }}",
+        e: "1 errors" },
     ];
 
     function generateRules(symbols) {
       var gen = new bolt.Generator(symbols);
+      gen.silent();
       gen.generateRules();
     }
 
