@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "test": {
+      ".validate": "(newData.child('a').isString() || newData.child('a').isNumber() || newData.child('a').val() == null) && (newData.child('b').isNumber() || newData.child('b').val() == null)"
+    }
+  }
+}

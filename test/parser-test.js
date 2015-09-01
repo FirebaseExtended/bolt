@@ -47,7 +47,7 @@ var pathAST = {
 var schema = "type Foo { a: number }";
 var schemaAST = {
   derivedFrom: 'object',
-  properties: { "a": { types: ['number'] } },
+  properties: { "a": { optional: false, types: ['number'] } },
   methods: {}
 };
 
@@ -225,8 +225,8 @@ b: string\
     assert.deepEqual(result.schema.Multi, {
       derivedFrom: 'object',
       properties: {
-        "a": { types: ['number'] },
-        "b": { types: ['string'] }
+        "a": { optional: false, types: ['number'] },
+        "b": { optional: false,  types: ['string'] }
       },
       methods: {}
     });
@@ -245,7 +245,7 @@ b: string\
     var result = parse("\
 type Foo {\
 \
-a: number,\
+a?: number,\
 \
 validate() {\
 return true;\
@@ -253,7 +253,7 @@ return true;\
 }");
     assert.deepEqual(result.schema.Foo, {
       derivedFrom: 'object',
-      properties: { "a": { types: ['number'] }},
+      properties: { "a": { optional: true, types: ['number'] }},
       methods: {
         "validate": {
           params: [],

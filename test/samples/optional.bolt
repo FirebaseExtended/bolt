@@ -1,0 +1,9 @@
+
+type Test {
+  a?: string|number
+  b: number|null
+}
+
+path /test {
+  validate() { return this instanceof Test; }
+}
