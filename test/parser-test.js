@@ -32,7 +32,7 @@ function fnAST() {
   return {
     params: [],
     body: {
-      type: 'boolean',
+      type: 'Boolean',
       value: true
     }
   };
@@ -44,10 +44,10 @@ var pathAST = {
   methods: {}
 };
 
-var schema = "type Foo { a: number }";
+var schema = "type Foo { a: Number }";
 var schemaAST = {
-  derivedFrom: 'object',
-  properties: { "a": { types: ['number'] } },
+  derivedFrom: 'Object',
+  properties: { "a": { types: ['Number'] } },
   methods: {}
 };
 
@@ -71,7 +71,7 @@ suite("Rules Parser Tests", function() {
     assert.deepEqual(result.functions.longName, {
       params: [],
       body: {
-        type: "boolean",
+        type: "Boolean",
         value: false
       }
     });
@@ -218,15 +218,15 @@ suite("Rules Parser Tests", function() {
   test("Multiprop Schema", function() {
     var result = parse("\
 type Multi {\
-a: number,\
-b: string\
+a: Number,\
+b: String\
 }\
 ");
     assert.deepEqual(result.schema.Multi, {
-      derivedFrom: 'object',
+      derivedFrom: 'Object',
       properties: {
-        "a": { types: ['number'] },
-        "b": { types: ['string'] }
+        "a": { types: ['Number'] },
+        "b": { types: ['String'] }
       },
       methods: {}
     });
@@ -245,20 +245,20 @@ b: string\
     var result = parse("\
 type Foo {\
 \
-a: number,\
+a: Number,\
 \
 validate() {\
 return true;\
 }\
 }");
     assert.deepEqual(result.schema.Foo, {
-      derivedFrom: 'object',
-      properties: { "a": { types: ['number'] }},
+      derivedFrom: 'Object',
+      properties: { "a": { types: ['Number'] }},
       methods: {
         "validate": {
           params: [],
           body: {
-            type: "boolean",
+            type: "Boolean",
             value: true
           }
         }
@@ -280,7 +280,7 @@ return true;\
         validate: {
           params: [],
           body: {
-            type: "boolean",
+            type: "Boolean",
             value: true
           }
         }

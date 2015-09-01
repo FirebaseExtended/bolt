@@ -31,6 +31,30 @@
   }
 
   var symbols = new ast.Symbols();
+
+  function ensureLowerCase(s, m) {
+    var canonical = s[0].toLowerCase() + s.slice(1);
+    if (s != canonical) {
+      warn(m + " should begin with a lowercase letter: ('" + s + "' should be '" + canonical + "').");
+    }
+    return s;
+  }
+
+  function ensureUpperCase(s, m) {
+    var canonical = s[0].toUpperCase() + s.slice(1);
+    if (s != canonical) {
+      warn(m + " should begin with an uppercase letter: ('" + s + "' should be '" + canonical + "').");
+    }
+    return s;
+  }
+
+  function warn(s) {
+    console.warn(errorString({line: line(), column: column()}, s));
+  }
+
+  function errorString(loc, s) {
+    return 'bolt:' + loc.line + ':' + loc.column + ': ' + s;
+  }
 }
 
 start = _ rules:Rules _ {
@@ -46,12 +70,12 @@ Rule = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
 Function = "function" __ name:Identifier params:ParameterList "{" _
   body:FunctionBody _
   "}" {
-  return {
-    name: name,
-    params: params,
-    body: body
-  };
-}
+    return {
+      name: ensureLowerCase(name, "Function names"),
+      params: params,
+      body: body
+    };
+  }
 
 Path = "path" __ path:PathExpression _ "{" _ methods:Methods _ "}" {
   return {
@@ -70,11 +94,11 @@ PathExpression = "/" Whitespace {
   }
 
 Schema =
-  "type" __ id:Identifier _ derived:("extends" __ Identifier _)? "{" _
+  "type" __ type:Identifier _ derived:("extends" __ Identifier _)? "{" _
   properties:Properties?
   "}" {
     var result = {
-      name: id,
+      name: ensureUpperCase(type, "Type names"),
       methods: {},
       properties: {}
     };
@@ -83,7 +107,7 @@ Schema =
       result.properties = properties.properties;
     }
     if (derived) {
-      result.derivedFrom = derived[2];
+      result.derivedFrom = ensureUpperCase(derived[2], "Type names");
     }
     return result;
 }
@@ -95,9 +119,10 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
   };
 
   function addPart(part) {
+    // TODO: Make sure methods and properties don't shadow each other.
     if ('types' in part) {
       if (result.properties[part.name]) {
-        error("Duplicate propert name: " + part.name);
+        error("Duplicate property name: " + part.name);
       }
       result.properties[part.name] = {
         types: part.types
@@ -147,7 +172,7 @@ Methods = all:(Method _)* {
 Method = name:Identifier params:ParameterList
     "{" _ body:FunctionBody _ "}" {
       return {
-        name:  name,
+        name:  ensureLowerCase(name, "Method names"),
         params: params,
         body:  body
       };
@@ -163,7 +188,7 @@ ParameterList = "(" _ ")" _ {
   / "(" _ head:Identifier tail:(_ "," _ Identifier)* _ ")" _ {
     var result = [head];
     for (var i = 0; i < tail.length; i++) {
-      result.push(tail[i][3]);
+      result.push(ensureLowerCase(tail[i][3], "Function arguments"));
     }
     return result;
 }
@@ -172,9 +197,9 @@ ParameterList = "(" _ ")" _ {
 // TODO: Allow for generic types, e.g., Type<A, B>
 TypeExpression "type" =
   head:Identifier tail:(_ "|" _ id:Identifier { return id; } )* _{
-    var result = [head];
+    var result = [ensureUpperCase(head, "Type names")];
     for (var i = 0; i < tail.length; i++) {
-      result.push(tail[i]);
+      result.push(ensureUpperCase(tail[i], "Type names"));
     }
     return result;
   }

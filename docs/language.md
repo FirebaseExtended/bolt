@@ -86,10 +86,10 @@ a Type or path storage location.
 
 Built in base types are also similar to JavaScript types:
 
-    string
-    number - integer of floating point
-    boolean - true or false
-    object - A structured object containing named properties.
+    String
+    Number - integer of floating point
+    Boolean - true or false
+    Object - A structured object containing named properties.
 
 # Expressions
 

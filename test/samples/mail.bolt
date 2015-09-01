@@ -2,9 +2,9 @@
 // https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
 
 type Message {
-  from: string
-  to: string
-  message: string
+  from: String
+  to: String
+  message: String
 
   validate() {
     return isCurrentUser(this.from);
