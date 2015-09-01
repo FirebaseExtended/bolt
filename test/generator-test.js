@@ -240,11 +240,11 @@ path /x { read() { return " + tests[i].x + "; }}\
   test("Builtin validation functions", function() {
     var symbols = parse("");
     var gen = new bolt.Generator(symbols);
-    var baseTypes = ['string', 'number', 'boolean'];
-    assert.equal(gen.getExpressionText(symbols.functions['@validator@object'].body),
-                 'newData.hasChildren()', 'object');
-    assert.equal(gen.getExpressionText(symbols.functions['@validator@null'].body),
-                 'newData.val() == null', 'object');
+    var baseTypes = ['String', 'Number', 'Boolean'];
+    assert.equal(gen.getExpressionText(symbols.functions['@validator@Object'].body),
+                 'newData.hasChildren()', 'Object');
+    assert.equal(gen.getExpressionText(symbols.functions['@validator@Null'].body),
+                 'newData.val() == null', 'Object');
     for (var i = 0; i < baseTypes.length; i++) {
       var type = baseTypes[i];
       assert.equal(gen.getExpressionText(symbols.functions['@validator@' + type].body),
@@ -256,22 +256,22 @@ path /x { read() { return " + tests[i].x + "; }}\
     var tests = [
       { s: "type Simple {}", v: "this instanceof Simple",
         x: "newData.hasChildren()" },
-      { s: "type Simple extends string {}", v: "this instanceof Simple", x: "newData.isString()" },
-      { s: "type Simple {n: number}", v: "this instanceof Simple",
+      { s: "type Simple extends String {}", v: "this instanceof Simple", x: "newData.isString()" },
+      { s: "type Simple {n: Number}", v: "this instanceof Simple",
         x: "newData.child('n').isNumber()" },
-      { s: "type Simple {s: string}", v: "this instanceof Simple",
+      { s: "type Simple {s: String}", v: "this instanceof Simple",
         x: "newData.child('s').isString()" },
-      { s: "type Simple {b: boolean}", v: "this instanceof Simple",
+      { s: "type Simple {b: Boolean}", v: "this instanceof Simple",
         x: "newData.child('b').isBoolean()" },
-      { s: "type Simple {x: object}", v: "this instanceof Simple",
+      { s: "type Simple {x: Object}", v: "this instanceof Simple",
         x: "newData.child('x').hasChildren()" },
-      { s: "type Simple {x: number|string}", v: "this instanceof Simple",
+      { s: "type Simple {x: Number|String}", v: "this instanceof Simple",
         x: "newData.child('x').isNumber() || newData.child('x').isString()" },
-      { s: "type Simple {a: number, b: string}", v: "this instanceof Simple",
+      { s: "type Simple {a: Number, b: String}", v: "this instanceof Simple",
         x: "newData.child('a').isNumber() && newData.child('b').isString()" },
-      { s: "type Simple {x: number|null}", v: "this instanceof Simple",
+      { s: "type Simple {x: Number|Null}", v: "this instanceof Simple",
         x: "newData.child('x').isNumber() || newData.child('x').val() == null" },
-      { s: "type Simple {n: number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
+      { s: "type Simple {n: Number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
         x: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
     ];
     for (var i = 0; i < tests.length; i++) {
@@ -286,7 +286,7 @@ path /x { read() { return " + tests[i].x + "; }}\
     var tests = [
       { s: "",
         e: "at least one path" },
-      { s: "type Simple extends string {a: string} path /x {} ",
+      { s: "type Simple extends String {a: String} path /x {} ",
         e: /properties.*extend/ },
       { s: "path /y { index() { return 1; }}",
         e: /index.*string/i },

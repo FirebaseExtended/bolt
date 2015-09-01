@@ -1,21 +1,21 @@
 // Rules defined using new Rules Engine syntax.
 
-type Document extends object {}
+type Document extends Object {}
 
-type Date extends string {
+type Date extends String {
   // validate() { return isISODate(this); }
 }
 
-type Userid extends string {
+type Userid extends String {
   // validate() { return userExists(this); }
 }
 
-type Docid extends string {}
+type Docid extends String {}
 
 type Metadata {
   created: Date,
   modified: Date,
-  title: string,
+  title: String,
 
   extensible(prop) { return true; }
 }
