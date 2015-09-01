@@ -37,7 +37,7 @@
     if (s != canonical) {
       warn(m + " should begin with a lowercase letter: ('" + s + "' should be '" + canonical + "').");
     }
-    return canonical;
+    return s;
   }
 
   function ensureUpperCase(s, m) {
@@ -45,7 +45,7 @@
     if (s != canonical) {
       warn(m + " should begin with an uppercase letter: ('" + s + "' should be '" + canonical + "').");
     }
-    return canonical;
+    return s;
   }
 
   function warn(s) {
