@@ -181,7 +181,7 @@ index() { return ['a', 'b']; }\
     }
   });
 
-  test("Partial evaluation", function() {
+  suite("Partial evaluation", function() {
     var tests = [
       { f: "function f(a) { return true == a; }", x: "f(a == b)", e: "true == (a == b)" },
       { f: "function f(a) { return a == true; }", x: "f(a == b)", e: "a == b == true" },
@@ -198,7 +198,9 @@ index() { return ['a', 'b']; }\
         x: "f()(123)", e: "123 == true" },
       { f: "function f(a) { return a + 1; }", x: "a[f(123)]", e: "a[123 + 1]" },
       { f: "", x: "this", e: "newData.val() == true" },
-      { f: "", x: "this.foo", e: "newData.child('foo').val() == true" },
+      { f: "", x: "!this", e: "!(newData.val() == true)" },
+      { f: "", x: "this.prop", e: "newData.child('prop').val() == true" },
+      { f: "", x: "!this.prop", e: "!(newData.child('prop').val() == true)" },
       { f: "",
         x: "this.foo || this.bar",
         e: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
@@ -208,11 +210,16 @@ index() { return ['a', 'b']; }\
       { f: "function f(a) { return a == '123'; }",
         x: "f(this.foo)", e: "newData.child('foo').val() == '123'" },
     ];
-    for (var i = 0; i < tests.length; i++) {
-      var symbols = parse(tests[i].f + " path /x { read() { return " + tests[i].x + "; }}");
+
+    function testIt(t) {
+      var symbols = parse(t.f + " path /x { read() { return " + t.x + "; }}");
       var gen = new bolt.Generator(symbols);
       var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      assert.equal(decode, tests[i].e, tests[i].e);
+      assert.equal(decode, t.e);
+    }
+
+    for (var i = 0; i < tests.length; i++) {
+      test(tests[i].x + " => " + tests[i].e, testIt.bind(undefined, tests[i]));
     }
   });
 
