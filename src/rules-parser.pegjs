@@ -79,7 +79,7 @@ Function = "function" __ name:Identifier params:ParameterList "{" _
 
 Path = "path" __ path:PathExpression isType:("is" __ id:Identifier _ { return id; })?
   "{" _ methods:Methods "}" {
-    result = {
+    var result = {
       parts: path,
       methods: methods
     };
