@@ -18,7 +18,6 @@
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var parse = bolt.parse;
 var fileio = require('file-io');
-var util = require('../lib/util');
 
 var assert = require('chai').assert;
 
