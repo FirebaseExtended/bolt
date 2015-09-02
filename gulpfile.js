@@ -32,7 +32,7 @@ var JS_SOURCES = ['gulpfile.js',
                   'bin/firebase-bolt',
                   'test/*.js'];
 
-var TEST_FILES = ['test/*-test.js'];
+var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js'];
 
 gulp.task('lint', function() {
   return gulp.src(JS_SOURCES.concat(['!lib/rules-parser.js']))
