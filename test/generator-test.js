@@ -17,8 +17,7 @@
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var parse = bolt.parse;
-var Promise = require('promise');
-var readFile = require('file-io').readFile;
+var fileio = require('file-io');
 
 var assert = require('chai').assert;
 
@@ -87,31 +86,31 @@ index() { return ['a', 'b']; }\
     assert.deepEqual(json, {rules: {".indexOn": ["a", "b"]}});
   });
 
-  test("Sample files", function() {
+  suite("Sample files", function() {
     var files = [
       "all_access",
       "userdoc",
       "mail"
     ];
-    var completed = [];
     for (var i = 0; i < files.length; i++) {
-      completed.push(testFileSample('test/samples/' + files[i] + '.' + bolt.FILE_EXTENSION));
+      test(files[i],
+           testFileSample.bind(undefined,
+                               'test/samples/' + files[i] +
+                               '.' + bolt.FILE_EXTENSION));
     }
-    return Promise.all(completed);
   });
 
   function testFileSample(filename) {
-    return readFile(filename)
+    return fileio.readFile(filename)
       .then(function(response) {
         var result = parse(response.content);
         assert.ok(result, response.url);
         var gen = new bolt.Generator(result);
         var json = gen.generateRules();
         assert.ok('rules' in json, response.url + " has rules");
-        return readFile(response.url.replace('.' + bolt.FILE_EXTENSION, '.json'))
+        return fileio.readJSONFile(response.url.replace('.' + bolt.FILE_EXTENSION, '.json'))
           .then(function(response2) {
-            assert.deepEqual(json, JSON.parse(response2.content),
-                             "Generated JSON should match " + response2.url);
+            assert.deepEqual(json, response2);
           });
       })
       .catch(function(error) {
@@ -160,7 +159,6 @@ index() { return ['a', 'b']; }\
       [ "a > 7" ],
       [ "a <= 7" ],
       [ "a >= 7" ],
-      [ "a instanceof Document" ],
       [ "a == 3" ],
       [ "a != 0" ],
       [ "a === 3", "a == 3" ],
@@ -254,31 +252,32 @@ path /x { read() { return " + tests[i].x + "; }}\
 
   test("Schema Validation", function() {
     var tests = [
-      { s: "type Simple {}", v: "this instanceof Simple",
+      { s: "type Simple extends Object {}",
         x: "newData.hasChildren()" },
-      { s: "type Simple extends String {}", v: "this instanceof Simple", x: "newData.isString()" },
-      { s: "type Simple {n: Number}", v: "this instanceof Simple",
+      { s: "type Simple extends String {}",
+        x: "newData.isString()" },
+      { s: "type Simple {n: Number}",
         x: "newData.child('n').isNumber()" },
-      { s: "type Simple {s: String}", v: "this instanceof Simple",
+      { s: "type Simple {s: String}",
         x: "newData.child('s').isString()" },
-      { s: "type Simple {b: Boolean}", v: "this instanceof Simple",
+      { s: "type Simple {b: Boolean}",
         x: "newData.child('b').isBoolean()" },
-      { s: "type Simple {x: Object}", v: "this instanceof Simple",
+      { s: "type Simple {x: Object}",
         x: "newData.child('x').hasChildren()" },
-      { s: "type Simple {x: Number|String}", v: "this instanceof Simple",
+      { s: "type Simple {x: Number|String}",
         x: "newData.child('x').isNumber() || newData.child('x').isString()" },
-      { s: "type Simple {a: Number, b: String}", v: "this instanceof Simple",
+      { s: "type Simple {a: Number, b: String}",
         x: "newData.child('a').isNumber() && newData.child('b').isString()" },
-      { s: "type Simple {x: Number|Null}", v: "this instanceof Simple",
+      { s: "type Simple {x: Number|Null}",
         x: "newData.child('x').isNumber() || newData.child('x').val() == null" },
-      { s: "type Simple {n: Number, validate() {return this.n < 7;}}", v: "this instanceof Simple",
+      { s: "type Simple {n: Number, validate() {return this.n < 7;}}",
         x: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
     ];
     for (var i = 0; i < tests.length; i++) {
-      var symbols = parse(tests[i].s + " path /x { validate() { return " + tests[i].v + "; }}");
+      var symbols = parse(tests[i].s + " path /x is Simple {}");
       var gen = new bolt.Generator(symbols);
-      var decode = gen.getExpressionText(symbols.paths['/x'].methods.validate.body);
-      assert.equal(decode, tests[i].x, tests[i].x);
+      var rules = gen.generateRules();
+      assert.deepEqual(rules, {"rules": {"x": {".validate": tests[i].x}}});
     }
   });
 
@@ -290,7 +289,7 @@ path /x { read() { return " + tests[i].x + "; }}\
         e: /properties.*extend/ },
       { s: "path /y { index() { return 1; }}",
         e: /index.*string/i },
-      { s: "path /x { validate() { return undefinedFunc(); }}",
+      { s: "path /x { write() { return undefinedFunc(); }}",
         e: "1 errors" },
     ];
 

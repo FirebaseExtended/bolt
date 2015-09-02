@@ -30,23 +30,11 @@ A bolt file can also contain JavaScript-style comments:
        comment
     */
 
-# Functions
-
-Functions must be simple return expressions with zero or more parameters.
-
-    function myFunction(arg1, arg2) {
-      return arg1 == arg2.value;
-    }
-
 # Paths
 
 A path statement provides access and validation rules for data stored at a given path.
 
-    path /path/to/data {
-      validate() {
-        return <validation expression>;
-      }
-
+    path /path/to/data [is Type] {
       read() {
         return <true-iff-reading-this-location-is-allowed>;
       }
@@ -56,17 +44,18 @@ A path statement provides access and validation rules for data stored at a given
       }
     }
 
+If a Type is not given, `Any` is assumed.
+
 Path statements can also include wildcards parts whose values can then be used
 within an expression as a variable parameter.
 
-    path /top/$wildcard/$id {
-      validate() {
+    path /top/$wildcard/$id is Type {
+      write() {
         return $wildcard < "Z" && $id > 7;
       }
     }
 
-In expressions, the value of 'this' is defined to be the top level object when used in
-a Type or path storage location.
+In expressions, the value of `this` is either the current value to `read()` or the new value to `write()`.
 
 # Types
 
@@ -78,22 +67,48 @@ a Type or path storage location.
       validate() {
         return <validation expression>;
       }
-
-      extensible(propertyName) {
-        return <propery extension allow if true>;
-      }
     }
+
+The value of `this` is the object of type TypeName (so properties can be referenced
+in expressions as `this.property`).
+
+If a BaseType is not given, `Object` is assumed if the TypeName has child properties
+(`Any` if not).
 
 Built in base types are also similar to JavaScript types:
 
-    String
-    Number - integer of floating point
+    String  -
+    Number  - integer or floating point
     Boolean - true or false
-    Object - A structured object containing named properties.
+    Object  - A structured object containing named properties.
+    Null    - null (absence of a value, or deleted)
+    Any     - Matches any of the other types.
+
+# Global variables
+
+You can also use:
+
+    data - The value at a location BEFORE a write is done.
+    root - The root of your Firebase database.
+
+# Functions
+
+Functions must be simple return expressions with zero or more parameters.
+
+    function myFunction(arg1, arg2) {
+      return arg1 == arg2.value;
+    }
 
 # Expressions
 
 Rule expressions are a subset of JavaScript expressions, and include:
 
   - Unary operators: - (minus), ! (boolean negation)
-  - Binary operators: +, -, *, /, %, instanceof
+  - Binary operators: +, -, *, /, %
+
+References to data locations (starting with `this`, `data`, or `root`) can be further qualified
+using the . and [] operators (just as in JavaScript Object references).
+
+    this.prop  - Refers to property of the current location named 'prop'.
+    this[prop] - Refers to a property of the current location named with the value of the
+                (string) variable, prop.
