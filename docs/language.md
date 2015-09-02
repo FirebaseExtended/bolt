@@ -55,8 +55,7 @@ within an expression as a variable parameter.
       }
     }
 
-In expressions, the value of `this` is defined to be *new* value at the path location (i.e.
-if writing, it is the value at the location after the write would have been complete).
+In expressions, the value of `this` is either the current value to `read()` or the new value to `write()`.
 
 # Types
 
