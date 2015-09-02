@@ -48,16 +48,16 @@ gulp.task('build', function() {
 });
 
 gulp.task('browserify-bolt', ['build'], function() {
-  return browserifyToDist('lib/bolt', { standalone: 'bolt' });
+  return browserifyToDist('lib/bolt.js', { standalone: 'bolt' });
 });
 
 // TODO: Use source to pipe glob of test files through browserify.
 gulp.task('browserify-parser-test', function() {
-  return browserifyToDist('test/parser-test', { exclude: 'bolt' });
+  return browserifyToDist('test/parser-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-generator-test', function() {
-  return browserifyToDist('test/generator-test', { exclude: 'bolt' });
+  return browserifyToDist('test/generator-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-mail-test', function() {
@@ -75,7 +75,7 @@ gulp.task('test', ['build'], function() {
     .pipe(mocha({ui: 'tdd'}));
 });
 
-gulp.task('default', ['lint', 'build', 'test']);
+gulp.task('default', ['lint', 'build', 'browserify', 'test']);
 
 function browserifyToDist(entry, opts) {
   // Browserify options include:
@@ -83,13 +83,15 @@ function browserifyToDist(entry, opts) {
   //   exclude: Don't include namespace.
   //   debug: Include sourcemap in output.
   opts = util.extend({}, opts, { entries: [entry], debug: true });
+  var exclude = opts.exclude;
+  delete opts.exclude;
   var b = browserify(opts);
-  if (opts.exclude) {
-    b.exclude(opts.exclude);
+  if (exclude) {
+    b.exclude(exclude);
   }
   return b
     .bundle()
-    .pipe(source(path.basename(entry) + '-bundle.js'))
+    .pipe(source(path.basename(entry)))
     .on('error', gutil.log)
     .pipe(gulp.dest('dist'));
 }

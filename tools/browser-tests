@@ -1,6 +1,7 @@
 #!/bin/bash
 # browser-tests --- Run unit tests in a browser environment.
-
+set -e
 cd $PROJ_DIR
+
 gulp browserify
 web-server start
