@@ -21,45 +21,45 @@ type Metadata {
 }
 
 type Permission {
-  grantor: Userid,
+  owner: Userid,
   grantee: Userid,
   docid: Docid
 }
 
-// Note no query support for /documents/$userid.
-path /documents/$userid/$docid {
-  validate() { return this instanceof Document; }
-  read() { return isCurrentUser($userid) || hasPermission($docid, 'read'); }
-  write() { return isCurrentUser($userid) || hasPermission($docid, 'write'); }
+path /documents/$ownerid {
+  read()  { return isCurrentUser($ownerid); }
+  write() { return isCurrentUser($ownerid); }
+}
+
+path /documents/$ownerid/$docid is Document {
+  read()  { return hasPermission($ownerid, $docid, 'read'); }
+  write() { return hasPermission($ownerid, $docid, 'write'); }
 }
 
 // Allow reading the list of all a user's own metadata.
-path /metadata/$userid {
-  read() { return isCurrentUser($userid); }
+path /metadata/$ownerid {
+  read()  { return isCurrentUser($ownerid); }
+  write() { return isCurrentUser($ownerid); }
 }
 
-path /metadata/$userid/$docid {
-  validate() { return this instanceof Metadata; }
-  read() { return hasPermission($docid, 'read'); }
-  write() { return isCurrentUser($userid) || hasPermission($docid, 'write'); }
+path /metadata/$ownerid/$docid is Metadata {
+  read()  { return hasPermission($ownerid, $docid, 'read'); }
+  write() { return hasPermission($ownerid, $docid, 'write'); }
 }
 
 path /permissions {
-  read() { return isLoggedIn(); }
-  index() { return ['grantor', 'grantee', 'docid']; }
+  read()  { return isLoggedIn(); }
+  index() { return ['owner', 'grantee', 'docid']; }
 }
 
-path /permissions/$key {
-  // Limit structure of the key format to "grantee|docid".
-  validate() {
-    return this instanceof Permission &&
-           $key == fullId(this.grantee, this.docid) &&
-           this.grantor == currentUser();
-  }
+path /permissions/$key is Permission {
   write() {
-    // BUG: Can have two-docid's owned by different owners - permissions can be stolen!
-    return this == null && isCurrentUser(data.grantor) ||
-           this != null && docIsOwnedBy(this.docid, currentUser());
+    return this == null && isCurrentUser(data.owner) ||
+      this != null &&
+      // Limit structure of the key format to "grantee|owner|docid"
+      $key == fullId(this.grantee, this.owner, this.docid) &&
+      isCurrentUser(this.owner) &&
+      docIsOwnedBy(this.docid, currentUser());
   }
   // No read() rule neeeded since this is only used in hasPermission()
 }
@@ -76,12 +76,12 @@ function currentUser() {
   return auth.uid;
 }
 
-function fullId(userid, docid) {
-  return userid + '|' + docid;
+function fullId(userid, ownerid, docid) {
+  return userid + '|' + ownerid + '|' + docid;
 }
 
-function hasPermission(docid, p) {
-  return root.permissions[fullId(currentUser(), docid)][p];
+function hasPermission(ownerid, docid, p) {
+  return root.permissions[fullId(currentUser(), ownerid, docid)][p];
 }
 
 function docIsOwnedBy(docid, userid) {

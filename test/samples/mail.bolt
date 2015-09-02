@@ -14,9 +14,7 @@ type Message {
 }
 
 // The inbox is someone's incoming mail.
-path /users/$userid/inbox/$msg {
-  validate() { return this instanceof Message; }
-
+path /users/$userid/inbox/$msg is Message {
   // Users can read their own inbox
   read() { return isCurrentUser($userid); }
 
@@ -30,9 +28,7 @@ path /users/$userid/inbox/$msg {
 }
 
 // The outbox is for recording what has been sent by a user.
-path /users/$userid/outbox/$msg {
-  validate() { return this instanceof Message; }
-
+path /users/$userid/outbox/$msg is Message {
   read() { return isCurrentUser($userid); }
 
   write() {

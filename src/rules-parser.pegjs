@@ -64,7 +64,7 @@ start = _ rules:Rules _ {
 Rules = rules:(Rule _)*
 
 Rule = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
-     / p:Path { symbols.registerPath(p.parts, p.methods); }
+     / p:Path { symbols.registerPath(p.parts, p.isType, p.methods); }
      / s:Schema { symbols.registerSchema(s.name, s.derivedFrom, s.properties, s.methods); }
 
 Function = "function" __ name:Identifier params:ParameterList "{" _
@@ -77,26 +77,24 @@ Function = "function" __ name:Identifier params:ParameterList "{" _
     };
   }
 
-Path = "path" __ path:PathExpression _ "{" _ methods:Methods _ "}" {
-  return {
-    parts: path,
-    methods: methods
-  };
-}
+Path = "path" __ path:PathExpression isType:("is" __ id:Identifier _ { return id; })?
+  "{" _ methods:Methods "}" {
+    result = {
+      parts: path,
+      methods: methods
+    };
+    if (isType) {
+      result.isType = ensureUpperCase(isType, "Type names");
+    }
+    return result;
+  }
 
-PathExpression = "/" Whitespace {
-    return [];
-  }
-  / parts:("/" part:Identifier {
-    return part;
-  })+ {
-    return parts;
-  }
+PathExpression "path" =  parts:("/" part:Identifier { return part; })+ _ { return parts; }
+  / "/" _ { return []; }
 
 Schema =
-  "type" __ type:Identifier _ derived:("extends" __ Identifier _)? "{" _
-  properties:Properties?
-  "}" {
+  "type" __ type:Identifier __ ext:("extends" __ id:Identifier _ { return id; })?
+  "{" _ properties:Properties? "}" {
     var result = {
       name: ensureUpperCase(type, "Type names"),
       methods: {},
@@ -106,8 +104,8 @@ Schema =
       result.methods = properties.methods;
       result.properties = properties.properties;
     }
-    if (derived) {
-      result.derivedFrom = ensureUpperCase(derived[2], "Type names");
+    if (ext) {
+      result.derivedFrom = ensureUpperCase(ext, "Type names");
     }
     return result;
 }
@@ -196,7 +194,7 @@ ParameterList = "(" _ ")" _ {
 // TODO: Allow for union types, e.g., Type1 | Type2
 // TODO: Allow for generic types, e.g., Type<A, B>
 TypeExpression "type" =
-  head:Identifier tail:(_ "|" _ id:Identifier { return id; } )* _{
+  head:Identifier tail:(_ "|" _ id:Identifier { return id; } )* _ {
     var result = [ensureUpperCase(head, "Type names")];
     for (var i = 0; i < tail.length; i++) {
       result.push(ensureUpperCase(tail[i], "Type names"));
@@ -210,7 +208,7 @@ TypeExpression "type" =
 // ======================================
 
 PrimaryExpression
-  = !Literal name:Identifier { return ast.variable(name); }
+  = !Literal name:Identifier _ { return ast.variable(name); }
   / Literal
   / "(" _ expression:Expression _ ")" { return expression; }
 
@@ -308,13 +306,11 @@ RelationalExpression
       return leftAssociative(head, tail);
     }
 
-// TODO: instanceof should require a TypeExpression on right
 RelationalOperator
   = "<="
   / ">="
   / "<"
   / ">"
-  / "instanceof"
 
 EqualityExpression
   = head:RelationalExpression
@@ -465,7 +461,7 @@ UnicodeEscapeSequence
       return String.fromCharCode(parseInt(digits, 16));
     }
 
-Identifier "identifier" = start:[a-zA-Z_$] rest:[a-zA-Z0-9_]* _ {
+Identifier "identifier" = start:[a-zA-Z_$] rest:[a-zA-Z0-9_]* {
   return start + rest.join("");
 }
 

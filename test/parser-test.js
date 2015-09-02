@@ -38,9 +38,10 @@ function fnAST() {
   };
 }
 
-var path = "path /p {}";
+var path = "path /x {}";
 var pathAST = {
-  parts: ['p'],
+  parts: ['x'],
+  isType: 'Any',
   methods: {}
 };
 
@@ -132,7 +133,6 @@ suite("Rules Parser Tests", function() {
       [ "a > 7", ast.gt(ast.variable('a'), ast.number(7)) ],
       [ "a <= 7", ast.lte(ast.variable('a'), ast.number(7)) ],
       [ "a >= 7", ast.gte(ast.variable('a'), ast.number(7)) ],
-      [ "a instanceof Document", ast.instanceOf(ast.variable('a'), ast.variable('Document')) ],
       [ "a == 3", ast.eq(ast.variable('a'), ast.number(3)) ],
       [ "a != 0", ast.ne(ast.variable('a'), ast.number(0)) ],
       [ "a === 3", ast.eq(ast.variable('a'), ast.number(3)) ],
@@ -199,13 +199,14 @@ suite("Rules Parser Tests", function() {
 
   test("Path", function() {
     var result = parse(path);
-    assert.deepEqual(result.paths, {'/p': pathAST});
+    assert.deepEqual(result.paths, {'/x': pathAST});
   });
 
   test("Root Path", function() {
     var result = parse("path / {}");
     assert.deepEqual(result.paths['/'], {
       parts: [],
+      isType: 'Any',
       methods: {}
     });
   });
@@ -270,14 +271,15 @@ return true;\
     var result = parse("\
 path /p/$q {\
 \
-validate() {\
+write() {\
 return true;\
 }\
 }");
     assert.deepEqual(result.paths['/p/$q'], {
       parts: ['p', '$q'],
+      isType: 'Any',
       methods: {
-        validate: {
+        write: {
           params: [],
           body: {
             type: "Boolean",
