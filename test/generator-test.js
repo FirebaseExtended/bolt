@@ -250,7 +250,9 @@ path /x { read() { return " + tests[i].x + "; }}\
     assert.equal(gen.getExpressionText(symbols.functions['@validator@Object'].body),
                  'newData.hasChildren()', 'Object');
     assert.equal(gen.getExpressionText(symbols.functions['@validator@Null'].body),
-                 'newData.val() == null', 'Object');
+                 'newData.val() == null', 'Null');
+    assert.equal(gen.getExpressionText(symbols.functions['@validator@Any'].body),
+                 'true', 'Any');
     for (var i = 0; i < baseTypes.length; i++) {
       var type = baseTypes[i];
       assert.equal(gen.getExpressionText(symbols.functions['@validator@' + type].body),
@@ -258,8 +260,10 @@ path /x { read() { return " + tests[i].x + "; }}\
     }
   });
 
-  test("Schema Validation", function() {
+  suite("Schema Validation", function() {
     var tests = [
+      { s: "type Simple {}",
+        x: undefined },
       { s: "type Simple extends Object {}",
         x: "newData.hasChildren()" },
       { s: "type Simple extends String {}",
@@ -281,11 +285,20 @@ path /x { read() { return " + tests[i].x + "; }}\
       { s: "type Simple {n: Number, validate() {return this.n < 7;}}",
         x: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
     ];
-    for (var i = 0; i < tests.length; i++) {
-      var symbols = parse(tests[i].s + " path /x is Simple {}");
+
+    function testIt(t) {
+      var symbols = parse(t.s + " path /x is Simple {}");
       var gen = new bolt.Generator(symbols);
       var rules = gen.generateRules();
-      assert.deepEqual(rules, {"rules": {"x": {".validate": tests[i].x}}});
+      if (t.x === undefined) {
+        assert.deepEqual(rules, {"rules": {"x": {} }});
+      } else {
+        assert.deepEqual(rules, {"rules": {"x": {".validate": t.x}}});
+      }
+    }
+
+    for (var i = 0; i < tests.length; i++) {
+      test(tests[i].s + " => " + tests[i].x, testIt.bind(undefined, tests[i]));
     }
   });
 
