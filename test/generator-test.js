@@ -18,6 +18,7 @@
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var parse = bolt.parse;
 var fileio = require('file-io');
+var util = require('../lib/util');
 
 var assert = require('chai').assert;
 
@@ -95,8 +96,7 @@ index() { return ['a', 'b']; }\
     for (var i = 0; i < files.length; i++) {
       test(files[i],
            testFileSample.bind(undefined,
-                               'test/samples/' + files[i] +
-                               '.' + bolt.FILE_EXTENSION));
+                               'test/samples/' + files[i] + '.' + bolt.FILE_EXTENSION));
     }
   });
 
@@ -243,8 +243,9 @@ path /x { read() { return " + tests[i].x + "; }}\
   });
 
   test("Builtin validation functions", function() {
-    var symbols = parse("");
+    var symbols = parse("path / {}");
     var gen = new bolt.Generator(symbols);
+    gen.generateRules();
     var baseTypes = ['String', 'Number', 'Boolean'];
     assert.equal(gen.getExpressionText(symbols.functions['@validator@Object'].body),
                  'newData.hasChildren()', 'Object');
@@ -288,29 +289,54 @@ path /x { read() { return " + tests[i].x + "; }}\
     }
   });
 
-  test("Schema Generation Errors", function() {
+  suite("Schema Generation Errors", function() {
     var tests = [
       { s: "",
-        e: "at least one path" },
+        e: /at least one path/ },
       { s: "type Simple extends String {a: String} path /x {} ",
         e: /properties.*extend/ },
       { s: "path /y { index() { return 1; }}",
         e: /index.*string/i },
       { s: "path /x { write() { return undefinedFunc(); }}",
-        e: "1 errors" },
+        e: /undefined.*function/i },
+      { s: "path /x is NoSuchType {}",
+        e: /type definition.*NoSuchType/ },
+      { s: "path /x { unsupported() { return true; } }",
+        w: /unsupported method/i },
     ];
 
-    function generateRules(symbols) {
+    function testIt(t) {
+      var symbols = parse(t.s);
       var gen = new bolt.Generator(symbols);
-      gen.silent();
-      gen.generateRules();
+      var lastError;
+      gen.setLoggers({
+        error: function(s) {
+          lastError = s;
+        },
+        warn: function(s) {
+          lastError = s;
+        },
+      });
+
+      try {
+        gen.generateRules();
+      } catch (e) {
+        if (!t.e) {
+          throw e;
+        }
+        assert.match(lastError, t.e);
+        return;
+      }
+      if (t.e) {
+        assert.fail(undefined, undefined, "No exception thrown.");
+      }
+      if (t.w) {
+        assert.match(lastError, t.w);
+      }
     }
 
     for (var i = 0; i < tests.length; i++) {
-      var symbols = parse(tests[i].s);
-      assert.throws(generateRules.bind(undefined, symbols),
-                    Error,
-                    tests[i].e);
+      test(util.quoteString(tests[i].s), testIt.bind(undefined, tests[i]));
     }
   });
 });

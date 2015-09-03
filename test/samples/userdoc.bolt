@@ -17,7 +17,7 @@ type Metadata {
   modified: Date,
   title: String,
 
-  extensible(prop) { return true; }
+  // extensible(prop) { return true; }
 }
 
 type Permission {

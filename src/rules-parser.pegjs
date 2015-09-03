@@ -20,6 +20,8 @@
   "use strict";
   var ast = require('./ast');
 
+  var errorCount = 0;
+
   // Return a left-associative binary structure
   // consisting of head (exp), and tail (op, exp)*.
   function leftAssociative(head, tail) {
@@ -31,6 +33,10 @@
   }
 
   var symbols = new ast.Symbols();
+  symbols.setLoggers({
+    error: error,
+    warn: warn
+  });
 
   function ensureLowerCase(s, m) {
     var canonical = s[0].toLowerCase() + s.slice(1);
@@ -48,6 +54,11 @@
     return s;
   }
 
+  function error(s) {
+    errorCount += 1;
+    console.error(errorString({line: line(), column: column()}, s));
+  }
+
   function warn(s) {
     console.warn(errorString({line: line(), column: column()}, s));
   }
@@ -58,6 +69,9 @@
 }
 
 start = _ rules:Rules _ {
+  if (errorCount != 0) {
+    throw(new Error("Fatal errors: " + errorCount));
+  }
   return symbols;
 }
 
@@ -129,10 +143,7 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
       if (result.methods[part.name]) {
         error("Duplicate method name: " + part.name);
       }
-      result.methods[part.name] = {
-        params: part.params,
-        body: part.body
-      };
+      result.methods[part.name] = ast.method(part.params, part.body);
     }
   }
 
@@ -159,10 +170,7 @@ Methods = all:(Method _)* {
     if (method.name in result) {
       error("Duplicate method name: " + method.name);
     }
-    result[method.name] = {
-      params: method.params,
-      body: method.body
-    };
+    result[method.name] = ast.method(method.params, method.body);
   }
   return result;
 }

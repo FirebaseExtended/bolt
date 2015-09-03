@@ -16,7 +16,6 @@
 "use strict";
 
 var assert = require('chai').assert;
-var Promise = require('promise');
 var readFile = require('file-io').readFile;
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
@@ -59,7 +58,7 @@ function functionExpression(name, exp) {
 suite("Rules Parser Tests", function() {
   test("Empty input", function() {
     var result = parse("");
-    assert.deepEqual(result, new ast.Symbols());
+    assert.ok(result instanceof ast.Symbols);
   });
 
   test("Single Rule", function() {
@@ -83,7 +82,7 @@ suite("Rules Parser Tests", function() {
     assert.deepEqual(result.functions, {f: fnAST(), g: fnAST()});
   });
 
-  test("Literals", function() {
+  suite("Literals", function() {
     var tests = [
       [ "true", ast.boolean(true) ],
       [ "false", ast.boolean(false) ],
@@ -97,13 +96,18 @@ suite("Rules Parser Tests", function() {
       [ "\"string\"", ast.string("string") ],
       [ "'string'", ast.string("string") ],
     ];
+
+    function testIt(t) {
+      var result = parse(functionExpression('f', t[0]));
+      assert.deepEqual(result.functions.f.body, t[1]);
+    }
+
     for (var i = 0; i < tests.length; i++) {
-      var result = parse(functionExpression('f', tests[i][0]));
-      assert.deepEqual(result.functions.f.body, tests[i][1], tests[i][0]);
+      test(tests[i][0], testIt.bind(undefined, tests[i]));
     }
   });
 
-  test("Expressions", function() {
+  suite("Expressions", function() {
     var tests = [
       [ "a", ast.variable('a') ],
       [ "a.b", ast.reference(ast.variable('a'), 'b') ],
@@ -159,9 +163,14 @@ suite("Rules Parser Tests", function() {
                                       ast.variable('c'),
                                       ast.variable('d')) ],
     ];
+
+    function testIt(t) {
+      var result = parse(functionExpression('f', t[0]));
+      assert.deepEqual(result.functions.f.body, t[1]);
+    }
+
     for (var i = 0; i < tests.length; i++) {
-      var result = parse(functionExpression('f', tests[i][0]));
-      assert.deepEqual(result.functions.f.body, tests[i][1], tests[i][0]);
+      test(tests[i][0], testIt.bind(undefined, tests[i]));
     }
   });
 
@@ -290,17 +299,17 @@ return true;\
     });
   });
 
-  test("Sample files", function() {
+  suite("Sample files", function() {
     var files = [
       "all_access",
       "userdoc",
       "mail"
     ];
-    var completed = [];
     for (var i = 0; i < files.length; i++) {
-      completed.push(testFile('test/samples/' + files[i] + '.' + BOLT_EXTENSION));
+      test(files[i],
+           testFile.bind(undefined,
+                         'test/samples/' + files[i] + '.' + BOLT_EXTENSION));
     }
-    return Promise.all(completed);
   });
 
   function testFile(filename) {

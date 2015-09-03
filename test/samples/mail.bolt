@@ -10,7 +10,7 @@ type Message {
     return isCurrentUser(this.from);
   }
 
-  extensible(prop) { return false; }
+  // extensible(prop) { return false; }
 }
 
 // The inbox is someone's incoming mail.
