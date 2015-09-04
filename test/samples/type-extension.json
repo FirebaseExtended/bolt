@@ -1,0 +1,5 @@
+{
+  "rules": {
+    ".validate": "newData.child('time').isNumber() && newData.child('time').val() >= 0 && (newData.child('name').isString() && newData.child('name').val().length > 0) && (newData.child('url').isString() && newData.child('url').val().beginsWith('http'))"
+  }
+}
