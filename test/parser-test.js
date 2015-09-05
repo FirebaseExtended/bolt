@@ -17,6 +17,7 @@
 
 var assert = require('chai').assert;
 var readFile = require('file-io').readFile;
+var helper = require('./test-helper');
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var ast = bolt.ast;
@@ -26,60 +27,30 @@ var BOLT_EXTENSION = bolt.FILE_EXTENSION;
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
 
-var fn = functionExpression('f', 'true');
-function fnAST() {
-  return {
-    params: [],
-    body: {
-      type: 'Boolean',
-      value: true
-    }
-  };
-}
-
-var path = "path /x {}";
-var pathAST = {
-  parts: ['x'],
-  isType: 'Any',
-  methods: {}
-};
-
-var schema = "type Foo { a: Number }";
-var schemaAST = {
-  derivedFrom: 'Object',
-  properties: { "a": { types: ['Number'] } },
-  methods: {}
-};
-
-function functionExpression(name, exp) {
-  return "function " + name + "() { return " + exp + "; }";
-}
-
 suite("Rules Parser Tests", function() {
   test("Empty input", function() {
     var result = parse("");
     assert.ok(result instanceof ast.Symbols);
   });
 
-  test("Single Rule", function() {
-    var result = parse(fn);
-    assert.deepEqual(result.functions, { f: fnAST()});
-  });
-
-  test("Function name", function() {
-    var result = parse("function longName() {return false;}");
-    assert.deepEqual(result.functions.longName, {
-      params: [],
-      body: {
-        type: "Boolean",
-        value: false
+  suite("Function Samples", function() {
+    var tests = [
+      { data: "function f() { return true; }",
+        expect: { f: { params: [], body: ast.boolean(true) } }
+      },
+      { data: "function longName() { return false; }",
+        expect: { longName: { params: [], body: ast.boolean(false) } }
+      },
+      { data: "function f(){return true;} function g(){return false;}",
+        expect: { f: { params: [], body: ast.boolean(true) },
+                  g: { params: [], body: ast.boolean(false) } }
       }
-    });
-  });
+    ];
 
-  test("Two functions", function() {
-    var result = parse(fn + "/* sep */" + functionExpression('g', 'true'));
-    assert.deepEqual(result.functions, {f: fnAST(), g: fnAST()});
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      assert.deepEqual(result.functions, expect);
+    });
   });
 
   suite("Literals", function() {
@@ -97,14 +68,10 @@ suite("Rules Parser Tests", function() {
       [ "'string'", ast.string("string") ],
     ];
 
-    function testIt(t) {
-      var result = parse(functionExpression('f', t[0]));
-      assert.deepEqual(result.functions.f.body, t[1]);
-    }
-
-    for (var i = 0; i < tests.length; i++) {
-      test(tests[i][0], testIt.bind(undefined, tests[i]));
-    }
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse("function f() { return " + data + ";}");
+      assert.deepEqual(result.functions.f.body, expect);
+    });
   });
 
   suite("Expressions", function() {
@@ -164,17 +131,16 @@ suite("Rules Parser Tests", function() {
                                       ast.variable('d')) ],
     ];
 
-    function testIt(t) {
-      var result = parse(functionExpression('f', t[0]));
-      assert.deepEqual(result.functions.f.body, t[1]);
-    }
-
-    for (var i = 0; i < tests.length; i++) {
-      test(tests[i][0], testIt.bind(undefined, tests[i]));
-    }
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse("function f() { return " + data + ";}");
+      assert.deepEqual(result.functions.f.body, expect);
+    });
   });
 
-  test("Whitespace", function() {
+  suite("Whitespace", function() {
+    var fn = "function f() { return true; }";
+    var fnAST = { params: [], body: ast.boolean(true) };
+
     var tests = [
       " " + fn,
       fn + " ",
@@ -186,13 +152,16 @@ suite("Rules Parser Tests", function() {
       fn + "\r\n",
       "  \t" + fn + "  \r\n"
     ];
-    for (var i = 0; i < tests.length; i++) {
-      var result = parse(tests[i]);
-      assert.deepEqual(result.functions.f, fnAST(), "'" + encodeURIComponent(tests[i]) + "'");
-    }
+
+    helper.dataDrivenTest(tests, function(data) {
+      assert.deepEqual(parse(data).functions.f, fnAST);
+    });
   });
 
-  test("Comments", function() {
+  suite("Comments", function() {
+    var fn = "function f() { return true; }";
+    var fnAST = { params: [], body: ast.boolean(true) };
+
     var tests = [
       "//Single Line\n" + fn,
       fn + " // My rule",
@@ -200,102 +169,56 @@ suite("Rules Parser Tests", function() {
       "/* inline */ " + fn,
       "/* pre */ " + fn + " /* post */"
     ];
-    for (var i = 0; i < tests.length; i++) {
-      var result = parse(tests[i]);
-      assert.deepEqual(result.functions.f, fnAST(), "'" + encodeURIComponent(tests[i]) + "'");
-    }
-  });
 
-  test("Path", function() {
-    var result = parse(path);
-    assert.deepEqual(result.paths, {'/x': pathAST});
-  });
-
-  test("Root Path", function() {
-    var result = parse("path / {}");
-    assert.deepEqual(result.paths['/'], {
-      parts: [],
-      isType: 'Any',
-      methods: {}
+    helper.dataDrivenTest(tests, function(data, expect) {
+      assert.deepEqual(parse(data).functions.f, fnAST);
     });
   });
 
-  test("Simple Schema", function() {
-    var result = parse(schema);
-    assert.deepEqual(result.schema, {Foo: schemaAST});
-  });
+  suite("Paths", function() {
+    var tests = [
+      { data: "path / {}",
+        expect: {"/": { parts: [], isType: 'Any', methods: {} }} },
+      { data: "path /x {}",
+        expect: {"/x": { parts: ['x'], isType: 'Any', methods: {} }} },
+      { data: "path /p/$q { write() { return true;  }}",
+        expect: {"/p/$q": { isType: 'Any',
+                            parts: ['p', '$q'],
+                            methods: {write: {params: [], body: ast.boolean(true)}}}} }
+    ];
 
-  test("Multiprop Schema", function() {
-    var result = parse("\
-type Multi {\
-a: Number,\
-b: String\
-}\
-");
-    assert.deepEqual(result.schema.Multi, {
-      derivedFrom: 'Object',
-      properties: {
-        "a": { types: ['Number'] },
-        "b": { types: ['String'] }
-      },
-      methods: {}
+    helper.dataDrivenTest(tests, function(data, expect) {
+      assert.deepEqual(parse(data).paths, expect);
     });
   });
 
-  test("Schema extension", function() {
-    var result = parse("type Foo extends Bar {}");
-    assert.deepEqual(result.schema.Foo, {
-      derivedFrom: "Bar",
-      properties: {},
-      methods: {}
-    });
-  });
+  suite("Schema", function() {
+    var tests = [
+      { data: "type Foo { a: Number }",
+        expect: { derivedFrom: 'Object',
+                  properties: {a: {types: ['Number']}},
+                  methods: {}} },
+      { data: "type Foo { a: Number, b: String }",
+        expect: { derivedFrom: 'Object',
+                  properties: {a: {types: ['Number']},
+                               b: {types: ['String']}},
+                  methods: {}} },
+      { data: "type Foo extends Bar {}",
+        expect: { derivedFrom: 'Bar', properties: {}, methods: {}} },
+      { data: "type Foo { a: Number validate() { return true; }}",
+        expect: { derivedFrom: 'Object',
+                  properties: {a: {types: ['Number']}},
+                  methods: {validate: {params: [],
+                                       body: ast.boolean(true)}}} },
+      { data: "type Foo { a: Number, validate() { return true; }}",
+        expect: { derivedFrom: 'Object',
+                  properties: {a: {types: ['Number']}},
+                  methods: {validate: {params: [],
+                                       body: ast.boolean(true)}}} }
+    ];
 
-  test("Schema method", function() {
-    var result = parse("\
-type Foo {\
-\
-a: Number,\
-\
-validate() {\
-return true;\
-}\
-}");
-    assert.deepEqual(result.schema.Foo, {
-      derivedFrom: 'Object',
-      properties: { "a": { types: ['Number'] }},
-      methods: {
-        "validate": {
-          params: [],
-          body: {
-            type: "Boolean",
-            value: true
-          }
-        }
-      }
-    });
-  });
-
-  test("Path method", function() {
-    var result = parse("\
-path /p/$q {\
-\
-write() {\
-return true;\
-}\
-}");
-    assert.deepEqual(result.paths['/p/$q'], {
-      parts: ['p', '$q'],
-      isType: 'Any',
-      methods: {
-        write: {
-          params: [],
-          body: {
-            type: "Boolean",
-            value: true
-          }
-        }
-      }
+    helper.dataDrivenTest(tests, function(data, expect) {
+      assert.deepEqual(parse(data).schema.Foo, expect);
     });
   });
 
@@ -305,19 +228,15 @@ return true;\
       "userdoc",
       "mail"
     ];
-    for (var i = 0; i < files.length; i++) {
-      test(files[i],
-           testFile.bind(undefined,
-                         'test/samples/' + files[i] + '.' + BOLT_EXTENSION));
-    }
-  });
 
-  function testFile(filename) {
-    return readFile(filename)
-      .then(function(response) {
-        var result = parse(response.content);
-        assert.ok(result, response.url);
-        return true;
-      });
-  }
+    helper.dataDrivenTest(files, function(data) {
+      var filename = 'test/samples/' + data + '.' + BOLT_EXTENSION;
+      return readFile(filename)
+        .then(function(response) {
+          var result = parse(response.content);
+          assert.ok(result, response.url);
+          return true;
+        });
+    });
+  });
 });

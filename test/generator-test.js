@@ -18,29 +18,12 @@
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
 var parse = bolt.parse;
 var fileio = require('file-io');
-var util = require('../lib/util');
+var helper = require('./test-helper');
 
 var assert = require('chai').assert;
 
-
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
-
-/*
- * Run data drive test with tests is one of these formats:
- * [ { data: <input>, expect: <expected output> }, ... ]
- * [ [ <input>, <expected output> ], ... ]
- *
- * Calls testIt(data, expect) for each test.
- */
-function dataDrivenTest(tests, testIt) {
-  for (var i = 0; i < tests.length; i++) {
-    var data = tests[i].data || tests[i][0] || tests[i];
-    var expect = tests[i].expect || tests[i][1];
-    var label = tests[i].label || JSON.stringify(data) + " => " + JSON.stringify(expect);
-    test(label, testIt.bind(undefined, data, expect));
-  }
-}
 
 suite("Rules Generator Tests", function() {
   suite("Basic Samples", function() {
@@ -62,7 +45,7 @@ suite("Rules Generator Tests", function() {
       },
     ];
 
-    dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data, expect) {
       var result = parse(data);
       assert.ok(result);
       var gen = new bolt.Generator(result);
@@ -73,32 +56,28 @@ suite("Rules Generator Tests", function() {
 
   suite("Sample files", function() {
     var files = ["all_access", "userdoc", "mail", "type-extension"];
-    for (var i = 0; i < files.length; i++) {
-      test(files[i],
-           testFileSample.bind(undefined,
-                               'test/samples/' + files[i] + '.' + bolt.FILE_EXTENSION));
-    }
+
+    helper.dataDrivenTest(files, function(filename) {
+      filename = 'test/samples/' + filename + '.' + bolt.FILE_EXTENSION;
+      return fileio.readFile(filename)
+        .then(function(response) {
+          var result = parse(response.content);
+          assert.ok(result, response.url);
+          var gen = new bolt.Generator(result);
+          var json = gen.generateRules();
+          assert.ok('rules' in json, response.url + " has rules");
+          return fileio.readJSONFile(response.url.replace('.' + bolt.FILE_EXTENSION, '.json'))
+            .then(function(response2) {
+              assert.deepEqual(json, response2);
+            });
+        })
+        .catch(function(error) {
+          assert.ok(false, error.message);
+        });
+    });
   });
 
-  function testFileSample(filename) {
-    return fileio.readFile(filename)
-      .then(function(response) {
-        var result = parse(response.content);
-        assert.ok(result, response.url);
-        var gen = new bolt.Generator(result);
-        var json = gen.generateRules();
-        assert.ok('rules' in json, response.url + " has rules");
-        return fileio.readJSONFile(response.url.replace('.' + bolt.FILE_EXTENSION, '.json'))
-          .then(function(response2) {
-            assert.deepEqual(json, response2);
-          });
-      })
-      .catch(function(error) {
-        assert.ok(false, error.message);
-      });
-  }
-
-  test("Expression decoding.", function() {
+  suite("Expression decoding.", function() {
     var tests = [
       [ "true" ],
       [ "false" ],
@@ -152,59 +131,57 @@ suite("Rules Generator Tests", function() {
       [ "a ? b : c",  ],
       [ "a || b ? c : d" ],
     ];
-    for (var i = 0; i < tests.length; i++) {
-      var result = parse('function f() {return ' + tests[i][0] + ';}');
-      var ast = result.functions.f.body;
-      var decode = bolt.decodeExpression(ast);
-      var expected = tests[i][1] || tests[i][0];
-      assert.deepEqual(decode, expected, tests[i][0] + " {" + ast.type + "}");
-    }
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      // Decode to self by default
+      expect = expect || data;
+      var result = parse('function f() {return ' + data + ';}');
+      var exp = result.functions.f.body;
+      var decode = bolt.decodeExpression(exp);
+      assert.equal(decode, expect);
+    });
   });
 
   suite("Partial evaluation", function() {
     var tests = [
-      { f: "function f(a) { return true == a; }", x: "f(a == b)", e: "true == (a == b)" },
-      { f: "function f(a) { return a == true; }", x: "f(a == b)", e: "a == b == true" },
-      { f: "function f(a) { return a + 3; }", x: "f(1 + 2)", e: "1 + 2 + 3" },
-      { f: "function f(a) { return a + 3; }", x: "f(1 * 2)", e: "1 * 2 + 3" },
-      { f: "function f(a) { return a * 3; }", x: "f(1 + 2)", e: "(1 + 2) * 3" },
-      { f: "function f(a) { return a + 1; }", x: "f(a + a)", e: "a + a + 1" },
+      { f: "function f(a) { return true == a; }", x: "f(a == b)", expect: "true == (a == b)" },
+      { f: "function f(a) { return a == true; }", x: "f(a == b)", expect: "a == b == true" },
+      { f: "function f(a) { return a + 3; }", x: "f(1 + 2)", expect: "1 + 2 + 3" },
+      { f: "function f(a) { return a + 3; }", x: "f(1 * 2)", expect: "1 * 2 + 3" },
+      { f: "function f(a) { return a * 3; }", x: "f(1 + 2)", expect: "(1 + 2) * 3" },
+      { f: "function f(a) { return a + 1; }", x: "f(a + a)", expect: "a + a + 1" },
       { f: "function f(a) { return g(a); } function g(a) { return a == true; }",
-        x: "f(123)", e: "123 == true" },
+        x: "f(123)", expect: "123 == true" },
       { f: "function f(a, b) { return g(a) == g(b); } function g(a) { return a == true; }",
-        x: "f(1, 2)", e: "1 == true == (2 == true)" },
+        x: "f(1, 2)", expect: "1 == true == (2 == true)" },
       // Highler level function works as long as returns a constant function
       { f: "function f() { return g; } function g(a) { return a == true; }",
-        x: "f()(123)", e: "123 == true" },
-      { f: "function f(a) { return a + 1; }", x: "a[f(123)]", e: "a[123 + 1]" },
-      { f: "", x: "this", e: "newData.val() == true" },
-      { f: "", x: "!this", e: "!(newData.val() == true)" },
-      { f: "", x: "this.prop", e: "newData.child('prop').val() == true" },
-      { f: "", x: "!this.prop", e: "!(newData.child('prop').val() == true)" },
-      { f: "", x: "this.foo.parent()", e: "newData.child('foo').parent().val() == true" },
+        x: "f()(123)", expect: "123 == true" },
+      { f: "function f(a) { return a + 1; }", x: "a[f(123)]", expect: "a[123 + 1]" },
+      { f: "", x: "this", expect: "newData.val() == true" },
+      { f: "", x: "!this", expect: "!(newData.val() == true)" },
+      { f: "", x: "this.prop", expect: "newData.child('prop').val() == true" },
+      { f: "", x: "!this.prop", expect: "!(newData.child('prop').val() == true)" },
+      { f: "", x: "this.foo.parent()", expect: "newData.child('foo').parent().val() == true" },
       { f: "",
         x: "this.foo || this.bar",
-        e: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
+        expect: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
       // Don't support snapshot functions beyond parent.
       // TODO: Should warn user not to use Firebase builtins!
-      { f: "", x: "this.isString == 'a'", e: "newData.child('isString').val() == 'a'" },
-      { f: "function f(a) { return a == '123'; }", x: "f(this)", e: "newData.val() == '123'" },
+      { f: "", x: "this.isString == 'a'", expect: "newData.child('isString').val() == 'a'" },
+      { f: "function f(a) { return a == '123'; }", x: "f(this)", expect: "newData.val() == '123'" },
       { f: "function f(a) { return a == '123'; }",
-        x: "f(this.foo)", e: "newData.child('foo').val() == '123'" },
+        x: "f(this.foo)", expect: "newData.child('foo').val() == '123'" },
     ];
 
-    function testIt(t) {
-      var symbols = parse(t.f + " path /x { read() { return " + t.x + "; }}");
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var symbols = parse(data.f + " path /x { read() { return " + data.x + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
       gen.generateRules();
       var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      assert.equal(decode, t.e);
-    }
-
-    for (var i = 0; i < tests.length; i++) {
-      test(tests[i].x + " => " + tests[i].e, testIt.bind(undefined, tests[i]));
-    }
+      assert.equal(decode, expect);
+    });
   });
 
   suite("String methods", function() {
@@ -237,7 +214,7 @@ suite("Rules Generator Tests", function() {
         expect: "'ababa'.matches(/bab/)" },
     ];
 
-    dataDrivenTest(tests, function testIt(data, expect) {
+    helper.dataDrivenTest(tests, function testIt(data, expect) {
       var symbols = parse("path /x { read() { return " + data + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
@@ -245,25 +222,6 @@ suite("Rules Generator Tests", function() {
       var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
       assert.equal(decode, expect);
     });
-  });
-
-  test("Function expansion errors", function() {
-    var tests = [
-      { p: "a", f: "f(a)", x: "f(1)" },
-    ];
-    function getExpressionText(gen, exp) {
-      gen.getExpressionText(exp);
-    }
-    for (var i = 0; i < tests.length; i++) {
-      var symbols = parse("\
-function f(" + tests[i].p + ") { return " + tests[i].f + "; }\
-path /x { read() { return " + tests[i].x + "; }}\
-");
-      var gen = new bolt.Generator(symbols);
-      assert.throws(getExpressionText.bind(undefined, gen, symbols.paths['/x'].methods.read.body),
-                    Error,
-                    "Recursive");
-    }
   });
 
   test("Builtin validation functions", function() {
@@ -286,73 +244,71 @@ path /x { read() { return " + tests[i].x + "; }}\
 
   suite("Schema Validation", function() {
     var tests = [
-      { s: "type Simple {}",
-        x: undefined },
-      { s: "type Simple extends Object {}",
-        x: "newData.hasChildren()" },
-      { s: "type Simple extends String {}",
-        x: "newData.isString()" },
-      { s: "type Simple extends String { validate() { return this.length > 0; } }",
-        x: "newData.isString() && newData.val().length > 0" },
-      { s: "type NonEmpty extends String { validate() { return this.length > 0; } } \
+      { data: "type Simple {}",
+        expect: undefined },
+      { data: "type Simple extends Object {}",
+        expect: "newData.hasChildren()" },
+      { data: "type Simple extends String {}",
+        expect: "newData.isString()" },
+      { data: "type Simple extends String { validate() { return this.length > 0; } }",
+        expect: "newData.isString() && newData.val().length > 0" },
+      { data: "type NonEmpty extends String { validate() { return this.length > 0; } } \
             type Simple { prop: NonEmpty }",
-        x: "newData.child('prop').isString() && newData.child('prop').val().length > 0" },
-      { s: "type Simple {n: Number}",
-        x: "newData.child('n').isNumber()" },
-      { s: "type Simple {s: String}",
-        x: "newData.child('s').isString()" },
-      { s: "type Simple {b: Boolean}",
-        x: "newData.child('b').isBoolean()" },
-      { s: "type Simple {x: Object}",
-        x: "newData.child('x').hasChildren()" },
-      { s: "type Simple {x: Number|String}",
-        x: "newData.child('x').isNumber() || newData.child('x').isString()" },
-      { s: "type Simple {a: Number, b: String}",
-        x: "newData.child('a').isNumber() && newData.child('b').isString()" },
-      { s: "type Simple {x: Number|Null}",
-        x: "newData.child('x').isNumber() || newData.child('x').val() == null" },
-      { s: "type Simple {n: Number, validate() {return this.n < 7;}}",
-        x: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
+        expect: "newData.child('prop').isString() && newData.child('prop').val().length > 0" },
+      { data: "type Simple {n: Number}",
+        expect: "newData.child('n').isNumber()" },
+      { data: "type Simple {s: String}",
+        expect: "newData.child('s').isString()" },
+      { data: "type Simple {b: Boolean}",
+        expect: "newData.child('b').isBoolean()" },
+      { data: "type Simple {x: Object}",
+        expect: "newData.child('x').hasChildren()" },
+      { data: "type Simple {x: Number|String}",
+        expect: "newData.child('x').isNumber() || newData.child('x').isString()" },
+      { data: "type Simple {a: Number, b: String}",
+        expect: "newData.child('a').isNumber() && newData.child('b').isString()" },
+      { data: "type Simple {x: Number|Null}",
+        expect: "newData.child('x').isNumber() || newData.child('x').val() == null" },
+      { data: "type Simple {n: Number, validate() {return this.n < 7;}}",
+        expect: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
     ];
 
-    function testIt(t) {
-      var symbols = parse(t.s + " path /x is Simple {}");
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var symbols = parse(data + " path /x is Simple {}");
       var gen = new bolt.Generator(symbols);
       var rules = gen.generateRules();
-      if (t.x === undefined) {
+      if (expect === undefined) {
         assert.deepEqual(rules, {"rules": {"x": {} }});
       } else {
-        assert.deepEqual(rules, {"rules": {"x": {".validate": t.x}}});
+        assert.deepEqual(rules, {"rules": {"x": {".validate": expect}}});
       }
-    }
-
-    for (var i = 0; i < tests.length; i++) {
-      test(tests[i].s + " => " + tests[i].x, testIt.bind(undefined, tests[i]));
-    }
+    });
   });
 
   suite("Schema Generation Errors", function() {
     var tests = [
-      { s: "",
-        e: /at least one path/ },
-      { s: "type Simple extends String {a: String} path /x {} ",
-        e: /properties.*extend/ },
-      { s: "path /y { index() { return 1; }}",
-        e: /index.*string/i },
-      { s: "path /x { write() { return undefinedFunc(); }}",
-        e: /undefined.*function/i },
-      { s: "path /x is NoSuchType {}",
-        e: /type definition.*NoSuchType/ },
-      { s: "path /x { unsupported() { return true; } }",
+      { data: "",
+        expect: /at least one path/ },
+      { data: "type Simple extends String {a: String} path /x {} ",
+        expect: /properties.*extend/ },
+      { data: "path /y { index() { return 1; }}",
+        expect: /index.*string/i },
+      { data: "path /x { write() { return undefinedFunc(); }}",
+        expect: /undefined.*function/i },
+      { data: "path /x is NoSuchType {}",
+        expect: /type definition.*NoSuchType/ },
+      { data: "path /x { unsupported() { return true; } }",
         w: /unsupported method/i },
-      { s: "path /x { validate() { return this.test(123); } }",
-        e: /convert value/i },
-      { s: "path /x { validate() { return this.test('a/'); } }",
-        e: /convert value/i },
+      { data: "path /x { validate() { return this.test(123); } }",
+        expect: /convert value/i },
+      { data: "path /x { validate() { return this.test('a/'); } }",
+        expect: /convert value/i },
+      { data: "function f(a) { return f(a); } path / { validate() { return f(1); }}",
+        expect: /recursive/i }
     ];
 
-    function testIt(t) {
-      var symbols = parse(t.s);
+    helper.dataDrivenTest(tests, function(data, expect, t) {
+      var symbols = parse(data);
       var gen = new bolt.Generator(symbols);
       var lastError;
       gen.setLoggers({
@@ -367,23 +323,19 @@ path /x { read() { return " + tests[i].x + "; }}\
       try {
         gen.generateRules();
       } catch (e) {
-        if (!t.e) {
+        if (!expect) {
           throw e;
         }
         lastError = lastError || e.message;
-        assert.match(lastError, t.e);
+        assert.match(lastError, expect);
         return;
       }
-      if (t.e) {
+      if (expect) {
         assert.fail(undefined, undefined, "No exception thrown.");
       }
       if (t.w) {
         assert.match(lastError, t.w);
       }
-    }
-
-    for (var i = 0; i < tests.length; i++) {
-      test(util.quoteString(tests[i].s), testIt.bind(undefined, tests[i]));
-    }
+    });
   });
 });
