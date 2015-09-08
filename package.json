@@ -16,6 +16,9 @@
   "files": [
     "lib",
     "bin",
+    "LICENSE",
+    "README.md",
+    "package.json",
     "docs/language.md"
   ],
   "directories": {
