@@ -41,13 +41,15 @@ gulp.task('lint', function() {
     .pipe(eslint.failAfterError());
 });
 
-gulp.task('build', function() {
+gulp.task('build', ['build-peg', 'browserify-bolt']);
+
+gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
     .pipe(peg())
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify-bolt', ['build'], function() {
+gulp.task('browserify-bolt', ['build-peg'], function() {
   return browserifyToDist('lib/bolt.js', { standalone: 'bolt' });
 });
 

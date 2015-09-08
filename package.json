@@ -16,6 +16,7 @@
   "files": [
     "lib",
     "bin",
+    "dist",
     "LICENSE",
     "README.md",
     "package.json",
