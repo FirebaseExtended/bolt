@@ -16,7 +16,7 @@
 "use strict";
 
 var assert = require('chai').assert;
-var readFile = require('file-io').readFile;
+var readFile = require('../lib/file-io').readFile;
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var ast = bolt.ast;
