@@ -77,7 +77,7 @@ gulp.task('test', ['build'], function() {
     .pipe(mocha({ui: 'tdd'}));
 });
 
-gulp.task('default', ['lint', 'build', 'browserify', 'test']);
+gulp.task('default', ['lint', 'build', 'test']);
 
 function browserifyToDist(entry, opts) {
   // Browserify options include:
