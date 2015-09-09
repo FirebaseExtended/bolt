@@ -16,10 +16,10 @@
 "use strict";
 
 var assert = require('chai').assert;
-var readFile = require('file-io').readFile;
+var readFile = require('../lib/file-io').readFile;
 var helper = require('./test-helper');
 
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;
 var BOLT_EXTENSION = bolt.FILE_EXTENSION;

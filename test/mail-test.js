@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var rulesSuite = bolt.rulesSuite;
 var secrets = require('./auth-secrets');
 
