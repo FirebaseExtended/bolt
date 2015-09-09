@@ -19,7 +19,7 @@ You can easily install the bolt compiler using [npm](https://docs.npmjs.com/cli/
 
     $ npm install --global firebase-bolt
 
-Execute a Bolt compiler from the command line (it reads a Bolt file from standard input and write a JSON
+Execute the Bolt compiler from the command line (it reads a Bolt file from standard input and write a JSON
 rules file to standard output):
 
     $ firebase-bolt < <bolt-file>
