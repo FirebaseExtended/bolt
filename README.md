@@ -1,6 +1,8 @@
 # Bolt Compiler
 
 [![Build Status](https://travis-ci.org/firebase/bolt.svg?branch=master)](https://travis-ci.org/firebase/bolt)
+[![NPM Version](https://badge.fury.io/js/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
+[![NPM Downloads](http://img.shields.io/npm/dm/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 
 Bolt is an experimental security and rules compiler for Firebase.  It is currently
 in early alpha.  There are known bugs and incomplete features in the current
