@@ -15,9 +15,9 @@
  */
 "use strict";
 
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('bolt');
+var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var parse = bolt.parse;
-var fileio = require('file-io');
+var fileio = require('../lib/file-io');
 var util = require('../lib/util');
 
 var assert = require('chai').assert;
