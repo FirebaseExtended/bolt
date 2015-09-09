@@ -13,6 +13,17 @@ to firebase-talk@googlegroups.com using "Bolt" in the subject line.
 
   - [Firebase Security and Modeling Language](docs/language.md) - Language documentation and syntax.
 
+# Using the Bolt Compiler
+
+You can easily install the bolt compiler using [npm](https://docs.npmjs.com/cli/install):
+
+    $ npm install --global firebase-bolt
+
+Execute a Bolt compiler from the command line (it reads a Bolt file from standard input and write a JSON
+rules file to standard output):
+
+    $ firebase-bolt < <bolt-file>
+
 # Developing with this Repo
 
 You should have node.js and npm installed to use this repository.
@@ -37,12 +48,10 @@ Run command line tests:
 
     $ gulp test
 
+More extensive tests which include running against a sandboxed Firebase app:
+
+    $ run-tests
+
 Run browser-based tests:
 
     $ browser-tests
-
-Execute a Bolt compiler from the command line:
-
-    $ firebase-bolt < <bolt-file>
-
-A Firebase JSON file is sent to standard output.
