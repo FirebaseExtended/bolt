@@ -23,76 +23,56 @@ var util = require('../lib/util');
 var assert = require('chai').assert;
 
 
-var defaultRules = {
-  rules: {
-    ".read": "true",
-    ".write": "true"
-  }
-};
-
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
 
+/*
+ * Run data drive test with tests is one of these formats:
+ * [ { data: <input>, expect: <expected output> }, ... ]
+ * [ [ <input>, <expected output> ], ... ]
+ *
+ * Calls testIt(data, expect) for each test.
+ */
+function dataDrivenTest(tests, testIt) {
+  for (var i = 0; i < tests.length; i++) {
+    var data = tests[i].data || tests[i][0] || tests[i];
+    var expect = tests[i].expect || tests[i][1];
+    var label = tests[i].label || JSON.stringify(data) + " => " + JSON.stringify(expect);
+    test(label, testIt.bind(undefined, data, expect));
+  }
+}
+
 suite("Rules Generator Tests", function() {
-  test("All Access", function() {
-    var data = "\
-path / {\
-read() { return true; }\
-write() { return true; }\
-}\
-";
-    var result = parse(data);
-    assert.ok(result);
-    var gen = new bolt.Generator(result);
-    var json = gen.generateRules();
-    assert.deepEqual(json, defaultRules);
-  });
+  suite("Basic Samples", function() {
+    var tests = [
+      { data: "path / {read() { return true; } write() { return true; }}",
+        expect: { rules: {".read": "true", ".write": "true"} }
+      },
+      { data: "path / {read() { return true; }}",
+        expect: { rules: {".read": "true"} }
+      },
+      { data: "path / { read() { return false; }}",
+        expect: { rules: {} }
+      },
+      { data: "path / {index() { return ['a', 'b']; }}",
+        expect: { rules: {".indexOn": ["a", "b"]} }
+      },
+      { data: "path / { validate() { return this > 0; }}",
+        expect: { rules: { ".validate": "newData.val() > 0" } }
+      },
+    ];
 
-  test("Read only", function() {
-    var data = "\
-path / {\
-read() { return true; }\
-}\
-";
-    var result = parse(data);
-    assert.ok(result);
-    var gen = new bolt.Generator(result);
-    var json = gen.generateRules();
-    assert.deepEqual(json, {rules: {".read": "true"}});
-  });
-
-  test("Read none", function() {
-    var data = "\
-path / {\
-read() { return false; }\
-}\
-";
-    var result = parse(data);
-    assert.ok(result);
-    var gen = new bolt.Generator(result);
-    var json = gen.generateRules();
-    assert.deepEqual(json, {rules: {".read": "false"}});
-  });
-
-  test("Indexed", function() {
-    var data = "\
-path / {\
-index() { return ['a', 'b']; }\
-}\
-";
-    var result = parse(data);
-    assert.ok(result);
-    var gen = new bolt.Generator(result);
-    var json = gen.generateRules();
-    assert.deepEqual(json, {rules: {".indexOn": ["a", "b"]}});
+    dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      assert.ok(result);
+      var gen = new bolt.Generator(result);
+      var json = gen.generateRules();
+      assert.deepEqual(json, expect);
+    });
   });
 
   suite("Sample files", function() {
-    var files = [
-      "all_access",
-      "userdoc",
-      "mail"
-    ];
+    var files = ["all_access", "userdoc", "mail", "type-extension"];
     for (var i = 0; i < files.length; i++) {
       test(files[i],
            testFileSample.bind(undefined,
@@ -201,11 +181,13 @@ index() { return ['a', 'b']; }\
       { f: "", x: "!this", e: "!(newData.val() == true)" },
       { f: "", x: "this.prop", e: "newData.child('prop').val() == true" },
       { f: "", x: "!this.prop", e: "!(newData.child('prop').val() == true)" },
+      { f: "", x: "this.foo.parent()", e: "newData.child('foo').parent().val() == true" },
       { f: "",
         x: "this.foo || this.bar",
         e: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
-      // Don't use child on built-in method names.
-      { f: "", x: "this.isString", e: "newData.isString" },
+      // Don't support snapshot functions beyond parent.
+      // TODO: Should warn user not to use Firebase builtins!
+      { f: "", x: "this.isString == 'a'", e: "newData.child('isString').val() == 'a'" },
       { f: "function f(a) { return a == '123'; }", x: "f(this)", e: "newData.val() == '123'" },
       { f: "function f(a) { return a == '123'; }",
         x: "f(this.foo)", e: "newData.child('foo').val() == '123'" },
@@ -214,6 +196,8 @@ index() { return ['a', 'b']; }\
     function testIt(t) {
       var symbols = parse(t.f + " path /x { read() { return " + t.x + "; }}");
       var gen = new bolt.Generator(symbols);
+      // Make sure local Schema initialized.
+      gen.generateRules();
       var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
       assert.equal(decode, t.e);
     }
@@ -221,6 +205,46 @@ index() { return ['a', 'b']; }\
     for (var i = 0; i < tests.length; i++) {
       test(tests[i].x + " => " + tests[i].e, testIt.bind(undefined, tests[i]));
     }
+  });
+
+  suite("String methods", function() {
+    var tests = [
+      { data: "this.length",
+        expect: "newData.val().length" },
+      { data: "this.length < 100",
+        expect: "newData.val().length < 100" },
+      { data: "'abc'.length",
+        expect: "'abc'.length" },
+      { data: "'abc'.includes('b')",
+        expect: "'abc'.contains('b')" },
+      { data: "this.includes('b')",
+        expect: "newData.val().contains('b')" },
+      { data: "'abc'.includes(this)",
+        expect: "'abc'.contains(newData.val())" },
+      { data: "'abc'.startsWith(this)",
+        expect: "'abc'.beginsWith(newData.val())" },
+      { data: "'abc'.endsWith(this)",
+        expect: "'abc'.endsWith(newData.val())" },
+      { data: "'abc'.replace(this.a, this.b)",
+        expect: "'abc'.replace(newData.child('a').val(), newData.child('b').val())" },
+      { data: "'ABC'.toLowerCase()",
+        expect: "'ABC'.toLowerCase()" },
+      { data: "'abc'.toUpperCase()",
+        expect: "'abc'.toUpperCase()" },
+      { data: "this.toUpperCase()",
+        expect: "newData.val().toUpperCase()" },
+      { data: "'ababa'.test('/bab/')",
+        expect: "'ababa'.matches(/bab/)" },
+    ];
+
+    dataDrivenTest(tests, function testIt(data, expect) {
+      var symbols = parse("path /x { read() { return " + data + "; }}");
+      var gen = new bolt.Generator(symbols);
+      // Make sure local Schema initialized.
+      gen.generateRules();
+      var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
+      assert.equal(decode, expect);
+    });
   });
 
   test("Function expansion errors", function() {
@@ -268,6 +292,11 @@ path /x { read() { return " + tests[i].x + "; }}\
         x: "newData.hasChildren()" },
       { s: "type Simple extends String {}",
         x: "newData.isString()" },
+      { s: "type Simple extends String { validate() { return this.length > 0; } }",
+        x: "newData.isString() && newData.val().length > 0" },
+      { s: "type NonEmpty extends String { validate() { return this.length > 0; } } \
+            type Simple { prop: NonEmpty }",
+        x: "newData.child('prop').isString() && newData.child('prop').val().length > 0" },
       { s: "type Simple {n: Number}",
         x: "newData.child('n').isNumber()" },
       { s: "type Simple {s: String}",
@@ -316,6 +345,10 @@ path /x { read() { return " + tests[i].x + "; }}\
         e: /type definition.*NoSuchType/ },
       { s: "path /x { unsupported() { return true; } }",
         w: /unsupported method/i },
+      { s: "path /x { validate() { return this.test(123); } }",
+        e: /convert value/i },
+      { s: "path /x { validate() { return this.test('a/'); } }",
+        e: /convert value/i },
     ];
 
     function testIt(t) {
@@ -337,6 +370,7 @@ path /x { read() { return " + tests[i].x + "; }}\
         if (!t.e) {
           throw e;
         }
+        lastError = lastError || e.message;
         assert.match(lastError, t.e);
         return;
       }

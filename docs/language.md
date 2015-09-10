@@ -42,6 +42,10 @@ A path statement provides access and validation rules for data stored at a given
       write() {
         return <true-iff-writing-this-location-is-allowed>;
       }
+
+      validate() {
+        return <additional-validation-of-path-keys-here>
+      }
     }
 
 If a Type is not given, `Any` is assumed.
@@ -77,12 +81,36 @@ If a BaseType is not given, `Object` is assumed if the TypeName has child proper
 
 Built in base types are also similar to JavaScript types:
 
-    String  -
-    Number  - integer or floating point
-    Boolean - true or false
+    String  - Stings
+    Number  - Integer or floating point
+    Boolean - Values true or false
     Object  - A structured object containing named properties.
-    Null    - null (absence of a value, or deleted)
+    Null    - Value null (same as absence of a value, or deleted)
     Any     - Matches any of the other types.
+    Array   - Sequence of values.
+
+## String methods
+
+The following methods can be used on string (static valued or strings stored
+in the database):
+
+    `s.length`            - Number of characters in the string.
+    `s.includes(sub)`     - Returns true iff `sub` is a substring of `s`.
+    `s.startsWith(sub)`   - Returns true iff `sub` is a prefix of `s`.
+    `s.endsWith(sub)`     - Returns true iff `sub` is a suffix of `s`.
+    `s.replace(old, new)` - Replaces all occurancs of `ole` ins `s` with `new`.
+    `s.toLowerCase()`     - Returns an all lower case version of `s`.
+    `s.toUpperCase()`     - Returns an all upper case version of `s`.
+    `s.test(regexp)`      - Returns true iff the string matches the regular expression.
+                            Note that, in Bolt, the regexp is quoted inside a string value
+                            (e.g., '/test/i').
+
+[Regular Expression Syntax](https://www.firebase.com/docs/security/api/string/matches.html)
+
+## Location reference methods
+
+    `ref.parent()`        - Returns the database location of the parent of the given
+                            location (e.g., ref.prop.parent() is the same as ref).
 
 # Global variables
 
@@ -112,3 +140,54 @@ using the . and [] operators (just as in JavaScript Object references).
     this.prop  - Refers to property of the current location named 'prop'.
     this[prop] - Refers to a property of the current location named with the value of the
                 (string) variable, prop.
+
+# Apendix A. Firebase Expressions and their Bolt equivalents.
+
+The special [Security and Rules API](https://www.firebase.com/docs/security/api/) in Firebase is
+not identical in Bolt.  This section demonstrates how equivalent behavior is achieved in Bolt.
+
+## Rules
+
+API | Bolt Equivalent
+----| ---------------
+".read" : "exp" | read() { return exp; }
+".write" : "exp" | write() { return exp; }
+".validate": "exp" | validate() { return exp; }
+".indexOn": [ "prop", ...] | index() { return [ "prop", ... ] }
+
+## Variables
+
+API | Bolt Equivalent
+----| ---------------
+auth | auth
+$location | $location (in path statement)
+now | NYI
+data | data
+newData | this
+
+## RuleDataSnapshot Methods
+
+API | Bolt Equivalent
+----| ---------------
+ref.val() | Implicit.  Just use ref in an expression (e.g., ref > 0).
+ref.child('prop') | ref.prop
+ref.child(exp) | ref[exp]
+ref.parent() | ref.parent()
+ref.hasChild(prop) | ref.prop != null
+ref.hasChildren | implicit using "path is Type"
+ref.exists | ref != null
+ref.getPriority | Not Supported
+ref.isNumber | prop: Number
+ref.isString | prop: String
+ref.isBoolean | prop: Boolean
+
+## String Methods
+
+API | Bolt Equivalent
+----| ---------------
+s.length | s.length
+s.contains(sub) | s.includes(sub)
+s.beginsWith(sub) | s.startsWith(sub)
+s.endsWith(sub) | s.endsWith(sub)
+s.replace(old, new) | s.replace(old, new)
+s.matches(/reg/) | s.test('/reg/')

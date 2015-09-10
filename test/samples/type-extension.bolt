@@ -1,0 +1,22 @@
+type PositiveInteger extends Number {
+  validate() { return this >= 0; }
+}
+
+type UnixTimestamp extends PositiveInteger {}
+
+type NonEmptyString extends String {
+  validate() { return this.length > 0; }
+}
+
+type URL extends String {
+  validate() { return this.startsWith('http'); }
+}
+
+type Test {
+  time: UnixTimestamp
+  name: NonEmptyString
+  url: URL
+}
+
+
+path / is Test {}
