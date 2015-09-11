@@ -238,6 +238,59 @@ suite("Rules Parser Tests", function() {
     });
   });
 
+  suite("Method variations", function() {
+    var tests = [
+      "validate() { return this; }",
+      "validate() { return this  }",
+      "validate() { this; }",
+      "validate() { this }",
+      "validate() = this;",
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse("type T {" + data + "}");
+      assert.deepEqual(result.schema.T.methods.validate.body,
+                       ast.variable('this'));
+    });
+  });
+
+  suite("Path variations", function() {
+    var tests = [
+      "path /p/c {}",
+      "/p/c {}",
+      "/p/c;",
+      "path /p/c is String {}",
+      "path /p/c is String;",
+      "/p/c is String {}",
+      "/p/c is String;",
+      "/p/c { validate() { return true; } }",
+      "/p/c { validate() { return true } }",
+      "/p/c { validate() { true } }",
+      "/p/c { validate() = true; }",
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      assert.deepEqual(result.paths['/p/c'].parts,
+                       ['p', 'c']);
+    });
+  });
+
+  suite("Type variations", function() {
+    var tests = [
+      "type T extends Any {}",
+      "type T extends Any;",
+      "type T {}",
+      "type T;"
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      assert.deepEqual(result.schema.T,
+                       { derivedFrom: 'Any', methods: {}, properties: {} });
+    });
+  });
+
   suite("Sample files", function() {
     var files = [
       "all_access",

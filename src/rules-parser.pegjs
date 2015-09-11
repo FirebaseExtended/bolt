@@ -81,39 +81,34 @@ Rule = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
      / p:Path { symbols.registerPath(p.parts, p.isType, p.methods); }
      / s:Schema { symbols.registerSchema(s.name, s.derivedFrom, s.properties, s.methods); }
 
-Function = "function" __ name:Identifier params:ParameterList "{" _ body:FunctionBody _ "}" _ {
+Function = ("function" __)? name:Identifier params:ParameterList _ body:FunctionBody {
   return {
     name: ensureLowerCase(name, "Function names"),
     params: params,
     body: body
   }
 }
-  / name:Identifier params:ParameterList _ "=" _ body:Expression  _ ";" _ {
-    return {
-      name: ensureLowerCase(name, "Function names"),
-      params: params,
-      body: body
-    };
-  }
 
-Path = "path" __ path:PathExpression isType:("is" __ id:Identifier _ { return id; })?
-  "{" _ methods:Methods "}" {
-    var result = {
-      parts: path,
-      methods: methods
-    };
-    if (isType) {
-      result.isType = ensureUpperCase(isType, "Type names");
-    }
-    return result;
-  }
+Path = ("path" __)? path:PathExpression isType:("is" __ id:Identifier _ { return id; })?
+  methods:("{" _ methods:Methods "}" { return methods; }
+           / ";" { return {}; } )? _ {
+   var result = {
+     parts: path,
+     methods: methods
+   };
+   if (isType) {
+     result.isType = ensureUpperCase(isType, "Type names");
+   }
+   return result;
+ }
 
 PathExpression "path" =  parts:("/" part:Identifier { return part; })+ _ { return parts; }
   / "/" _ { return []; }
 
 Schema =
-  "type" __ type:Identifier __ ext:("extends" __ id:Identifier _ { return id; })?
-  "{" _ properties:Properties? "}" {
+  "type" __ type:Identifier ext:(__ "extends" __ id:Identifier _ { return id; })?
+  properties:(_ "{" _ properties:Properties? "}" { return properties; }
+              / _ ";" { return { properties: {}, methods: {} }; }) {
     var result = {
       name: ensureUpperCase(type, "Type names"),
       methods: {},
@@ -159,19 +154,17 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
   return result;
 }
 
-PropertyDefinition
-  = name:Identifier _ ":" _ types:TypeExpression {
-      return {
-        name:  name,
-        types: types
-      };
-    }
+PropertyDefinition = name:Identifier _ ":" _ types:TypeExpression {
+  return {
+    name:  name,
+    types: types
+  }; }
   / Method
 
-Methods = all:(Method _)* {
+Methods = all:(Method)* _ {
   var result = {};
   for (var i = 0; i < all.length; i++) {
-    var method = all[i][0];
+    var method = all[i];
     if (method.name in result) {
       error("Duplicate method name: " + method.name);
     }
@@ -180,18 +173,16 @@ Methods = all:(Method _)* {
   return result;
 }
 
-Method = name:Identifier params:ParameterList
-    "{" _ body:FunctionBody _ "}" {
-      return {
-        name:  ensureLowerCase(name, "Method names"),
-        params: params,
-        body:  body
-      };
+Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
+  return {
+    name:  ensureLowerCase(name, "Method names"),
+    params: params,
+    body:  body
+  };
 }
 
-FunctionBody = ("return" _)? exp:Expression _ ";"? _ {
-  return exp;
-}
+FunctionBody = "{" _ ("return" _)? exp:Expression _ ";"? _ "}" _ { return exp; }
+  / "=" _ exp:Expression _ ";" _ { return exp; }
 
 ParameterList = "(" _ ")" _ {
     return [];
