@@ -1,4 +1,4 @@
-# Firebase Security and Modeling Language
+rior# Firebase Security and Modeling Language
 
 This experimental Security and Rules language is meant to be used a
 convenient front-end to the existing Firebase JSON-based rules language.
@@ -121,11 +121,16 @@ You can also use:
 
 # Functions
 
-Functions must be simple return expressions with zero or more parameters.
+Functions must be simple return expressions with zero or more parameters.  All of the following
+examples are identical and can be used interchangably.
 
     function myFunction(arg1, arg2) {
       return arg1 == arg2.value;
     }
+
+    function myFunction(arg1, arg2) { arg1 == arg2.value }
+
+    myFunction(arg1, arg2) = arg1 == arg2.value;
 
 # Expressions
 
