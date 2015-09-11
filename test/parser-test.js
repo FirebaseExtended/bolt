@@ -222,6 +222,22 @@ suite("Rules Parser Tests", function() {
     });
   });
 
+  suite("Function variations", function() {
+    var tests = [
+      "function f(x) { return x + 1; }",
+      "function f(x) { return x + 1 }",
+      "function f(x) { x + 1; }",
+      "function f(x) { x + 1 }",
+      "f(x) = x + 1;",
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      assert.deepEqual(result.functions.f.body,
+                       ast.add(ast.variable('x'), ast.number(1)));
+    });
+  });
+
   suite("Sample files", function() {
     var files = [
       "all_access",

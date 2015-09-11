@@ -81,9 +81,14 @@ Rule = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
      / p:Path { symbols.registerPath(p.parts, p.isType, p.methods); }
      / s:Schema { symbols.registerSchema(s.name, s.derivedFrom, s.properties, s.methods); }
 
-Function = "function" __ name:Identifier params:ParameterList "{" _
-  body:FunctionBody _
-  "}" {
+Function = "function" __ name:Identifier params:ParameterList "{" _ body:FunctionBody _ "}" _ {
+  return {
+    name: ensureLowerCase(name, "Function names"),
+    params: params,
+    body: body
+  }
+}
+  / name:Identifier params:ParameterList _ "=" _ body:Expression  _ ";" _ {
     return {
       name: ensureLowerCase(name, "Function names"),
       params: params,
@@ -184,7 +189,7 @@ Method = name:Identifier params:ParameterList
       };
 }
 
-FunctionBody = "return" _ exp:Expression _ ";" {
+FunctionBody = ("return" _)? exp:Expression _ ";"? _ {
   return exp;
 }
 

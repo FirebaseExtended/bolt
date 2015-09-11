@@ -64,35 +64,13 @@ path /permissions/$key is Permission {
   // No read() rule neeeded since this is only used in hasPermission()
 }
 
-function isLoggedIn() {
-  return auth != null;
-}
+isLoggedIn() = auth != null;
+isCurrentUser(userid) = currentUser() == userid;
+currentUser() = auth.uid;
+fullId(userid, ownerid, docid) = userid + '|' + ownerid + '|' + docid;
+hasPermission(ownerid, docid, p) = root.permissions[fullId(currentUser(), ownerid, docid)][p];
+docIsOwnedBy(docid, userid) = root.documents[userid][docid] != null;
+userExists(userid) = root.users[userid] != null;
 
-function isCurrentUser(userid) {
-  return currentUser() == userid;
-}
-
-function currentUser() {
-  return auth.uid;
-}
-
-function fullId(userid, ownerid, docid) {
-  return userid + '|' + ownerid + '|' + docid;
-}
-
-function hasPermission(ownerid, docid, p) {
-  return root.permissions[fullId(currentUser(), ownerid, docid)][p];
-}
-
-function docIsOwnedBy(docid, userid) {
-  return root.documents[userid][docid] != null;
-}
-
-function isISODate(date) {
-  // TODO: Use .match instead - needs specific translator for string->regexp in language.
-  return beginsWith(date, '2015-');
-}
-
-function userExists(userid) {
-  return root.users[userid] != null;
-}
+// TODO: Use .match instead - needs specific translator for string->regexp in language.
+isISODate(date) = beginsWith(date, '2015-');
