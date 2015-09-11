@@ -31,7 +31,7 @@ process.stdin.on('end', function() {
 
   try {
     symbols = bolt.parse(input);
-  } catch(e) {
+  } catch (e) {
     console.error('bolt:' + e.line + ':' + e.column + ': ' + e.message);
     process.exit(1);
   }
@@ -39,7 +39,7 @@ process.stdin.on('end', function() {
   try {
     var gen = new bolt.Generator(symbols);
     rules = gen.generateRules();
-  } catch(e) {
+  } catch (e) {
     console.error('bolt: ' + e.message);
     process.exit(2);
   }

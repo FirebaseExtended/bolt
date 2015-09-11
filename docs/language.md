@@ -34,7 +34,7 @@ A bolt file can also contain JavaScript-style comments:
 
 A path statement provides access and validation rules for data stored at a given path.
 
-    path /path/to/data [is Type] {
+    [path] /path/to/data [is Type] {
       read() {
         return <true-iff-reading-this-location-is-allowed>;
       }
@@ -58,6 +58,14 @@ within an expression as a variable parameter.
         return $wildcard < "Z" && $id > 7;
       }
     }
+
+If a path has no body the following form can be used:
+
+    path /top/$wildcard/$id is Type;
+
+or
+
+    /top/$wildcard/$id is Type;
 
 In expressions, the value of `this` is either the current value to `read()` or the new value to `write()`.
 
@@ -131,6 +139,13 @@ examples are identical and can be used interchangably.
     function myFunction(arg1, arg2) { arg1 == arg2.value }
 
     myFunction(arg1, arg2) = arg1 == arg2.value;
+
+Similarly, methods in path and type statements can use the abbreviated functional form (all
+these are equivalent):
+
+    write() { return this.user == auth.uid; }
+    write() { this.user == auth.uid }
+    write() = this.user == auth.uid;
 
 # Expressions
 
