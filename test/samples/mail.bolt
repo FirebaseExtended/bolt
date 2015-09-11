@@ -21,8 +21,8 @@ path /users/$userid/inbox/$msg is Message {
   // Anyone can send a message to anybody by posting in the users inbox, as long as they have
   // the correct sender field.
   write() {
-    return isCreating(data) ||
-      isUpdating(data) && isCurrentUser($userid);
+    return isCreating(this) ||
+      isUpdating(this) && isCurrentUser($userid);
   }
 
 }
@@ -32,17 +32,17 @@ path /users/$userid/outbox/$msg is Message {
   read() { return isCurrentUser($userid); }
 
   write() {
-    return isCreating(data) ||
-      isUpdating(data) && isCurrentUser($userid);
+    return isCreating(this) ||
+      isUpdating(this) && isCurrentUser($userid);
   }
 }
 
 function isCreating(old) {
-  return old == null;
+  return prior(old) == null;
 }
 
 function isUpdating(old) {
-  return old != null;
+  return prior(old) != null;
 }
 
 function isCurrentUser(userid) {

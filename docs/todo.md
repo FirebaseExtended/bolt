@@ -2,13 +2,13 @@
 
 # Language changes
 
-- Support for match function (and register all current FB server functions and
+X Support for match function (and register all current FB server functions and
   methods).
 - Errors: esp undefined functions and variable references.
 - Nested path and functions (scoped).
-- Use Javascript names for types (String, Boolean, Number, Object).
+X Use Javascript names for types (String, Boolean, Number, Object).
 - Add command line handling for firebase-bolt.
-- How to mudularly include an external rule set.
+- How to mudularly include an external rule set (import rules [as alias] [at /path])
 - Generate (Java) language stubs based on schema (cf bolt_compiler experiment).
 - Handle extensible.
   - Use hasChildren in .validate along with sibling .validate rules for each
@@ -28,7 +28,7 @@ X Switch to Mocha/Chai
   X Import firebase realtime lib (not needed?)
     - Add promise-based get/set to lib/firebase-promises
   - Save each test under /bolt-simulator/$filename/$date
-  - asAdmin - for db setup.
+  x asAdmin - for db setup.
   X asynch execution of test.
   X Setup auth-secrets from prompts (CLI)
 - Concept of "coverage" for behavioral tests?  (Like ensure every property that
@@ -41,7 +41,9 @@ X Switch to Mocha/Chai
   not throwing exceptions as the source seems to implied.  Can't figure out how
   to run non-minified version.
   username, provider would be nice to set for simulator....
+  (improper use of token generator - options vs properties).
 - The admin: true option does not seem to work in the tokenGenerator.
+  (improper use of token generator - options vs properties).
 
 # Repo structure and OSS
 
@@ -49,7 +51,7 @@ X Apache license.
 X Contributing
 X check-oss-release script
 X Add license to all source files.
-- Add GoogleBot for CLA checks (Rob help)
+X Add GoogleBot for CLA checks (Rob help)
 X Remove namespace.js.
 - Cleanup browserify rules - ugly (prefer glob-ing test files and running as a merged stream).
 - Setup catapult (Jacob help)

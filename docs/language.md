@@ -116,7 +116,6 @@ in the database):
 
 You can also use:
 
-    data - The value at a location BEFORE a write is done.
     root - The root of your Firebase database.
 
 # Functions
@@ -134,12 +133,21 @@ Rule expressions are a subset of JavaScript expressions, and include:
   - Unary operators: - (minus), ! (boolean negation)
   - Binary operators: +, -, *, /, %
 
-References to data locations (starting with `this`, `data`, or `root`) can be further qualified
+References to data locations (starting with `this` or `root`) can be further qualified
 using the . and [] operators (just as in JavaScript Object references).
 
     this.prop  - Refers to property of the current location named 'prop'.
     this[prop] - Refers to a property of the current location named with the value of the
                 (string) variable, prop.
+
+To reference the previous value of a property (in a write() or validate() rule), wrap
+the reference in a `prior()` function:
+
+    prior(this) - Value of `this` before the write is completed.
+    prior(this.prop) - Value of a property before the write is completed.
+
+You can also use `prior()` to wrap any expressions (including function calls) that
+use `this`.
 
 # Apendix A. Firebase Expressions and their Bolt equivalents.
 
@@ -162,8 +170,8 @@ API | Bolt Equivalent
 auth | auth
 $location | $location (in path statement)
 now | NYI
-data | data
-newData | this
+data | prior(this)
+newData | this (in validate() and write() rules)
 
 ## RuleDataSnapshot Methods
 
