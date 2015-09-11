@@ -1,4 +1,4 @@
-rior# Firebase Security and Modeling Language
+# Firebase Security and Modeling Language
 
 This experimental Security and Rules language is meant to be used a
 convenient front-end to the existing Firebase JSON-based rules language.
