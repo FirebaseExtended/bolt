@@ -1,0 +1,5 @@
+{
+  "rules": {
+    ".validate": "(newData.val() + 2) * 3"
+  }
+}

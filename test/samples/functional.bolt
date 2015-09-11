@@ -1,0 +1,4 @@
+function f(g, x) { return g(x)*3; }
+function y(x) { return x + 2; }
+
+path / { validate() { return f(y,this); }}

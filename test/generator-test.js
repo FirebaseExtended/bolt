@@ -55,7 +55,12 @@ suite("Rules Generator Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access", "userdoc", "mail", "type-extension"];
+    var files = ["all_access",
+                 "userdoc",
+                 "mail",
+                 "type-extension",
+                 "functional"
+                ];
 
     helper.dataDrivenTest(files, function(filename) {
       filename = 'test/samples/' + filename + '.' + bolt.FILE_EXTENSION;
