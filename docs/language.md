@@ -140,7 +140,7 @@ examples are identical and can be used interchangably.
 
     myFunction(arg1, arg2) = arg1 == arg2.value;
 
-Similarly, methods in path and type statement can use the abbreviated functional form (all
+Similarly, methods in path and type statements can use the abbreviated functional form (all
 these are equivalent):
 
     write() { return this.user == auth.uid; }
