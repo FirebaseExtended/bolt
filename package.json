@@ -58,9 +58,13 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {
-    "firebase-token-generator": "^2.0.0",
-    "node-uuid": "^1.4.3",
     "chai": "^3.2.0",
-    "promise": "^7.0.4"
+    "firebase-token-generator": "^2.0.0",
+    "gulp-sourcemaps": "^1.5.2",
+    "gulp-typescript": "^2.8.3",
+    "merge2": "^0.3.6",
+    "node-uuid": "^1.4.3",
+    "promise": "^7.0.4",
+    "source-map-support": "^0.3.2"
   }
 }

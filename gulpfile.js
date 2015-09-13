@@ -32,16 +32,56 @@ var JS_SOURCES = ['gulpfile.js',
                   'bin/firebase-bolt',
                   'test/*.js'];
 
+
+var ts = require('gulp-typescript');
+var merge = require('merge2');
+var sourcemaps = require('gulp-sourcemaps');
+
+
 var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js'];
 
+var TS_SETTINGS = {
+    sortOutput: true,
+    declarationFiles: true,
+    noExternalResolve: false,
+    module: 'commonjs'
+};
+
+var tsProject = ts.createProject(TS_SETTINGS);
+var tsTestProject = ts.createProject(TS_SETTINGS);
+
+/*
+TODO: TS output does not match out linting style
+REPLACE WITH TS EQUIVELENT ON TS SRCes
 gulp.task('lint', function() {
   return gulp.src(JS_SOURCES.concat(['!lib/rules-parser.js']))
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
 });
+*/
 
-gulp.task('build', ['build-peg', 'browserify-bolt']);
+gulp.task('compile', ['build-peg'], function() {
+  var tsResult = gulp.src('lib/*.ts')
+                    .pipe(sourcemaps.init())
+                    .pipe(ts(tsProject));
+    return merge([ // Merge the two output streams, so this task is finished when the IO of both operations are done.
+        tsResult.dts.pipe(gulp.dest('dist/ts/')),
+        tsResult.js
+            .pipe(sourcemaps.write())
+            .pipe(gulp.dest('lib/'))
+    ]);
+});
+
+gulp.task('compile-test', ['compile'], function() {
+  return gulp.src('test/*.ts')
+    .pipe(sourcemaps.init())
+    .pipe(ts(tsTestProject))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest('test/'));   
+});
+
+gulp.task('build', ['compile', 'compile-test', 'build-peg', 'browserify-bolt']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
@@ -49,7 +89,7 @@ gulp.task('build-peg', function() {
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify-bolt', ['build-peg'], function() {
+gulp.task('browserify-bolt', ['compile', 'build-peg'], function() {
   return browserifyToDist('lib/bolt.js', { standalone: 'bolt' });
 });
 
@@ -71,13 +111,19 @@ gulp.task('browserify', ['browserify-bolt',
                          'browserify-generator-test',
                          'browserify-mail-test']);
 
+
+
 // Runs the Mocha test suite
 gulp.task('test', ['build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
 
-gulp.task('default', ['lint', 'build', 'test']);
+gulp.task('default', ['build', 'test']);
+
+gulp.task('watch', ['default'], function() {
+    gulp.watch(['lib/*.ts', 'test/*.ts'], ['default']);
+});
 
 function browserifyToDist(entry, opts) {
   // Browserify options include:

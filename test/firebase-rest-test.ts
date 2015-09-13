@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/// <reference path="../types/node.d.ts" />
+require('source-map-support').install();
 "use strict";
 
 //var assert = require('chai').assert;

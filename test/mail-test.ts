@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/// <reference path="../types/node.d.ts" />
+require('source-map-support').install();
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var rulesSuite = bolt.rulesSuite;
 var secrets = require('./auth-secrets');
