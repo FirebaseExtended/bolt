@@ -1,5 +1,17 @@
 {
   "rules": {
-    ".validate": "newData.child('time').isNumber() && newData.child('time').val() >= 0 && (newData.child('name').isString() && newData.child('name').val().length > 0) && (newData.child('url').isString() && newData.child('url').val().beginsWith('http'))"
+    ".validate": "newData.hasChildren(['time', 'name', 'url'])",
+    "time": {
+      ".validate": "newData.isNumber() && newData.val() >= 0"
+    },
+    "name": {
+      ".validate": "newData.isString() && newData.val().length > 0"
+    },
+    "url": {
+      ".validate": "newData.isString() && newData.val().beginsWith('http')"
+    },
+    "$other": {
+      ".validate": "false"
+    }
   }
 }

@@ -89,7 +89,7 @@ Function = ("function" __)? name:Identifier params:ParameterList _ body:Function
   }
 }
 
-Path = ("path" __)? path:PathExpression isType:("is" __ id:Identifier _ { return id; })?
+Path = ("path" __)? path:PathExpression isType:("is" __ id:SingleType _ { return id; })?
   methods:("{" _ methods:Methods "}" { return methods; }
            / ";" { return {}; } )? _ {
    var result = {
@@ -97,7 +97,7 @@ Path = ("path" __)? path:PathExpression isType:("is" __ id:Identifier _ { return
      methods: methods
    };
    if (isType) {
-     result.isType = ensureUpperCase(isType, "Type names");
+     result.isType = isType;
    }
    return result;
  }
@@ -106,7 +106,7 @@ PathExpression "path" =  parts:("/" part:Identifier { return part; })+ _ { retur
   / "/" _ { return []; }
 
 Schema =
-  "type" __ type:Identifier ext:(__ "extends" __ id:Identifier _ { return id; })?
+  "type" __ type:Identifier ext:(__ "extends" __ type:SingleType  _ { return type; })?
   properties:(_ "{" _ properties:Properties? "}" { return properties; }
               / _ ";" { return { properties: {}, methods: {} }; }) {
     var result = {
@@ -119,7 +119,7 @@ Schema =
       result.properties = properties.properties;
     }
     if (ext) {
-      result.derivedFrom = ensureUpperCase(ext, "Type names");
+      result.derivedFrom = ext;
     }
     return result;
 }
@@ -132,13 +132,11 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
 
   function addPart(part) {
     // TODO: Make sure methods and properties don't shadow each other.
-    if ('types' in part) {
+    if ('type' in part) {
       if (result.properties[part.name]) {
         error("Duplicate property name: " + part.name);
       }
-      result.properties[part.name] = {
-        types: part.types
-      };
+      result.properties[part.name] = part.type;
     } else {
       if (result.methods[part.name]) {
         error("Duplicate method name: " + part.name);
@@ -154,11 +152,12 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
   return result;
 }
 
-PropertyDefinition = name:Identifier _ ":" _ types:TypeExpression {
-  return {
-    name:  name,
-    types: types
-  }; }
+PropertyDefinition = name:Identifier _ ":" _ type:TypeExpression {
+      return {
+        name:  name,
+        type: type
+      };
+    }
   / Method
 
 Methods = all:(Method)* _ {
@@ -188,23 +187,43 @@ ParameterList = "(" _ ")" _ {
     return [];
   }
   / "(" _ head:Identifier tail:(_ "," _ Identifier)* _ ")" _ {
-    var result = [head];
+    var result = [ensureLowerCase(head, "Function arguments")];
     for (var i = 0; i < tail.length; i++) {
       result.push(ensureLowerCase(tail[i][3], "Function arguments"));
     }
     return result;
 }
 
-// TODO: Allow for union types, e.g., Type1 | Type2
-// TODO: Allow for generic types, e.g., Type<A, B>
-TypeExpression "type" =
-  head:Identifier tail:(_ "|" _ id:Identifier { return id; } )* _ {
-    var result = [ensureUpperCase(head, "Type names")];
+TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; } )* _ {
+  var result = [head];
+  if (tail.length == 0) {
+    return head;
+  }
+  for (var i = 0; i < tail.length; i++) {
+    result.push(tail[i]);
+  }
+  return ast.unionType(result);
+}
+
+// Type, Type[], or Type<X, ... >
+// Type[] === Map<String, Type>
+SingleType = type:Identifier opt:(isMap:("\[\]") / "<" _ types:TypeList _ ">")? _ {
+  if (!opt) {
+    return ast.typeType(type);
+  }
+  if (opt.isMap) {
+    return ast.genericType('Map', ['String', type]);
+  }
+  return ast.genericType(type, opt.types);
+}
+
+TypeList = head:SingleType tail:(_ "," _ type:SingleType { return type; })* _ {
+  var result = [ensureUpperCase(head)];
     for (var i = 0; i < tail.length; i++) {
       result.push(ensureUpperCase(tail[i], "Type names"));
     }
     return result;
-  }
+}
 
 
 // ======================================

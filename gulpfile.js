@@ -72,12 +72,12 @@ gulp.task('browserify', ['browserify-bolt',
                          'browserify-mail-test']);
 
 // Runs the Mocha test suite
-gulp.task('test', ['build'], function() {
+gulp.task('test', ['lint', 'build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
 
-gulp.task('default', ['lint', 'build', 'test']);
+gulp.task('default', ['test']);
 
 function browserifyToDist(entry, opts) {
   // Browserify options include:

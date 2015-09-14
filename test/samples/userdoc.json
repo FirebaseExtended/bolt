@@ -16,7 +16,19 @@
         ".read": "auth.uid == $ownerid",
         ".write": "auth.uid == $ownerid",
         "$docid": {
-          ".validate": "newData.child('created').isString() && newData.child('modified').isString() && newData.child('title').isString()",
+          ".validate": "newData.hasChildren(['created', 'modified', 'title'])",
+          "created": {
+            ".validate": "newData.isString()"
+          },
+          "modified": {
+            ".validate": "newData.isString()"
+          },
+          "title": {
+            ".validate": "newData.isString()"
+          },
+          "$other": {
+            ".validate": "false"
+          },
           ".read": "root.child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('read').val() == true",
           ".write": "root.child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('write').val() == true"
         }
@@ -30,7 +42,19 @@
         "docid"
       ],
       "$key": {
-        ".validate": "newData.child('owner').isString() && newData.child('grantee').isString() && newData.child('docid').isString()",
+        ".validate": "newData.hasChildren(['owner', 'grantee', 'docid'])",
+        "owner": {
+          ".validate": "newData.isString()"
+        },
+        "grantee": {
+          ".validate": "newData.isString()"
+        },
+        "docid": {
+          ".validate": "newData.isString()"
+        },
+        "$other": {
+          ".validate": "false"
+        },
         ".write": "newData.val() == null && auth.uid == data.child('owner').val() || newData.val() != null && $key == newData.child('grantee').val() + '|' + newData.child('owner').val() + '|' + newData.child('docid').val() && auth.uid == newData.child('owner').val() && root.child('documents').child(auth.uid).child(newData.child('docid').val()).val() != null"
       }
     }
