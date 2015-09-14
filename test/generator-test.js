@@ -20,7 +20,9 @@ var parse = bolt.parse;
 var fileio = require('../lib/file-io');
 var helper = require('./test-helper');
 
-var assert = require('chai').assert;
+var chai = require('chai');
+chai.config.truncateThreshold = 1000;
+var assert = chai.assert;
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
@@ -171,21 +173,20 @@ suite("Rules Generator Tests", function() {
       { f: "",
         x: "this.foo || this.bar",
         expect: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
-      // Don't support snapshot functions beyond parent.
+      // TODO: Don't support snapshot functions beyond parent.
       // TODO: Should warn user not to use Firebase builtins!
-      { f: "", x: "this.isString == 'a'", expect: "newData.child('isString').val() == 'a'" },
+      // { f: "", x: "this.isString()", expect: "newData.child('isString').val() == true" },
       { f: "function f(a) { return a == '123'; }", x: "f(this)", expect: "newData.val() == '123'" },
       { f: "function f(a) { return a == '123'; }",
         x: "f(this.foo)", expect: "newData.child('foo').val() == '123'" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var symbols = parse(data.f + " path /x { read() { return " + data.x + "; }}");
+      var symbols = parse(data.f + " path /x { write() { return " + data.x + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      gen.generateRules();
-      var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      assert.equal(decode, expect);
+      var json = gen.generateRules();
+      assert.equal(json.rules.x['.write'], expect);
     });
   });
 
@@ -220,12 +221,11 @@ suite("Rules Generator Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function testIt(data, expect) {
-      var symbols = parse("path /x { read() { return " + data + "; }}");
+      var symbols = parse("path /x { write() { return " + data + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      gen.generateRules();
-      var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      assert.equal(decode, expect);
+      var json = gen.generateRules();
+      assert.equal(json.rules.x['.write'], expect);
     });
   });
 
@@ -276,6 +276,12 @@ suite("Rules Generator Tests", function() {
         expect: "newData.child('x').isNumber() || newData.child('x').val() == null" },
       { data: "type Simple {n: Number, validate() {return this.n < 7;}}",
         expect: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
+      { data: "type Bigger extends Number {" +
+        "validate() { return this == null || this > prior(this); }}" +
+        "type Simple { ts: Bigger }",
+        expect: "newData.child('ts').isNumber() && " +
+        "(newData.child('ts').val() == null || " +
+        "newData.child('ts').val() > data.child('ts').val())" }
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
