@@ -207,14 +207,8 @@ TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; }
 
 // Type, Type[], or Type<X, ... >
 // Type[] === Map<String, Type>
-SingleType = type:Identifier opt:(isMap:("\[\]") / "<" _ types:TypeList _ ">")? _ {
-  if (!opt) {
-    return ast.typeType(type);
-  }
-  if (opt.isMap) {
-    return ast.genericType('Map', ['String', type]);
-  }
-  return ast.genericType(type, opt.types);
+SingleType = type:Identifier _ {
+  return ast.typeType(type);
 }
 
 TypeList = head:SingleType tail:(_ "," _ type:SingleType { return type; })* _ {

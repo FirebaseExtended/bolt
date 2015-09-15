@@ -300,7 +300,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access", "userdoc", "mail", "children", "children-by-nesting"];
+    var files = ["all_access", "userdoc", "mail", "children"];
 
     helper.dataDrivenTest(files, function(data) {
       var filename = 'test/samples/' + data + '.' + BOLT_EXTENSION;
