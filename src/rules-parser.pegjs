@@ -211,15 +211,6 @@ SingleType = type:Identifier _ {
   return ast.typeType(type);
 }
 
-TypeList = head:SingleType tail:(_ "," _ type:SingleType { return type; })* _ {
-  var result = [ensureUpperCase(head)];
-    for (var i = 0; i < tail.length; i++) {
-      result.push(ensureUpperCase(tail[i], "Type names"));
-    }
-    return result;
-}
-
-
 // ======================================
 // Expressions
 // ======================================
