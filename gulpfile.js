@@ -67,10 +67,21 @@ gulp.task('browserify-mail-test', function() {
   return browserifyToDist('test/mail-test', { exclude: 'bolt' });
 });
 
+gulp.task('browserify-ast-test', function() {
+  return browserifyToDist('test/ast-test.js', { exclude: 'bolt' });
+});
+
+gulp.task('browserify-util-test', function() {
+  return browserifyToDist('test/util-test.js', { exclude: 'bolt' });
+});
+
 gulp.task('browserify', ['browserify-bolt',
                          'browserify-parser-test',
                          'browserify-generator-test',
-                         'browserify-mail-test']);
+                         'browserify-mail-test',
+                         'browserify-util-test',
+                         'browserify-ast-test',
+                        ]);
 
 // Runs the Mocha test suite
 gulp.task('test', ['lint', 'build'], function() {
