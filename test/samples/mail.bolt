@@ -13,17 +13,13 @@
 // Functionally similar rules to the corresponding rules defined in the Blaze Compiler:
 // https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
 
-type ImmutableString extends String {
-  validate() = isNew(this);
-}
-
 type Message {
-  from: ImmutableString,
-  to: ImmutableString,
-  message: ImmutableString,
+  from: String,
+  to: String,
+  message: String,
 
   validate() {
-    return isCurrentUser(this.from);
+    return isNew(this) && isCurrentUser(this.from);
   }
 }
 
@@ -39,15 +35,9 @@ path /users/$userid/outbox/$msg is Message {
   write() = isCurrentUser($userid);
 }
 
-function isNew(ref) {
-  return prior(ref) == null;
-}
+isNew(ref) = prior(ref) == null;
 
-function isCurrentUser(userid) {
-  return currentUser() == userid;
-}
+isCurrentUser(userid) = currentUser() == userid;
 
-function currentUser() {
-  // TODO: Use auth.uid - so not require customer token.
-  return auth.username;
-}
+// TODO: Use auth.uid - so not require customer token.
+currentUser() = auth.username;
