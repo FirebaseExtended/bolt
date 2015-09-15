@@ -102,16 +102,16 @@ Built in base types are also similar to JavaScript types:
 The following methods can be used on string (static valued or strings stored
 in the database):
 
-    `s.length`            - Number of characters in the string.
-    `s.includes(sub)`     - Returns true iff `sub` is a substring of `s`.
-    `s.startsWith(sub)`   - Returns true iff `sub` is a prefix of `s`.
-    `s.endsWith(sub)`     - Returns true iff `sub` is a suffix of `s`.
-    `s.replace(old, new)` - Replaces all occurancs of `ole` ins `s` with `new`.
-    `s.toLowerCase()`     - Returns an all lower case version of `s`.
-    `s.toUpperCase()`     - Returns an all upper case version of `s`.
-    `s.test(regexp)`      - Returns true iff the string matches the regular expression.
-                            Note that, in Bolt, the regexp is quoted inside a string value
-                            (e.g., '/test/i').
+    s.length            - Number of characters in the string.
+    s.includes(sub)     - Returns true iff sub is a substring of s.
+    s.startsWith(sub)   - Returns true iff sub is a prefix of s.
+    s.endsWith(sub)     - Returns true iff sub is a suffix of s.
+    s.replace(old, new) - Replaces all occurancs of ole ins s with new.
+    s.toLowerCase()     - Returns an all lower case version of s.
+    s.toUpperCase()     - Returns an all upper case version of s.
+    s.test(regexp)      - Returns true iff the string matches the regular expression.
+                          Note that, in Bolt, the regexp is quoted inside a string value
+                          (e.g., '/test/i').
 
 [Regular Expression Syntax](https://www.firebase.com/docs/security/api/string/matches.html)
 
@@ -125,6 +125,9 @@ in the database):
 You can also use:
 
     root - The root of your Firebase database.
+    auth - The current auth state (if auth != null the user is authenticated and his
+           (opaque string) user-id is auth.uid).
+    now -  The (Unix) timestamp of the current time (a Number).
 
 # Functions
 
