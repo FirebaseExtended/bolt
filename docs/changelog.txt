@@ -1,5 +1,5 @@
 feature - Abbreviated functions, methods, and path statements (see docs/language.md for details).
 changed - Output JSON validation functions are now formatted in a property tree instead of a
-          long expression of &&-ed terms.
+          long expression of AND-ed terms.
 fixed - Mail Simulator test now fully functioning.
 feature - Travis Continuous Integration tests now implemented for this project.
