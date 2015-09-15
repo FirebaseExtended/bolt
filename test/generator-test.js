@@ -65,6 +65,7 @@ suite("Rules Generator Tests", function() {
                  "type-extension",
                  "children",
                  "functional",
+                 "user-security",
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
