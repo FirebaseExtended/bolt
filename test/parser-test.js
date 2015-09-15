@@ -178,11 +178,11 @@ suite("Rules Parser Tests", function() {
   suite("Paths", function() {
     var tests = [
       { data: "path / {}",
-        expect: {"/": { parts: [], isType: 'Any', methods: {} }} },
+        expect: {"/": { parts: [], isType: ast.typeType('Any'), methods: {} }} },
       { data: "path /x {}",
-        expect: {"/x": { parts: ['x'], isType: 'Any', methods: {} }} },
+        expect: {"/x": { parts: ['x'], isType: ast.typeType('Any'), methods: {} }} },
       { data: "path /p/$q { write() { return true;  }}",
-        expect: {"/p/$q": { isType: 'Any',
+        expect: {"/p/$q": { isType: ast.typeType('Any'),
                             parts: ['p', '$q'],
                             methods: {write: {params: [], body: ast.boolean(true)}}}} }
     ];
@@ -195,30 +195,38 @@ suite("Rules Parser Tests", function() {
   suite("Schema", function() {
     var tests = [
       { data: "type Foo { a: Number }",
-        expect: { derivedFrom: 'Object',
-                  properties: {a: {types: ['Number']}},
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.typeType('Number')},
                   methods: {}} },
       { data: "type Foo { a: Number, b: String }",
-        expect: { derivedFrom: 'Object',
-                  properties: {a: {types: ['Number']},
-                               b: {types: ['String']}},
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.typeType('Number'),
+                               b: ast.typeType('String')},
                   methods: {}} },
       { data: "type Foo extends Bar {}",
-        expect: { derivedFrom: 'Bar', properties: {}, methods: {}} },
+        expect: { derivedFrom: ast.typeType('Bar'),
+                  properties: {},
+                  methods: {}} },
       { data: "type Foo { a: Number validate() { return true; }}",
-        expect: { derivedFrom: 'Object',
-                  properties: {a: {types: ['Number']}},
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.typeType('Number')},
                   methods: {validate: {params: [],
                                        body: ast.boolean(true)}}} },
       { data: "type Foo { a: Number, validate() { return true; }}",
-        expect: { derivedFrom: 'Object',
-                  properties: {a: {types: ['Number']}},
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.typeType('Number')},
                   methods: {validate: {params: [],
-                                       body: ast.boolean(true)}}} }
+                                       body: ast.boolean(true)}}} },
+      { data: "type Foo { a: Number | String }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.unionType([ast.typeType('Number'),
+                                                 ast.typeType('String')])},
+                  methods: {} }},
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      assert.deepEqual(parse(data).schema.Foo, expect);
+      var result = parse(data).schema.Foo;
+      assert.deepEqual(result, expect);
     });
   });
 
@@ -287,16 +295,12 @@ suite("Rules Parser Tests", function() {
     helper.dataDrivenTest(tests, function(data, expect) {
       var result = parse(data);
       assert.deepEqual(result.schema.T,
-                       { derivedFrom: 'Any', methods: {}, properties: {} });
+                       { derivedFrom: ast.typeType('Any'), methods: {}, properties: {} });
     });
   });
 
   suite("Sample files", function() {
-    var files = [
-      "all_access",
-      "userdoc",
-      "mail"
-    ];
+    var files = ["all_access", "userdoc", "mail", "children"];
 
     helper.dataDrivenTest(files, function(data) {
       var filename = 'test/samples/' + data + '.' + BOLT_EXTENSION;

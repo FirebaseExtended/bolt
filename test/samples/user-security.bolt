@@ -1,0 +1,59 @@
+// user-security.bolt - Chat room example.
+//
+// Design goals:
+//
+// - Any logged in user can get a list of room names.
+// - Room names are read-only
+// - Users can only add/remove themselves to rooms.
+// - Users can go by a different nickname in each room.
+// - Messages can be read by any room member.
+// - Messages can be created by any member.
+// - Messages cannot be modified or deleted.
+// - Messages are signed by user's uid, and timestamped.
+//
+// See https://www.firebase.com/docs/security/guide/user-security.html
+
+path /room_names { read() = auth != null; }
+path /room_names/$room_id is String;
+
+type Nickname extends String {
+  validate() = this.length > 0 && this.length < 20;
+}
+
+type UserID extends String {
+  validate() = isCurrentUser(this);
+}
+
+path /members/$room_id {
+  read() = this[auth.uid] != null;
+}
+
+path /members/$room_id/$user_id is Nickname {
+  write() = isCurrentUser($user_id);
+}
+
+type MessageString extends String {
+  validate() = this.length > 0 && this.length < 50;
+}
+
+type Timestamp extends Number { validate() = this <= now; }
+
+type Message {
+  validate() = isNew(this);
+
+  user: UserID,
+  message: MessageString,
+  timestamp: Timestamp
+}
+
+path /messages/$room_id {
+  read() = root.room_names[$room_id] != null;
+}
+
+path /messages/$room_id/$message_id is Message {
+  write() = root.members[$room_id][auth.uid] != null;
+}
+
+isCurrentUser(id) = auth != null && auth.uid == id;
+
+isNew(ref) = prior(this) == null;

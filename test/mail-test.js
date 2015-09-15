@@ -42,7 +42,6 @@ rulesSuite("Mail", function(test) {
       })
       .fails("Sender cannot overwrite.")
 
-    /* NYI
       .at('/users/bill/inbox/2')
       .write({
         from: 'tom',
@@ -51,7 +50,6 @@ rulesSuite("Mail", function(test) {
         spurious: 'supurious data'
       })
       .fails("No undefined fields.")
-    */
 
       .write({
         from: 'george',
@@ -92,7 +90,6 @@ rulesSuite("Mail", function(test) {
 
       .as('bill')
 
-    /* NYI
       .at('/users/bill/outbox/1/message')
       .write("Bill gets my inheritance.")
       .fails("Sender cannot tamper with outbox message.")
@@ -100,7 +97,6 @@ rulesSuite("Mail", function(test) {
       .at('/users/bill/outbox/1/from')
       .write('bill')
       .fails("Can't do a partial overwrite - even if same data.")
-    */
 
       .as('bill')
       .at('/users/bill/outbox/2')
@@ -111,7 +107,6 @@ rulesSuite("Mail", function(test) {
       })
       .fails("From field must be correct.")
 
-    /* NYI
       .write({
         from: 'bill',
         to: 'tom',
@@ -119,7 +114,6 @@ rulesSuite("Mail", function(test) {
         spurious: "spurious"
       })
       .fails("No undefined fields.")
-    */
 
       .at('/users/bill/outbox/1')
       .write(null)
