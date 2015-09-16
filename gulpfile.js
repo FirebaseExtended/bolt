@@ -55,7 +55,7 @@ var tsProject = ts.createProject(TS_SETTINGS);
 var tsTestProject = ts.createProject(TS_SETTINGS);
 
 gulp.task('clean', function(cb) {
-  del(['lib', 'lib-test'], cb);
+  del(['lib', 'lib-test', 'dist'], cb);
 });
 
 
