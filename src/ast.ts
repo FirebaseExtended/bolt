@@ -192,10 +192,7 @@ function isOp(opType, exp) {
 }
 
 // Return a generating function to make an operator exp node.
-function opGen(opType, arity) {
-  if (arity === undefined) {
-    arity = 2;
-  }
+function opGen(opType: string, arity: number = 2) {
   return function(/* variable */) {
     if (arguments.length !== arity) {
       throw new Error("Operator has " + arguments.length +

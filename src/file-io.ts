@@ -52,7 +52,7 @@ function writeFile(path, data) {
   return request('PUT', path, data) || writeFS(path, data);
 }
 
-function request(method, url, data) {
+function request(method, url, data ?: string) {
   if (!global.XMLHttpRequest) {
     return undefined;
   }
