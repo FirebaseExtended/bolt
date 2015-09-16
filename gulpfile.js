@@ -150,7 +150,7 @@ gulp.task('browserify', ['browserify-bolt',
                         ]);
 
 // Runs the Mocha test suite
-gulp.task('test', ['lint', 'build'], function() {
+gulp.task('test', ['eslint', 'tslint', 'build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
