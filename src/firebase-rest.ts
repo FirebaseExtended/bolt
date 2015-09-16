@@ -30,7 +30,7 @@ module.exports = {
   "Client": Client,
   "generateUidAuthToken": generateUidAuthToken,
   RULES_LOCATION: '/.settings/rules',
-  TIMESTAMP: {".sv": "timestamp"},
+  TIMESTAMP: {".sv": "timestamp"}
 };
 
 function Client(appName, authToken, uid) {
@@ -60,7 +60,7 @@ util.methods(Client, {
     var options = {
       hostname: this.appName + '.' + FIREBASE_HOST,
       path: path + '.json',
-      method: opt.method,
+      method: opt.method
     };
 
     var query = {};
@@ -80,9 +80,9 @@ util.methods(Client, {
 
     return request(options, content, this.debug)
       .then(function(body) {
-        return body == '' ? null : JSON.parse(body);
+        return body === '' ? null : JSON.parse(body);
       });
-  },
+  }
 });
 
 var ridNext = 0;
@@ -113,7 +113,7 @@ function request(options, content, debug) {
       res.on('end', function() {
         var result = chunks.join('');
         log("Result (" + res.statusCode + "): '" + result + "'");
-        if (Math.floor(res.statusCode / 100) != 2) {
+        if (Math.floor(res.statusCode / 100) !== 2) {
           reject(new Error("Status = " + res.statusCode + " " + result));
         } else {
           resolve(result);

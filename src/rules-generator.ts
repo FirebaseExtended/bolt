@@ -104,6 +104,7 @@ util.methods(Generator, {
     var name;
 
     for (name in paths) {
+      if ()
       this.validateMethods(errors.badPathMethod, paths[name].methods,
                            ['validate', 'read', 'write', 'index']);
       this.validateType(paths[name].isType);

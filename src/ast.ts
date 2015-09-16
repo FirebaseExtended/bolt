@@ -81,7 +81,7 @@ module.exports = {
 };
 
 var errors = {
-  typeMismatch: "Unexpected type: ",
+  typeMismatch: "Unexpected type: "
 };
 
 function variable(name) {
@@ -131,10 +131,10 @@ function snapshotVariable(name) {
 }
 
 function snapshotChild(base, accessor) {
-  if (typeof accessor == 'string') {
+  if (typeof accessor === 'string') {
     accessor = string(accessor);
   }
-  if (base.valueType != 'Snapshot') {
+  if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
   var result = cast(call(reference(base, 'child'), [accessor]), 'Snapshot');
@@ -142,7 +142,7 @@ function snapshotChild(base, accessor) {
 }
 
 function snapshotParent(base) {
-  if (base.valueType != 'Snapshot') {
+  if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
   return cast(reference(cast(base), 'parent'), 'Snapshot');
@@ -153,7 +153,7 @@ function snapshotValue(exp) {
 }
 
 function ensureValue(exp) {
-  if (exp.valueType == 'Snapshot') {
+  if (exp.valueType === 'Snapshot') {
     return snapshotValue(exp);
   }
   return exp;
@@ -169,7 +169,7 @@ function ensureBoolean(exp) {
 }
 
 function isCall(exp, methodName) {
-  return exp.type == 'call' && exp.ref.type == 'ref' && exp.ref.accessor == methodName;
+  return exp.type === 'call' && exp.ref.type === 'ref' && exp.ref.accessor === methodName;
 }
 
 // Return value generating function for a given Type.
@@ -184,11 +184,11 @@ function valueGen(typeName) {
 }
 
 function cmpValues(v1, v2) {
-  return v1.typeName == v2.typeName && v1.value == v2.value;
+  return v1.typeName === v2.typeName && v1.value === v2.value;
 }
 
 function isOp(opType, exp) {
-  return exp.type == 'op' && exp.op == opType;
+  return exp.type === 'op' && exp.op === opType;
 }
 
 // Return a generating function to make an operator exp node.
@@ -197,7 +197,7 @@ function opGen(opType, arity) {
     arity = 2;
   }
   return function(/* variable */) {
-    if (arguments.length != arity) {
+    if (arguments.length !== arity) {
       throw new Error("Operator has " + arguments.length +
                       " arguments (expecting " + arity + ").");
     }
@@ -246,7 +246,7 @@ function leftAssociateGen(opType, identityValue, zeroValue) {
       result.push(flat[i]);
     }
 
-    if (result.length == 0) {
+    if (result.length === 0) {
       return identityValue;
     }
 
@@ -317,7 +317,7 @@ function Symbols() {
   this.schema = {};
   this.log = {
     error: function(s) { console.error(s); },
-    warn: function(s) { console.warn(s); },
+    warn: function(s) { console.warn(s); }
   };
 }
 
@@ -372,7 +372,7 @@ util.methods(Symbols, {
     }
     visited[descendant] = true;
 
-    if (descendant == ancestor) {
+    if (descendant === ancestor) {
       return true;
     }
 

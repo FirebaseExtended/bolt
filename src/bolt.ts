@@ -39,7 +39,7 @@ util.extend(module.exports, {
 // Usage:
 //   json = bolt.generate(bolt-text)
 function generate(symbols) {
-  if (typeof symbols == 'string') {
+  if (typeof symbols === 'string') {
     symbols = parser.parse(symbols);
   }
   var gen = new generator.Generator(symbols);

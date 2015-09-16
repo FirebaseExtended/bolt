@@ -24,7 +24,7 @@ module.exports = {
   'readFile': util.maybePromise(readFile),
   'readJSONFile': util.maybePromise(readJSONFile),
   'writeFile': util.maybePromise(writeFile),
-  'writeJSONFile': util.maybePromise(writeJSONFile),
+  'writeJSONFile': util.maybePromise(writeJSONFile)
 };
 
 function readJSONFile(path, fnFallback) {
@@ -33,7 +33,7 @@ function readJSONFile(path, fnFallback) {
       return JSON.parse(response.content);
     })
     .catch(function(error) {
-      if (error.code == 'ENOENT' && typeof fnFallback == 'function') {
+      if (error.code === 'ENOENT' && typeof fnFallback === 'function') {
         return fnFallback();
       }
       throw error;
@@ -63,7 +63,7 @@ function request(method, url, data) {
     req.open(method, '/' + url);
 
     req.onload = function() {
-      if (req.status == 200) {
+      if (req.status === 200) {
         resolve({content: req.response, url: url});
       } else {
         reject(new Error(url + " " + req.statusText));
