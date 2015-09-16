@@ -82,6 +82,7 @@ util.methods(RulesSuite, {
       });
 
       test("Initialization.", function() {
+        // pass
       });
 
       test("Rules test.", function() {
@@ -166,7 +167,7 @@ util.methods(RulesSuite, {
     }
 
     return this.users[username];
-  },
+  }
 });
 
 function RulesTest(testName, suite, fnTest) {

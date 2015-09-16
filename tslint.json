@@ -38,7 +38,7 @@
     "no-unused-variable": true,
     "no-unreachable": true,
     "no-use-before-declare": true,
-    "no-var-keyword": true,
+    "no-var-keyword": false,
     "one-line": [true,
       "check-open-brace",
       "check-catch",
