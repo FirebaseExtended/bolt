@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /// <reference path="../typings/node.d.ts" />
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../lib/bolt');
 var rulesSuite = bolt.rulesSuite;
 var secrets = require('./auth-secrets');
 
