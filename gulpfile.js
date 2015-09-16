@@ -20,7 +20,7 @@ var gulp = require('gulp');
 var eslint = require('gulp-eslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
-var util = require('./lib/util');
+var util = require('./src/util');
 
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
@@ -81,11 +81,20 @@ gulp.task('compile-test', ['compile'], function() {
     .pipe(gulp.dest('test/'));   
 });
 
-gulp.task('build', ['compile', 'compile-test', 'build-peg', 'browserify-bolt']);
+gulp.task('build', ['compile', 'compile-test', 'build-peg', 'browserify-bolt', 'copy-js']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
     .pipe(peg())
+    .pipe(gulp.dest('lib'));
+});
+
+
+/**
+ * We have some raw JS source, so we copy that over to the lib directory
+ */
+gulp.task('copy-js', function() {
+  return gulp.src('src/util.js')
     .pipe(gulp.dest('lib'));
 });
 

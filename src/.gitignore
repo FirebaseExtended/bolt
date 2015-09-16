@@ -1,0 +1,8 @@
+# tools like IntilliJ put the .js in the same directory as .ts files, so ignore them
+ast.js*
+bolt.js*
+file-io.js*
+firebase-rest.js*
+rules-generator.js*
+rules-parser.js*
+simulator.js*

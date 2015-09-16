@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../types/node.d.ts" />
-/// <reference path="../types/mocha.d.ts" />
-require('source-map-support').install();
-"use strict";
+/// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/mocha.d.ts" />
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var parse = bolt.parse;

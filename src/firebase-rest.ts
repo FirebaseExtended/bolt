@@ -15,10 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../types/node.d.ts" />
-require('source-map-support').install();
+/// <reference path="../typings/node.d.ts" />
 
-"use strict";
 var Promise = require('promise');
 var https = require('https');
 var util = require('./util');

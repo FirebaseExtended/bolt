@@ -2,14 +2,6 @@
 .idea
 bower_components/
 node_modules/
-test/*.js*
-#util.js is written in .js for gulp to use, so we can't typescript that yet
-lib/ast.js
-lib/bolt.js
-lib/file-io.js
-lib/firebase-rest.js
-lib/rules-generator.js
-lib/rules-parser.js 
-lib/simulator.js
+lib/
 dist/
 npm-debug.log
