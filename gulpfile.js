@@ -68,7 +68,9 @@ gulp.task('eslint', function() {
 gulp.task('tslint', function() {
   return gulp.src(TS_SOURCES)
     .pipe(tslint())
-    .pipe(tslint.report('full'));
+    .pipe(tslint.report('prose', {
+        emitError: false
+      }));
 });
 
 
@@ -94,7 +96,9 @@ gulp.task('compile-test', ['compile'], function() {
     .pipe(gulp.dest('test/'));
 });
 
-gulp.task('build', ['compile', 'compile-test', 'build-peg', 'browserify-bolt', 'copy-js']);
+gulp.task('build',
+    ['eslint', 'tslint', 'compile', 'compile-test', 'build-peg', 'browserify-bolt', 'copy-js']
+);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
