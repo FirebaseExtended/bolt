@@ -19,14 +19,18 @@ var assert = require('chai').assert;
 var helper = require('./test-helper');
 
 var ast = require('../lib/ast');
-var gen = require('../lib/rules-generator');
-var util = require('../lib/util');
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {
     var t = ast.boolean(true);
     var f = ast.boolean(false);
-    var v = ast.variable('v');
+    var v = ast.variable;
+    var and = ast.and;
+    var or = ast.or;
+    var a = v('a');
+    var b = v('b');
+    var c = v('c');
+    var d = v('d');
 
     var tests = [
       { data: [],
@@ -43,49 +47,64 @@ suite("Abstract Syntax Tree (AST)", function() {
         expect: {and: f, or: t} },
       { data: [f, t, f],
         expect: {and: f, or: t} },
-      { data: [v],
-        expect: {and: v, or: v} },
-      { data: [v, t],
-        expect: {and: v, or: t} },
-      { data: [v, f],
-        expect: {and: f, or: v} },
-      { data: [t, v],
-        expect: {and: v, or: t} },
-      { data: [f, v],
-        expect: {and: f, or: v} },
-      { data: [t, v, f],
+      { data: [a],
+        expect: {and: a, or: a} },
+      { data: [a, t],
+        expect: {and: a, or: t} },
+      { data: [a, f],
+        expect: {and: f, or: a} },
+      { data: [t, a],
+        expect: {and: a, or: t} },
+      { data: [f, a],
+        expect: {and: f, or: a} },
+      { data: [t, a, f],
         expect: {and: f, or: t} },
-      { data: [f, v, t],
+      { data: [f, a, t],
         expect: {and: f, or: t} },
-      { data: [v, f, v],
-        expect: {and: f, or: ast.or(v, v)} },
-      { data: [v, t, v],
-        expect: {and: ast.and(v, v), or: t} },
+      { data: [a, f, a],
+        expect: {and: f, or: ast.or(a, a)} },
+      { data: [a, t, a],
+        expect: {and: and(a, a), or: t} },
+      { data: [and(a, b), and(c, d)],
+        expect: {and: and(and(and(a, b), c), d),
+                 or: or(and(a, b), and(c, d))} },
+      { data: [or(a, b), or(c, d)],
+        expect: {and: and(or(a, b), or(c, d)),
+                 or: or(or(or(a, b), c), d)} },
     ];
-
-    function formatter(x) {
-      if (util.isType(x, 'array')) {
-        return '[' + x.map(formatter).join(', ') + ']';
-      }
-      if (util.isType(x, 'object')) {
-        if ('type' in x) {
-          return gen.decodeExpression(x);
-        }
-        var result = '{';
-        var sep = '';
-        for (var prop in x) {
-          result += sep + formatter(x[prop]);
-          sep = ', ';
-        }
-        result += '}';
-        return result;
-      }
-      return JSON.stringify(x);
-    }
 
     helper.dataDrivenTest(tests, function(data, expect) {
       assert.deepEqual(ast.andArray(data), expect.and, 'AND');
       assert.deepEqual(ast.orArray(data), expect.or, 'OR');
-    }, formatter);
+    }, helper.expFormat);
+  });
+
+  suite("Flatten", function() {
+    var v = ast.variable;
+    var and = ast.and;
+    var a = v('a');
+    var b = v('b');
+    var c = v('c');
+    var d = v('d');
+
+    var tests = [
+      { data: a,
+        expect: [a] },
+      { data: and(a, b),
+        expect: [a, b] },
+      { data: and(a, b),
+        expect: [a, b] },
+      { data: and(and(a, b), c),
+        expect: [a, b, c] },
+      { data: and(a, and(b, c)),
+        expect: [a, b, c] },
+      { data: and(and(a, b), and(c, d)),
+        expect: [a, b, c, d] },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = ast.flatten('&&', data);
+      assert.deepEqual(result, expect);
+    }, helper.expFormat);
   });
 });
