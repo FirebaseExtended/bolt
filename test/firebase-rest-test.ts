@@ -15,7 +15,7 @@
  */
 /// <reference path="../typings/node.d.ts" />
 
-//var assert = require('chai').assert;
+// var assert = require('chai').assert;
 var Promise = require('promise');
 var rest = require('../lib/firebase-rest');
 var secrets = require('./auth-secrets');
