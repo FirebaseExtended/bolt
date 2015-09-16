@@ -104,7 +104,8 @@ util.methods(Generator, {
     var name;
 
     for (name in paths) {
-      if ()
+      if (!paths.hasOwnProperty(name)) { continue; }
+
       this.validateMethods(errors.badPathMethod, paths[name].methods,
                            ['validate', 'read', 'write', 'index']);
       this.validateType(paths[name].isType);
@@ -117,6 +118,8 @@ util.methods(Generator, {
     }
 
     for (var schemaName in this.symbols.schema) {
+      if (!this.symbols.schema.hasOwnProperty(schemaName)) { continue; }
+
       this.ensureValidator(schemaName);
     }
 
@@ -126,6 +129,8 @@ util.methods(Generator, {
     }
 
     for (var pathName in paths) {
+      if (!paths.hasOwnProperty(pathName)) { continue; }
+
       this.updateRules(paths[pathName]);
     }
     this.convertExpressions(this.rules);
@@ -228,7 +233,7 @@ util.methods(Generator, {
   // Intermediate nodes can be "prop" or "$prop" values.
   createValidator: function(schemaName) {
     var schema = this.symbols.schema[schemaName];
-    var validator = {};
+    var validator: {$other?: any} = {}; // todo proper typing
 
     if (!schema) {
       throw new Error(errors.application + "Undefined schema: " + schemaName);
@@ -265,8 +270,8 @@ util.methods(Generator, {
     }
 
     if (hasProps) {
-      validator['$other'] = {};
-      extendValidator(validator['$other'], {'.validate': ast.boolean(false)});
+      validator.$other = {};
+      extendValidator(validator.$other, {'.validate': ast.boolean(false)});
     }
 
     if (schema.methods.validate) {
