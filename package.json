@@ -41,7 +41,6 @@
   ],
   "preferGlobal": true,
   "scripts": {
-    "prepublish": "gulp build",
     "test": "gulp test",
     "travis": "gulp"
   },
