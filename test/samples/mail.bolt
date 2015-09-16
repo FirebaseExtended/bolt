@@ -37,7 +37,4 @@ path /users/$userid/outbox/$msg is Message {
 
 isNew(ref) = prior(ref) == null;
 
-isCurrentUser(userid) = currentUser() == userid;
-
-// TODO: Use auth.uid - so not require customer token.
-currentUser() = auth.username;
+isCurrentUser(userid) = auth != null && auth.uid == userid;
