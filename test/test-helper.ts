@@ -40,7 +40,7 @@ function dataDrivenTest(tests, testIt, formatter) {
 
   for (var i = 0; i < tests.length; i++) {
     // Not Array or Object
-    if (typeof tests[i] != 'object') {
+    if (typeof tests[i] !== 'object') {
       label = formatter(tests[i]);
       data = tests[i];
       expect = undefined;
@@ -91,6 +91,9 @@ function expFormat(x) {
     var result = '{';
     var sep = '';
     for (var prop in x) {
+      if (!x.hasOwnProperty(prop)) {
+        continue;
+      }
       result += sep + expFormat(x[prop]);
       sep = ', ';
     }
