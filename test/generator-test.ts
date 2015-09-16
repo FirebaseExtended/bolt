@@ -16,7 +16,7 @@
 /// <reference path="../typings/node.d.ts" />
 /// <reference path="../typings/mocha.d.ts" />
 
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../lib/bolt');
 var parse = bolt.parse;
 var generator = require('../lib/rules-generator');
 var ast = require('../lib/ast');
@@ -365,7 +365,7 @@ suite("Rules Generator Tests", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       generator.mapValidator(data, function(value, prop) {
-        if (value == 2) {
+        if (value === 2) {
           return undefined;
         }
         return value + 1;
