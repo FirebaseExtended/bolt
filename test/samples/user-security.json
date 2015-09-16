@@ -10,7 +10,7 @@
       "$room_id": {
         ".read": "data.child(auth.uid).val() != null",
         "$user_id": {
-          ".validate": "newData.isString() && (newData.val().length > 0 && newData.val().length < 20)",
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 20",
           ".write": "auth != null && auth.uid == $user_id"
         }
       }
@@ -24,7 +24,7 @@
             ".validate": "newData.isString() && (auth != null && auth.uid == newData.val())"
           },
           "message": {
-            ".validate": "newData.isString() && (newData.val().length > 0 && newData.val().length < 50)"
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 50"
           },
           "timestamp": {
             ".validate": "newData.isNumber() && newData.val() <= now"
