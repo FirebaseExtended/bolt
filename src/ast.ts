@@ -21,18 +21,22 @@ var util = require('./util');
 
 var string = valueGen('String');
 var eq = opGen('==');
-var nop = opGen('nop', 1);
 var boolean = valueGen('Boolean');
 
 module.exports = {
   'variable': variable,
+  'literal': literal,
   'nullType': nullType,
   'reference': reference,
   'call': call,
+  'builtin': builtin,
+
+  // TODO: Moves these out of ast.js
   'snapshotVariable': snapshotVariable,
   'snapshotChild': snapshotChild,
   'snapshotParent': snapshotParent,
   'snapshotValue': snapshotValue,
+
   'cast': cast,
   'ensureValue': ensureValue,
   'ensureBoolean': ensureBoolean,
@@ -41,8 +45,10 @@ module.exports = {
   'number': valueGen('Number'),
   'boolean': boolean,
   'string': string,
-  'array': array,
+  'array': valueGen('Array'),
+  'regexp': valueGen('RegExp'),
 
+  'op': op,
   'neg': opGen('neg', 1),
   'not': opGen('!', 1),
   'mult': opGen('*'),
@@ -59,13 +65,17 @@ module.exports = {
   'and': opGen('&&'),
   'or': opGen('||'),
   'ternary': opGen('?:', 3),
-  'nop': nop,
   'value': opGen('value', 1),
 
-  'andArray': leftAssociateGen('&&', boolean(true)),
-  'orArray': leftAssociateGen('||', boolean(false)),
+  'andArray': leftAssociateGen('&&', boolean(true), boolean(false)),
+  'orArray': leftAssociateGen('||', boolean(false), boolean(true)),
+  'flatten': flatten,
 
-  'op': op,
+  // Type operators
+  'typeType': typeType,
+  'unionType': unionType,
+
+  'getTypeNames': getTypeNames,
 
   'Symbols': Symbols
 };
@@ -75,32 +85,45 @@ var errors = {
 };
 
 function variable(name) {
-  return { type: 'var', name: name };
+  return { type: 'var', valueType: 'Any', name: name };
+}
+
+function literal(name) {
+  return { type: 'literal', valueType: 'Any', name: name };
 }
 
 function nullType() {
-  return { type: 'Null' };
+  return { type: 'Null', valueType: 'Null' };
 }
 
 function reference(base, prop) {
   return {
     type: 'ref',
+    valueType: 'Any',
     base: base,
     accessor: prop
   };
 }
 
+// Make a (shallow) copy of the base expression, setting (or removing) it's
+// valueType.
+//
+// valueType is a string indicating the type of evaluating an expression (e.g.
+// 'Snapshot') - used to know when type coercion is needed in the context
+// of parent expressions.
 function cast(base, valueType) {
-  var result = nop(base);
-  if (valueType) {
-    result.valueType = valueType;
-  }
+  var result = util.extend({}, base);
+  result.valueType = valueType;
   return result;
 }
 
 function call(ref, args) {
   args = args || [];
-  return { type: 'call', ref: ref, args: args };
+  return { type: 'call', valueType: 'Any', ref: ref, args: args };
+}
+
+function builtin(fn) {
+  return { type: 'builtin', valueType: 'Any', fn: fn };
 }
 
 function snapshotVariable(name) {
@@ -114,7 +137,8 @@ function snapshotChild(base, accessor) {
   if (base.valueType != 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
-  return cast(call(reference(cast(base), 'child'), [accessor]), 'Snapshot');
+  var result = cast(call(reference(base, 'child'), [accessor]), 'Snapshot');
+  return result;
 }
 
 function snapshotParent(base) {
@@ -148,12 +172,26 @@ function isCall(exp, methodName) {
   return exp.type == 'call' && exp.ref.type == 'ref' && exp.ref.accessor == methodName;
 }
 
-function valueGen(type) {
+// Return value generating function for a given Type.
+function valueGen(typeName) {
   return function(value) {
-    return { type: type, value: value };
+    return {
+      type: typeName,      // Exp type identifying a constant value of this Type.
+      valueType: typeName, // The type of the result of evaluating this expression.
+      value: value         // The (constant) value itself.
+    };
   };
 }
 
+function cmpValues(v1, v2) {
+  return v1.typeName == v2.typeName && v1.value == v2.value;
+}
+
+function isOp(opType, exp) {
+  return exp.type == 'op' && exp.op == opType;
+}
+
+// Return a generating function to make an operator exp node.
 function opGen(opType, arity) {
   if (arity === undefined) {
     arity = 2;
@@ -167,40 +205,110 @@ function opGen(opType, arity) {
   };
 }
 
-// A reducing function for binary operators - use with [].reduce
-// initialValue's in array are ignored (or returned for empty array).
-function leftAssociateGen(opType, initialValue) {
-  function reducer(result, current) {
-    if (result === undefined) {
-      return current;
-    }
-    if (current.type == initialValue.type && current.value == initialValue.value) {
-      return result;
-    }
-    return op(opType, [result, current]);
-  }
-
+// Create an expression builder function which operates on arrays of values.
+// Returns new expression like v1 op v2 op v3 ...
+//
+// - Any identityValue's in array input are ignored.
+// - If zeroValue is found - just return zeroValue.
+//
+// Our function re-orders top-level op in array elements to the resulting
+// expression is left-associating.  E.g.:
+//
+//    [a && b, c && d] => (((a && b) && c) && d)
+//    (NOT (a && b) && (c && d))
+function leftAssociateGen(opType, identityValue, zeroValue) {
   return function(a) {
-    if (a.length == 0) {
-      return initialValue;
+    var i;
+
+    function reducer(result, current) {
+      if (result === undefined) {
+        return current;
+      }
+      return op(opType, [result, current]);
     }
-    return a.reduce(reducer);
+
+    // First flatten all top-level op values to one flat array.
+    var flat = [];
+    for (i = 0; i < a.length; i++) {
+      flatten(opType, a[i], flat);
+    }
+
+    var result = [];
+    for (i = 0; i < flat.length; i++) {
+      // Remove identifyValues from array.
+      if (cmpValues(flat[i], identityValue)) {
+        continue;
+      }
+      // Just return zeroValue if found
+      if (cmpValues(flat[i], zeroValue)) {
+        return zeroValue;
+      }
+      result.push(flat[i]);
+    }
+
+    if (result.length == 0) {
+      return identityValue;
+    }
+
+    // Return left-associative expression of opType.
+    return result.reduce(reducer);
   };
 }
 
+// Flatten the top level tree of op into a single flat array of expressions.
+function flatten(opType, exp, flat) {
+  var i;
+
+  if (flat === undefined) {
+    flat = [];
+  }
+
+  if (!isOp(opType, exp)) {
+    flat.push(exp);
+    return flat;
+  }
+
+  for (i = 0; i < exp.args.length; i++) {
+    flatten(opType, exp.args[i], flat);
+  }
+
+  return flat;
+}
+
 function op(opType, args) {
-  return { type: 'op', op: opType, args: args };
+  return {
+    type: 'op',     // This is (multi-argument) operator.
+    valueType: 'Any',
+    op: opType,     // The operator (string, e.g. '+').
+    args: args      // Arguments to the operator Array<exp>
+  };
 }
 
-function array(args) {
-  return { type: 'Array', value: args };
-}
-
+// Warning: NOT an expression type!
 function method(params, body) {
   return {
     params: params,
     body: body
   };
+}
+
+function typeType(typeName) {
+  return { type: "type", name: typeName };
+}
+
+function unionType(types) {
+  return { type: "union", types: types };
+}
+
+function getTypeNames(type) {
+  switch (type.type) {
+  case 'type':
+    return [type.name];
+  case 'union':
+    return type.types.map(getTypeNames).reduce(util.extendArray);
+  default:
+    throw new Error("Unknown type: " + type.type);
+  }
 }
 
 function Symbols() {
@@ -227,17 +335,13 @@ util.methods(Symbols, {
   },
 
   registerFunction: function(name, params, body) {
-    var fn = {
-      params: params,
-      body: body
-    };
-    this.register('functions', name, fn);
+    this.register('functions', name, method(params, body));
   },
 
   registerPath: function(parts, isType, methods) {
     methods = methods || {};
 
-    isType = isType || 'Any';
+    isType = isType || typeType('Any');
     var p = {
       parts: parts,
       isType: isType,
@@ -250,7 +354,7 @@ util.methods(Symbols, {
     methods = methods || {};
     properties = properties || {};
 
-    derivedFrom = derivedFrom || (Object.keys(properties).length > 0 ? 'Object' : 'Any');
+    derivedFrom = derivedFrom || typeType(Object.keys(properties).length > 0 ? 'Object' : 'Any');
     var s = {
       derivedFrom: derivedFrom,
       properties: properties,
@@ -276,7 +380,7 @@ util.methods(Symbols, {
     if (!schema) {
       return false;
     }
-    return this.isDerivedFrom(schema.derivedFrom, ancestor, visited);
+    return this.isDerivedFrom(schema.derivedFrom.name, ancestor, visited);
   },
 
   setLoggers: function(loggers) {

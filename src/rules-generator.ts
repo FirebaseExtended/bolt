@@ -20,7 +20,9 @@ var ast = require('./ast');
 
 module.exports = {
   'Generator': Generator,
-  'decodeExpression': decodeExpression
+  'decodeExpression': decodeExpression,
+  'extendValidator': extendValidator,
+  'mapValidator': mapValidator,
 };
 
 var errors = {
@@ -35,12 +37,13 @@ var errors = {
   badSchemaMethod: "Unsupported method name in type statement: ",
   badPathMethod: "Unsupported method name in path statement: ",
   coercion: "Cannot convert value: ",
+  undefinedFunction: "Undefined function: ",
+  application: "Bolt application error: ",
 };
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 var JS_OPS = {
   'value': { rep: "", p: 16 },
-  'nop': { rep: "", p: 16 },
 
   'neg': { rep: "-", p: 15},
   '!': { p: 15},
@@ -64,10 +67,12 @@ var JS_OPS = {
 
 var builtinSchemaNames = ['Any', 'Null', 'String', 'Number', 'Boolean', 'Object'];
 // Method names allowed in Bolt files.
-var valueMethods = ['length', 'includes', 'startsWith', 'endsWith',
-                    'replace', 'toLowerCase', 'toUpperCase', 'test'];
-var snapshotMethods = ['parent'];
-var reservedMethods = snapshotMethods.concat(valueMethods);
+var valueMethods = ['length', 'includes', 'startsWith', 'beginsWith', 'endsWith',
+                    'replace', 'toLowerCase', 'toUpperCase', 'test', 'contains',
+                    'matches'];
+// TODO: Make sure users don't call internal methods...make private to impl.
+var snapshotMethods = ['parent', 'child', 'hasChildren', 'val', 'isString', 'isNumber',
+                       'isBoolean'].concat(valueMethods);
 
 // Symbols contains:
 //   functions: {}
@@ -76,15 +81,17 @@ var reservedMethods = snapshotMethods.concat(valueMethods);
 function Generator(symbols) {
   this.symbols = symbols;
   this.log = symbols.log;
+  this.validators = {};
   this.rules = {};
   this.errorCount = 0;
   this.runSilently = false;
+  this.allowUndefinedFunctions = false;
 
+  // TODO: globals should be part of this.symbols.
   this.globals = {
-    "this": ast.snapshotVariable('newData'),
-    "root": ast.snapshotVariable('root'),
-    "data": ast.snapshotVariable('data'),
+    "root": ast.cast(ast.literal('root'), 'Snapshot'),
   };
+  this.globalStacks = {};
 
   this.registerBuiltinSchema();
 }
@@ -109,7 +116,7 @@ util.methods(Generator, {
     }
 
     for (var schemaName in this.symbols.schema) {
-      this.registerSchemaValidator(schemaName);
+      this.ensureValidator(schemaName);
     }
 
 
@@ -120,10 +127,13 @@ util.methods(Generator, {
     for (var pathName in paths) {
       this.updateRules(paths[pathName]);
     }
+    this.convertExpressions(this.rules);
 
     if (this.errorCount != 0) {
       throw new Error(errors.generateFailed + this.errorCount + " errors.");
     }
+
+    util.pruneEmptyChildren(this.rules);
 
     return {
       rules: this.rules
@@ -139,142 +149,156 @@ util.methods(Generator, {
     }
   },
 
-  validateType: function(typeName) {
-    if (!(typeName in this.symbols.schema)) {
-      this.fatal(errors.noSuchType + util.quoteString(typeName));
-    }
+  validateType: function(type) {
+    ast.getTypeNames(type).forEach(function(typeName) {
+      if (!(typeName in this.symbols.schema)) {
+        this.fatal(errors.noSuchType + util.quoteString(typeName));
+      }
+    }.bind(this));
   },
 
   registerBuiltinSchema: function() {
     var self = this;
     var thisVar = ast.variable('this');
 
-    function registerAsCall(name, fnCall) {
-      self.symbols.registerSchema(name, 'Any', undefined, {
-        validate: ast.method(['this'], ast.call(ast.reference(ast.cast(thisVar), fnCall)))
+    function registerAsCall(name, methodName) {
+      self.symbols.registerSchema(name, ast.typeType('Any'), undefined, {
+        validate: ast.method(['this'], ast.call(ast.reference(ast.cast(thisVar, 'Any'),
+                                                              methodName)))
       });
     }
 
-    this.symbols.registerSchema('Any', 'Any', undefined, {
+    this.symbols.registerSchema('Any', ast.typeType('Any'), undefined, {
       validate: ast.method(['this'], ast.boolean(true))
     });
 
-    this.symbols.registerSchema('Null', 'Any', undefined, {
+    /*
+    this.symbols.registerSchema('Object', ast.typeType('Any'), undefined, {
+      validate: ast.method(['this'], ast.boolean(true))
+    });
+    */
+    registerAsCall('Object', 'hasChildren');
+
+    this.symbols.registerSchema('Null', ast.typeType('Any'), undefined, {
       validate: ast.method(['this'], ast.eq(thisVar, ast.nullType()))
     });
 
-    self.symbols.registerSchema('String', 'Any', undefined, {
-      validate: ast.method(['this'], ast.call(ast.reference(ast.cast(thisVar), 'isString'))),
-      includes: ast.method(['this', 's'], ast.call(ast.reference(ast.value(thisVar), 'contains'),
-                                                   [ ast.value(ast.variable('s')) ])),
+    self.symbols.registerSchema('String', ast.typeType('Any'), undefined, {
+      validate: ast.method(['this'],
+                           ast.call(ast.reference(ast.cast(thisVar, 'Any'), 'isString'))),
+      includes: ast.method(['this', 's'],
+                           ast.call(ast.reference(ast.value(thisVar), 'contains'),
+                                    [ ast.value(ast.variable('s')) ])),
       startsWith: ast.method(['this', 's'],
                              ast.call(ast.reference(ast.value(thisVar), 'beginsWith'),
                                       [ ast.value(ast.variable('s')) ])),
-      endsWith: ast.method(['this', 's'], ast.call(ast.reference(ast.value(thisVar), 'endsWith'),
-                                                     [ ast.value(ast.variable('s')) ])),
+      endsWith: ast.method(['this', 's'],
+                           ast.call(ast.reference(ast.value(thisVar), 'endsWith'),
+                                    [ ast.value(ast.variable('s')) ])),
       replace: ast.method(['this', 's', 'r'],
                           ast.call(ast.reference(ast.value(thisVar), 'replace'),
                                    [ ast.value(ast.variable('s')), ast.value(ast.variable('r')) ])),
-      test: ast.method(['this', 's'], ast.call(ast.reference(ast.value(thisVar), 'matches'),
-                                               [ ast.cast(ast.variable('s'), 'RegExp') ])),
-      /*
-      length:
-      beginsWith
-      endsWith
-      replace
-      toLowerCase
-      toUpperCase
-      matches: { enabled: false, on: 'String', args: ['RegExp'], returns: 'Boolean'},
-      */
-
+      test: ast.method(['this', 's'],
+                       ast.call(ast.reference(ast.value(thisVar), 'matches'),
+                                [ ast.call(ast.variable('@RegExp'), [ast.variable('s')]) ])),
     });
 
-    registerAsCall('Object', 'hasChildren');
     registerAsCall('Number', 'isNumber');
     registerAsCall('Boolean', 'isBoolean');
+
+    this.symbols.registerFunction('@RegExp', ['s'],
+                                  ast.builtin(this.makeRegExp.bind(this)));
   },
 
-  // Return a validator expression that returns true iff
-  // *this* conforms to the defined schema:
-  // 1. Conforms to derivedFrom schema. &&
-  // 2. Each property in properties conforms to it's type.
-  // 3. Conforms to the validate method.
-  registerSchemaValidator: function(schemaName) {
+  // Ensure we have a definition for a validator for the given schema.
+  ensureValidator: function(schemaName) {
+    // TODO: Guard against recursion
+    if (!this.validators[schemaName]) {
+      this.validators[schemaName] = this.createValidator(schemaName);
+      // console.log(schemaName + ": " + util.prettyJSON(this.validators[schemaName]));
+    }
+    return this.validators[schemaName];
+  },
+
+  // A validator is a structured object, where each leaf node
+  // is:
+  //     ".validate": [<expression>, ...]
+  // All expressions will be ANDed together to form the file expresion.
+  // Intermediate nodes can be "prop" or "$prop" values.
+  createValidator: function(schemaName) {
     var schema = this.symbols.schema[schemaName];
-    var terms = [];
-    var thisVar = ast.variable('this');
+    var validator = {};
+
+    if (!schema) {
+      throw new Error(errors.application + "Undefined schema: " + schemaName);
+    }
 
     var hasProps = Object.keys(schema.properties).length > 0;
 
     if (hasProps && !this.symbols.isDerivedFrom(schemaName, 'Object')) {
-      this.fatal(errors.nonObject + " (" + schemaName + " is " + schema.derivedFrom + ")");
-      return;
+      this.fatal(errors.nonObject + " (" + schemaName + " is " + schema.derivedFrom.name + ")");
+      return {};
     }
 
-    // @validator@<T>(this)
-    if (schema.derivedFrom != 'Any' && !hasProps) {
-      terms.push(ast.call(ast.variable('@validator@' + schema.derivedFrom),
-                          [ thisVar ]));
+    if (schema.derivedFrom.name != 'Any') {
+      extendValidator(validator, this.ensureValidator(schema.derivedFrom.name));
     }
 
-    for (var propName in schema.properties) {
-      var property = schema.properties[propName];
-      var propTerms = [];
-      for (var i = 0; i < property.types.length; i++) {
-        var type = property.types[i];
-        // @validator@<type>(this[propName])
-        propTerms.push(ast.call(ast.variable('@validator@' + type),
-                                [ ast.reference(thisVar, propName) ]));
+    var requiredProperties = [];
+    Object.keys(schema.properties).forEach(function(propName) {
+      if (!validator[propName]) {
+        validator[propName] = {};
       }
-      if (propTerms.length > 0) {
-        terms.push(ast.orArray(propTerms));
+      var propType = schema.properties[propName];
+      var propSchema = ast.getTypeNames(propType);
+      if (!util.arrayIncludes(propSchema, 'Null')) {
+        requiredProperties.push(propName);
       }
+      extendValidator(validator[propName], this.unionValidators(propSchema));
+    }.bind(this));
+
+    if (requiredProperties.length > 0) {
+      // this.hasChildren(requiredProperties)
+      extendValidator(validator,
+                      {'.validate': [hasChildrenExp(requiredProperties)]});
+    }
+
+    if (hasProps) {
+      validator['$other'] = {};
+      extendValidator(validator['$other'], {'.validate': ast.boolean(false)});
     }
 
     if (schema.methods.validate) {
-      terms.push(schema.methods.validate.body);
+      extendValidator(validator, {'.validate': [schema.methods.validate.body]});
     }
 
-    if (terms.length == 0) {
-      terms.push(ast.boolean(true));
-    }
-
-    var exp = ast.andArray(terms);
-    this.registerValidator(schemaName, exp);
-  },
-
-  // TODO: Store validators in this.symbols.schema[type].methods.validateAll
-  registerValidator: function(type, exp) {
-    this.symbols.registerFunction('@validator@' + type, ['this'], exp);
+    return validator;
   },
 
   // Update rules based on the given path expression.
   updateRules: function(path) {
     var i;
-    var location = this.ensurePath(path.parts);
+    var location = util.ensureObjectPath(this.rules, path.parts);
     var exp;
 
     // Path validation function && Type Validation
-    var terms = [];
     if (path.methods.validate) {
-      terms.push(path.methods.validate.body);
+      extendValidator(location, {'.validate': [path.methods.validate.body]});
     }
-    terms.push(this.symbols.functions['@validator@' + path.isType].body);
 
-    exp = this.partialEval(ast.andArray(terms));
-    if (!(exp.type == 'Boolean' && exp.value == true)) {
-      location['.validate'] = this.getExpressionText(exp);
-    }
+    ast.getTypeNames(path.isType).forEach(function(typeName) {
+      extendValidator(location, this.validators[typeName]);
+    }.bind(this));
 
     // Write .read and .write expressions
     ['read', 'write'].forEach(function(method) {
       if (path.methods[method]) {
-        exp = path.methods[method].body;
-        if (!(exp.type == 'Boolean' && exp.value == false)) {
-          location['.' + method] = this.getExpressionText(exp);
-        }
+        var validator = {};
+        // TODO: What if two paths overwrite the same location?
+        validator['.' + method] = [path.methods[method].body];
+        extendValidator(location, validator);
       }
-    }.bind(this));
+    });
 
     // Write indices
     if (path.methods.index) {
@@ -297,28 +321,67 @@ util.methods(Generator, {
           indices.push(exp.value[i].value);
         }
       }
+      // TODO: Error check not over-writing index rules.
       location['.indexOn'] = indices;
     }
   },
 
-  getExpressionText: function(exp) {
+  // Return union validator (||) over each schema
+  unionValidators: function(schema) {
+    var union = {};
+    schema.forEach(function(typeName) {
+      // First and the validator terms for a single type
+      var singleType = extendValidator({}, this.ensureValidator(typeName));
+      mapValidator(singleType, ast.andArray);
+      extendValidator(union, singleType);
+    }.bind(this));
+    mapValidator(union, ast.orArray);
+    return union;
+  },
+
+  convertExpressions: function(validator, thisIs) {
+    var methodThisIs = { '.validate': 'newData',
+                         '.read': 'data',
+                         '.write': 'newData' };
+
+    mapValidator(validator, function(value, prop) {
+      if (prop in methodThisIs) {
+        value = collapseHasChildren(value);
+        value = this.getExpressionText(ast.andArray(value), methodThisIs[prop]);
+        if (prop == '.validate' && value == 'true' ||
+            (prop == '.read' || prop == '.write') && value == 'false') {
+          value = undefined;
+        }
+      }
+      return value;
+    }.bind(this));
+  },
+
+  getExpressionText: function(exp, thisIs) {
+    if (!('type' in exp)) {
+      throw new Error(errors.application + "Not an expression: " + util.prettyJSON(exp));
+    }
+    // First evaluate w/o binding of this to specific location.
+    this.allowUndefinedFunctions = true;
+    exp = this.partialEval(exp, { 'this': ast.cast(ast.call(ast.variable('@getThis')),
+                                                   'Snapshot') });
+    // Now re-evaluate the flattened expression.
+    this.allowUndefinedFunctions = false;
+    this.thisIs = thisIs || 'newData';
+    this.symbols.registerFunction('@getThis', [],
+                                  ast.builtin(this.getThis.bind(this)));
+    this.symbols.registerFunction('prior', ['exp'],
+                                  ast.builtin(this.prior.bind(this)));
+
     exp = this.partialEval(exp);
+
+    delete this.symbols.functions['@getThis'];
+    delete this.symbols.functions.prior;
+
     // Top level expressions should never be to a snapshot reference - should
     // always evaluate to a boolean.
     exp = ast.ensureBoolean(exp);
     return decodeExpression(exp);
-  },
-
-  ensurePath: function(parts) {
-    var obj = this.rules;
-    for (var i = 0; i < parts.length; i++) {
-      var name = parts[i];
-      if (!(name in obj)) {
-        obj[name] = {};
-      }
-      obj = obj[name];
-    }
-    return obj;
   },
 
   // Partial evaluation of expressions - copy of expression tree (immutable).
@@ -374,15 +437,14 @@ util.methods(Generator, {
     }
 
     function lookupVar(exp2) {
+      // TODO: Unbound variable access should be an error.
       return params[exp2.name] || self.globals[exp2.name] || exp2;
     }
 
     switch (exp.type) {
     case 'op':
       // Ensure arguments are boolean (or values) where needed.
-      if (exp.op == 'nop') {
-        args[0] = subExpression(exp.args[0]);
-      } else if (exp.op == 'value') {
+      if (exp.op == 'value') {
         args[0] = valueExpression(subExpression(exp.args[0]));
       } else if (exp.op == '||' || exp.op == '&&' || exp.op == '!') {
         for (i = 0; i < exp.args.length; i++) {
@@ -403,8 +465,7 @@ util.methods(Generator, {
       return exp;
 
     case 'var':
-      exp = lookupVar(exp);
-      return exp;
+      return lookupVar(exp);
 
     case 'ref':
       var base;
@@ -421,7 +482,7 @@ util.methods(Generator, {
       if (base.valueType == 'Snapshot') {
         if (accessor == 'parent') {
           return ast.snapshotParent(base);
-        } else if (!util.arrayIncludes(reservedMethods, accessor)) {
+        } else if (!util.arrayIncludes(snapshotMethods, accessor)) {
           return ast.snapshotChild(base, accessor);
         }
       }
@@ -453,6 +514,10 @@ util.methods(Generator, {
           return exp;
         }
 
+        if (fn.body.type == 'builtin') {
+          return fn.body.fn(callArgs, params);
+        }
+
         for (i = 0; i < fn.params.length; i++) {
           innerParams[fn.params[i]] = subExpression(callArgs[i]);
         }
@@ -465,13 +530,20 @@ util.methods(Generator, {
         functionCalls[ref.name] = false;
       } else {
         // Not a global function - expand args.
-        // TODO: Check snapshot and string-specific methods arguments here.
+        if (!this.allowUndefinedFunctions) {
+          var funcName = ref.type == 'ref' ? ref.accessor : ref.name;
+          if (!(funcName in this.symbols.schema.String.methods ||
+                util.arrayIncludes(snapshotMethods, funcName))) {
+            this.fatal(errors.undefinedFunction + decodeExpression(ref));
+          }
+        }
         for (i = 0; i < exp.args.length; i++) {
           args[i] = subExpression(exp.args[i]);
         }
         if (replaceExp()) {
           exp.ref = ref;
           exp.args = args;
+          // TODO: Get rid of this hack (for data.parent().val())
           if (exp.ref.valueType == 'Snapshot') {
             exp.valueType = 'Snapshot';
           }
@@ -486,13 +558,41 @@ util.methods(Generator, {
     }
   },
 
+  // Builtin function - convert all 'this' to 'data' (from 'newData').
+  // Args are function arguments, and params are the local (function) scope variables.
+  prior: function(args, params) {
+    var lastThisIs = this.thisIs;
+    this.thisIs = 'data';
+    var exp = this.partialEval(args[0], params);
+    this.thisIs = lastThisIs;
+    return exp;
+  },
+
+  // Builtin function - current value of 'this'
+  getThis: function(args, params) {
+    var result = ast.snapshotVariable(this.thisIs);
+    return result;
+  },
+
+  // Builtin function - convert string to RegExp
+  makeRegExp: function(args, params) {
+    if (args.length != 1) {
+      throw new Error(errors.application + "RegExp arguments.");
+    }
+    var exp = this.partialEval(args[0], params);
+    if (exp.type != 'String' || !/\/.*\//.test(exp.value)) {
+      throw new Error(errors.coercion + decodeExpression(exp) + " => RegExp");
+    }
+    return ast.regexp(exp.value);
+  },
+
   // Lookup globally defined function.
   lookupFunction: function(ref) {
     // Global function.
     if (ref.type == 'var') {
       var fn = this.symbols.functions[ref.name];
       if (!fn) {
-        this.fatal("Undefined global function: " + ref.name);
+        return undefined;
       }
       return { self: undefined, fn: fn};
     }
@@ -505,6 +605,19 @@ util.methods(Generator, {
       }
     }
     return undefined;
+  },
+
+  pushGlobal: function(name, exp) {
+    if (!this.globalStacks[name]) {
+      this.globalStacks[name] = [];
+    }
+    var stack = this.globalStacks[name];
+    stack.push(this.globals[name]);
+    this.globals[name] = exp;
+  },
+
+  popGlobal: function(name) {
+    this.globals[name] = this.globalStacks[name].pop();
   },
 
   setLoggers: function(loggers) {
@@ -536,11 +649,17 @@ function decodeExpression(exp, outerPrecedence) {
     result = util.quoteString(exp.value);
     break;
 
+  // RegExp assumed to be in correct format.
+  case 'RegExp':
+    result = exp.value;
+    break;
+
   case 'Null':
     result = 'null';
     break;
 
   case 'var':
+  case 'literal':
     result = exp.name;
     break;
 
@@ -557,17 +676,14 @@ function decodeExpression(exp, outerPrecedence) {
     result = decodeExpression(exp.ref) + '(' + decodeArray(exp.args) + ')';
     break;
 
+  case 'builtin':
+    result = decodeExpression(exp);
+    break;
+
   case 'op':
     var rep = JS_OPS[exp.op].rep === undefined ? exp.op : JS_OPS[exp.op].rep;
     if (exp.args.length == 1) {
-      if (exp.valueType == 'RegExp') {
-        if (exp.args[0].type != 'String' || exp.args[0].value[0] != '/') {
-          throw new Error(errors.coercion + decodeExpression(exp.args[0]) + " => RegExp");
-        }
-        result = exp.args[0].value;
-      } else {
-        result = rep + decodeExpression(exp.args[0], innerPrecedence);
-      }
+      result = rep + decodeExpression(exp.args[0], innerPrecedence);
     } else if (exp.args.length == 2) {
       result =
         decodeExpression(exp.args[0], innerPrecedence) +
@@ -619,4 +735,93 @@ function precedenceOf(exp) {
   default:
     return 19;
   }
+}
+
+// Merge all .X terms into target.
+function extendValidator(target, src) {
+  if (src === undefined) {
+    throw new Error(errors.application + "Illegal validation source.");
+  }
+  for (var prop in src) {
+    if (!src.hasOwnProperty(prop)) {
+      continue;
+    }
+    if (prop[0] == '.') {
+      if (target[prop] == undefined) {
+        target[prop] = [];
+      }
+      if (util.isType(src[prop], 'array')) {
+        util.extendArray(target[prop], src[prop]);
+      } else {
+        target[prop].push(src[prop]);
+      }
+    } else {
+      if (!target[prop]) {
+        target[prop] = {};
+      }
+      extendValidator(target[prop], src[prop]);
+    }
+  }
+
+  return target;
+}
+
+// Call fn(value, prop) on all '.props' and assiging the value back into the
+// validator.
+function mapValidator(v, fn) {
+  for (var prop in v) {
+    if (!v.hasOwnProperty(prop)) {
+      continue;
+    }
+    if (prop[0] == '.') {
+      v[prop] = fn(v[prop], prop);
+      if (v[prop] === undefined) {
+        delete v[prop];
+      }
+    } else {
+      mapValidator(v[prop], fn);
+    }
+  }
+}
+
+// Collapse all hasChildren calls into one (combining their arguments).
+// E.g. newData.hasChildren() && newData.hasChildren(['x']) && newData.hasChildren(['y']) =>
+//      newData.hasChildren(['x', 'y'])
+function collapseHasChildren(exps) {
+  var hasHasChildren = false;
+  var combined = [];
+  var result = [];
+  exps.forEach(function(exp) {
+    if (exp.type == 'call' && exp.ref.type == 'ref' && exp.ref.accessor == 'hasChildren') {
+      if (exp.args.length == 0) {
+        hasHasChildren = true;
+        return;
+      }
+      // Expect one argument of Array type.
+      if (exp.args.length != 1 || exp.args[0].type != 'Array') {
+        throw new Error(errors.application + "Invalid argument to hasChildren(): " +
+                        exp.args[0].type);
+      }
+      exp.args[0].value.forEach(function(arg) {
+        hasHasChildren = true;
+        if (arg.type != 'String') {
+          throw new Error(errors.application + "Expect string argument to hasChildren(), not: " +
+                          arg.type);
+        }
+        combined.push(arg.value);
+      });
+    } else {
+      result.push(exp);
+    }
+  });
+  if (hasHasChildren) {
+    result.unshift(hasChildrenExp(combined));
+  }
+  return result;
+}
+
+// Generate this.hasChildren([props, ...])
+function hasChildrenExp(props) {
+  var args = props.length == 0 ? [] : [ast.array(props.map(ast.string))];
+  return ast.call(ast.reference(ast.cast(ast.variable('this'), 'Any'), 'hasChildren'), args);
 }

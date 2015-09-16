@@ -18,10 +18,14 @@
 
 var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
 var parse = bolt.parse;
+var generator = require('../lib/rules-generator');
+var ast = require('../lib/ast');
 var fileio = require('../lib/file-io');
 var helper = require('./test-helper');
 
-var assert = require('chai').assert;
+var chai = require('chai');
+chai.config.truncateThreshold = 1000;
+var assert = chai.assert;
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
@@ -60,7 +64,9 @@ suite("Rules Generator Tests", function() {
                  "userdoc",
                  "mail",
                  "type-extension",
-                 "functional"
+                 "children",
+                 "functional",
+                 "user-security",
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
@@ -172,21 +178,20 @@ suite("Rules Generator Tests", function() {
       { f: "",
         x: "this.foo || this.bar",
         expect: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
-      // Don't support snapshot functions beyond parent.
+      // TODO: Don't support snapshot functions beyond parent.
       // TODO: Should warn user not to use Firebase builtins!
-      { f: "", x: "this.isString == 'a'", expect: "newData.child('isString').val() == 'a'" },
+      // { f: "", x: "this.isString()", expect: "newData.child('isString').val() == true" },
       { f: "function f(a) { return a == '123'; }", x: "f(this)", expect: "newData.val() == '123'" },
       { f: "function f(a) { return a == '123'; }",
         x: "f(this.foo)", expect: "newData.child('foo').val() == '123'" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var symbols = parse(data.f + " path /x { read() { return " + data.x + "; }}");
+      var symbols = parse(data.f + " path /x { write() { return " + data.x + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      gen.generateRules();
-      var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      assert.equal(decode, expect);
+      var json = gen.generateRules();
+      assert.equal(json.rules.x['.write'], expect);
     });
   });
 
@@ -220,74 +225,152 @@ suite("Rules Generator Tests", function() {
         expect: "'ababa'.matches(/bab/)" },
     ];
 
-    helper.dataDrivenTest(tests, function testIt(data, expect) {
-      var symbols = parse("path /x { read() { return " + data + "; }}");
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var symbols = parse("path /x { write() { return " + data + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      gen.generateRules();
-      var decode = gen.getExpressionText(symbols.paths['/x'].methods.read.body);
-      assert.equal(decode, expect);
+      var json = gen.generateRules();
+      assert.equal(json.rules.x['.write'], expect);
     });
   });
 
-  test("Builtin validation functions", function() {
-    var symbols = parse("path / {}");
-    var gen = new bolt.Generator(symbols);
-    gen.generateRules();
-    var baseTypes = ['String', 'Number', 'Boolean'];
-    assert.equal(gen.getExpressionText(symbols.functions['@validator@Object'].body),
-                 'newData.hasChildren()', 'Object');
-    assert.equal(gen.getExpressionText(symbols.functions['@validator@Null'].body),
-                 'newData.val() == null', 'Null');
-    assert.equal(gen.getExpressionText(symbols.functions['@validator@Any'].body),
-                 'true', 'Any');
-    for (var i = 0; i < baseTypes.length; i++) {
-      var type = baseTypes[i];
-      assert.equal(gen.getExpressionText(symbols.functions['@validator@' + type].body),
-                   'newData.is' + type.toUpperCase()[0] + type.slice(1) + '()', type);
-    }
+  suite("Builtin validation functions", function() {
+    var tests = [
+      [ 'String', 'this.isString()'],
+      [ 'Number', 'this.isNumber()'],
+      [ 'Boolean', 'this.isBoolean()'],
+      [ 'Object', 'this.hasChildren()'],
+      [ 'Null', 'this == null'],
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var symbols = parse("path / {}");
+      var gen = new bolt.Generator(symbols);
+      gen.generateRules();
+
+      var terms = gen.validators[data]['.validate'];
+      var result = bolt.decodeExpression(ast.andArray(terms));
+      assert.deepEqual(result, expect);
+    });
   });
 
   suite("Schema Validation", function() {
     var tests = [
-      { data: "type Simple {}",
+      { data: "type T {}",
         expect: undefined },
-      { data: "type Simple extends Object {}",
-        expect: "newData.hasChildren()" },
-      { data: "type Simple extends String {}",
-        expect: "newData.isString()" },
-      { data: "type Simple extends String { validate() { return this.length > 0; } }",
-        expect: "newData.isString() && newData.val().length > 0" },
+      { data: "type T extends Object {}",
+        expect: {'.validate': "newData.hasChildren()"} },
+      { data: "type T extends String {}",
+        expect: {'.validate': "newData.isString()"} },
+      { data: "type T extends String { validate() { return this.length > 0; } }",
+        expect: {'.validate': "newData.isString() && newData.val().length > 0"} },
       { data: "type NonEmpty extends String { validate() { return this.length > 0; } } \
-            type Simple { prop: NonEmpty }",
-        expect: "newData.child('prop').isString() && newData.child('prop').val().length > 0" },
-      { data: "type Simple {n: Number}",
-        expect: "newData.child('n').isNumber()" },
-      { data: "type Simple {s: String}",
-        expect: "newData.child('s').isString()" },
-      { data: "type Simple {b: Boolean}",
-        expect: "newData.child('b').isBoolean()" },
-      { data: "type Simple {x: Object}",
-        expect: "newData.child('x').hasChildren()" },
-      { data: "type Simple {x: Number|String}",
-        expect: "newData.child('x').isNumber() || newData.child('x').isString()" },
-      { data: "type Simple {a: Number, b: String}",
-        expect: "newData.child('a').isNumber() && newData.child('b').isString()" },
-      { data: "type Simple {x: Number|Null}",
-        expect: "newData.child('x').isNumber() || newData.child('x').val() == null" },
-      { data: "type Simple {n: Number, validate() {return this.n < 7;}}",
-        expect: "newData.child('n').isNumber() && newData.child('n').val() < 7" },
+            type T { prop: NonEmpty }",
+        expect: {'.validate': "newData.hasChildren(['prop'])",
+                 prop: {
+                   '.validate': 'newData.isString() && newData.val().length > 0'
+                 },
+                 '$other': {'.validate': "false"}
+                } },
+      { data: "type T {n: Number}",
+        expect: {'.validate': "newData.hasChildren(['n'])",
+                 n: {'.validate': "newData.isNumber()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {s: String}",
+        expect: {'.validate': "newData.hasChildren(['s'])",
+                 s: {'.validate': "newData.isString()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {b: Boolean}",
+        expect: {'.validate': "newData.hasChildren(['b'])",
+                 b: {'.validate': "newData.isBoolean()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {x: Object}",
+        expect: {'.validate': "newData.hasChildren(['x'])",
+                 x: {'.validate': "newData.hasChildren()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {x: Number|String}",
+        expect: {'.validate': "newData.hasChildren(['x'])",
+                 x: {'.validate': "newData.isNumber() || newData.isString()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {a: Number, b: String}",
+        expect: {'.validate': "newData.hasChildren(['a', 'b'])",
+                 a: {'.validate': "newData.isNumber()"},
+                 b: {'.validate': "newData.isString()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {x: Number|Null}",
+        expect: {'.validate': "newData.hasChildren()",
+                 x: {'.validate': "newData.isNumber() || newData.val() == null"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {n: Number, validate() {return this.n < 7;}}",
+        expect: {'.validate': "newData.hasChildren(['n']) && newData.child('n').val() < 7",
+                 n: {'.validate': "newData.isNumber()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type Bigger extends Number {validate() { return this > prior(this); }}" +
+        "type T { ts: Bigger }",
+        expect: {'.validate': "newData.hasChildren(['ts'])",
+                 ts: {'.validate': "newData.isNumber() && newData.val() > data.val()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {a: String, b: String, c: String}",
+        expect: {'.validate': "newData.hasChildren(['a', 'b', 'c'])",
+                 a: {'.validate': "newData.isString()"},
+                 b: {'.validate': "newData.isString()"},
+                 c: {'.validate': "newData.isString()"},
+                 '$other': {'.validate': "false"}} },
+      { data: "type B { foo: Number } type T extends B { bar: String }",
+        expect: {'.validate': "newData.hasChildren(['foo', 'bar'])",
+                 foo: {'.validate': "newData.isNumber()"},
+                 bar: {'.validate': "newData.isString()"},
+                 '$other': {'.validate': "false"}} },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var symbols = parse(data + " path /x is Simple {}");
+      var symbols = parse(data + " path /t is T {}");
       var gen = new bolt.Generator(symbols);
       var rules = gen.generateRules();
       if (expect === undefined) {
-        assert.deepEqual(rules, {"rules": {"x": {} }});
+        assert.deepEqual(rules, {"rules": {}});
       } else {
-        assert.deepEqual(rules, {"rules": {"x": {".validate": expect}}});
+        assert.deepEqual(rules, {"rules": {t: expect}});
       }
+    });
+  });
+
+  suite("extendValidator", function() {
+    var tests = [
+      { data: {target: {}, src: {}},
+        expect: {} },
+      { data: {target: {}, src: {'.x': [1]}},
+        expect: {'.x': [1]} },
+      { data: {target: {'.x': [1]}, src: {'.x': [2]}},
+        expect: {'.x': [1, 2]} },
+      { data: {target: {'.x': [1]}, src: {'.x': [2], c: {'.x': [3]}}},
+        expect: {'.x': [1, 2], c: {'.x': [3]}} },
+      { data: {target: {'.x': [1], c: {'.x': [2]}}, src: {c: {'.x': [3]}}},
+        expect: {'.x': [1], c: {'.x': [2, 3]}} },
+      { data: {target: {}, src: {a: {b: {c: {d: {'.x': [1], e: {'.x': [2]}}}}}}},
+        expect: {a: {b: {c: {d: {'.x': [1], e: {'.x': [2]}}}}}} },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      generator.extendValidator(data.target, data.src);
+      assert.deepEqual(data.target, expect);
+    });
+  });
+
+  suite("mapValidator", function() {
+    var tests = [
+      { data: {'.x': 1}, expect: {'.x': 2} },
+      { data: {'.x': 2}, expect: {} },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      generator.mapValidator(data, function(value, prop) {
+        if (value == 2) {
+          return undefined;
+        }
+        return value + 1;
+      });
+      assert.deepEqual(data, expect);
     });
   });
 

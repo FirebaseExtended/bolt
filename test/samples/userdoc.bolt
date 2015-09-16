@@ -54,7 +54,7 @@ path /permissions {
 
 path /permissions/$key is Permission {
   write() {
-    return this == null && isCurrentUser(data.owner) ||
+    return this == null && isCurrentUser(prior(this.owner)) ||
       this != null &&
       // Limit structure of the key format to "grantee|owner|docid"
       $key == fullId(this.grantee, this.owner, this.docid) &&

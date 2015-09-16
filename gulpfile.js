@@ -41,7 +41,8 @@ var merge = require('merge2');
 var sourcemaps = require('gulp-sourcemaps');
 
 
-var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js'];
+var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js',
+                  'test/ast-test.js', 'test/util-test.js'];
 
 var TS_SETTINGS = {
   sortOutput: true,
@@ -132,18 +133,29 @@ gulp.task('browserify-mail-test', function() {
   return browserifyToDist('test/mail-test', { exclude: 'bolt' });
 });
 
+gulp.task('browserify-ast-test', function() {
+  return browserifyToDist('test/ast-test.js', { exclude: 'bolt' });
+});
+
+gulp.task('browserify-util-test', function() {
+  return browserifyToDist('test/util-test.js', { exclude: 'bolt' });
+});
+
 gulp.task('browserify', ['browserify-bolt',
                          'browserify-parser-test',
                          'browserify-generator-test',
-                         'browserify-mail-test']);
+                         'browserify-mail-test',
+                         'browserify-util-test',
+                         'browserify-ast-test',
+                        ]);
 
 // Runs the Mocha test suite
-gulp.task('test', ['build'], function() {
+gulp.task('test', ['lint', 'build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
 
-gulp.task('default', ['build', 'test']);
+gulp.task('default', ['test']);
 
 gulp.task('watch', ['default'], function() {
   gulp.watch(['lib/*.ts', 'test/*.ts'], ['default']);

@@ -102,16 +102,16 @@ Built in base types are also similar to JavaScript types:
 The following methods can be used on string (static valued or strings stored
 in the database):
 
-    `s.length`            - Number of characters in the string.
-    `s.includes(sub)`     - Returns true iff `sub` is a substring of `s`.
-    `s.startsWith(sub)`   - Returns true iff `sub` is a prefix of `s`.
-    `s.endsWith(sub)`     - Returns true iff `sub` is a suffix of `s`.
-    `s.replace(old, new)` - Replaces all occurancs of `ole` ins `s` with `new`.
-    `s.toLowerCase()`     - Returns an all lower case version of `s`.
-    `s.toUpperCase()`     - Returns an all upper case version of `s`.
-    `s.test(regexp)`      - Returns true iff the string matches the regular expression.
-                            Note that, in Bolt, the regexp is quoted inside a string value
-                            (e.g., '/test/i').
+    s.length            - Number of characters in the string.
+    s.includes(sub)     - Returns true iff sub is a substring of s.
+    s.startsWith(sub)   - Returns true iff sub is a prefix of s.
+    s.endsWith(sub)     - Returns true iff sub is a suffix of s.
+    s.replace(old, new) - Replaces all occurancs of ole ins s with new.
+    s.toLowerCase()     - Returns an all lower case version of s.
+    s.toUpperCase()     - Returns an all upper case version of s.
+    s.test(regexp)      - Returns true iff the string matches the regular expression.
+                          Note that, in Bolt, the regexp is quoted inside a string value
+                          (e.g., '/test/i').
 
 [Regular Expression Syntax](https://www.firebase.com/docs/security/api/string/matches.html)
 
@@ -124,8 +124,10 @@ in the database):
 
 You can also use:
 
-    data - The value at a location BEFORE a write is done.
     root - The root of your Firebase database.
+    auth - The current auth state (if auth != null the user is authenticated and his
+           (opaque string) user-id is auth.uid).
+    now -  The (Unix) timestamp of the current time (a Number).
 
 # Functions
 
@@ -154,12 +156,21 @@ Rule expressions are a subset of JavaScript expressions, and include:
   - Unary operators: - (minus), ! (boolean negation)
   - Binary operators: +, -, *, /, %
 
-References to data locations (starting with `this`, `data`, or `root`) can be further qualified
+References to data locations (starting with `this` or `root`) can be further qualified
 using the . and [] operators (just as in JavaScript Object references).
 
     this.prop  - Refers to property of the current location named 'prop'.
     this[prop] - Refers to a property of the current location named with the value of the
                 (string) variable, prop.
+
+To reference the previous value of a property (in a write() or validate() rule), wrap
+the reference in a `prior()` function:
+
+    prior(this) - Value of `this` before the write is completed.
+    prior(this.prop) - Value of a property before the write is completed.
+
+You can also use `prior()` to wrap any expressions (including function calls) that
+use `this`.
 
 # Apendix A. Firebase Expressions and their Bolt equivalents.
 
@@ -182,8 +193,8 @@ API | Bolt Equivalent
 auth | auth
 $location | $location (in path statement)
 now | NYI
-data | data
-newData | this
+data | prior(this)
+newData | this (in validate() and write() rules)
 
 ## RuleDataSnapshot Methods
 

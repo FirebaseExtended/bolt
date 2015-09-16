@@ -17,6 +17,7 @@ var Promise = require('promise');
 
 module.exports = {
   'extend': extend,
+  'extendArray': extendArray,
   'methods': methods,
   'copyArray': copyArray,
   'arrayIncludes': arrayIncludes,
@@ -29,6 +30,8 @@ module.exports = {
   'prettyJSON': prettyJSON,
   'deepExtend': deepExtend,
   'quoteString': quoteString,
+  'ensureObjectPath': ensureObjectPath,
+  'pruneEmptyChildren': pruneEmptyChildren,
 };
 
 function methods(ctor, obj) {
@@ -164,4 +167,43 @@ function quoteString(s) {
 
 function arrayIncludes(a, e) {
   return a.indexOf(e) != -1;
+}
+
+// Like Python list.extend
+function extendArray(target, src) {
+  if (target === undefined) {
+    target = [];
+  }
+  Array.prototype.push.apply(target, src);
+  return target;
+}
+
+function ensureObjectPath(obj, parts) {
+  for (var i = 0; i < parts.length; i++) {
+    var name = parts[i];
+    if (!(name in obj)) {
+      obj[name] = {};
+    }
+    obj = obj[name];
+  }
+  return obj;
+}
+
+// Remove all empty, '{}',  children - returns true iff obj is empty.
+function pruneEmptyChildren(obj) {
+  if (obj.constructor != Object) {
+    return false;
+  }
+  var hasChildren = false;
+  for (var prop in obj) {
+    if (!obj.hasOwnProperty(prop)) {
+      continue;
+    }
+    if (pruneEmptyChildren(obj[prop])) {
+      delete obj[prop];
+    } else {
+      hasChildren = true;
+    }
+  }
+  return !hasChildren;
 }

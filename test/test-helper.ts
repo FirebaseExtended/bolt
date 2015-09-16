@@ -16,9 +16,11 @@
 /// <reference path="../typings/node.d.ts" />
 
 var util = require('../lib/util');
+var gen = require('../lib/rules-generator');
 
 module.exports = {
-  'dataDrivenTest': dataDrivenTest
+  'dataDrivenTest': dataDrivenTest,
+  'expFormat': expFormat,
 };
 
 /*
@@ -76,4 +78,24 @@ function format(o) {
   default:
     return JSON.stringify(o);
   }
+}
+
+function expFormat(x) {
+  if (util.isType(x, 'array')) {
+    return '[' + x.map(expFormat).join(', ') + ']';
+  }
+  if (util.isType(x, 'object')) {
+    if ('type' in x) {
+      return gen.decodeExpression(x);
+    }
+    var result = '{';
+    var sep = '';
+    for (var prop in x) {
+      result += sep + expFormat(x[prop]);
+      sep = ', ';
+    }
+    result += '}';
+    return result;
+  }
+  return JSON.stringify(x);
 }

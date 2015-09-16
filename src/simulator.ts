@@ -18,16 +18,16 @@
 /// <reference path="../typings/node.d.ts" />
 
 var Promise = require('promise');
-var uuid = require('node-uuid');
 var assert = require('chai').assert;
 var rest = require('./firebase-rest');
-var FirebaseTokenGenerator = require('firebase-token-generator');
 
 // Browserify bug: https://github.com/substack/node-browserify/issues/1150
 var bolt = (typeof window != 'undefined' && window.bolt) || require('./bolt');
 
 var util = require('./util');
 var fileIO = require('./file-io');
+
+var MAX_TEST_MS = 30000;
 
 module.exports = {
   rulesSuite: rulesSuite
@@ -59,7 +59,7 @@ util.methods(RulesSuite, {
 
     // Run Mocha Test Suite - serialize with any other mocha test suites.
     suite("Firebase Rules Simulator: " + self.suiteName, function() {
-      this.timeout(10000);
+      this.timeout(MAX_TEST_MS);
       suiteSetup(function() {
         var rulesPath = new Promise(function(resolve) {
           self.rulesPathResolve = resolve;
@@ -93,11 +93,13 @@ util.methods(RulesSuite, {
   // Interface for test functions:
   //   test.rules(rulesPath)
   //   test.database(appName, appSecret)
+  //   test.uid(username)
   //   test(testName, testFunction)
   getInterface: function() {
     var test = this.test.bind(this);
     test.rules = this.rules.bind(this);
     test.database = this.database.bind(this);
+    test.uid = this.uid.bind(this);
     return test;
   },
 
@@ -142,26 +144,27 @@ util.methods(RulesSuite, {
     }
     this.appName = appName;
     this.appSecret = appSecret;
-    // Why won't this work for writing rules?
-    // this.adminClient = this.ensureUser('admin');
-    this.adminClient = new rest.Client(appName, appSecret);
-    this.anonClient = new rest.Client(appName);
+    this.adminClient = this.ensureUser('admin');
     this.databaseReady();
   },
 
+  uid: function(username) {
+    return this.ensureUser(username).uid;
+  },
+
   ensureUser: function(username) {
-    if (username == 'admin') {
-      return this.adminClient;
-    }
-    if (username == 'anon') {
-      return this.anonClient;
+    if (!(username in this.users)) {
+      if (username == 'anon') {
+        this.users[username] = new rest.Client(this.appName);
+      } else {
+        var tokenInfo;
+        tokenInfo = rest.generateUidAuthToken(this.appSecret,
+                                              { debug: true,
+                                                admin: username == 'admin' });
+        this.users[username] = new rest.Client(this.appName, tokenInfo.token, tokenInfo.uid);
+      }
     }
 
-    if (!(username in this.users)) {
-      // TODO: How is this working taking a non-allowed option???
-      var token = generateAuthToken({ username: username }, this.appSecret);
-      this.users[username] = new rest.Client(this.appName, token);
-    }
     return this.users[username];
   },
 });
@@ -320,14 +323,3 @@ util.methods(RulesTest, {
     return this.suite.suiteName + "." + this.testName + " " + message;
   }
 });
-
-function generateAuthToken(opts, secret) {
-  opts = util.extend({
-    uid: uuid.v4(),
-    debug: true,
-  }, opts);
-
-  var tokenGenerator = new FirebaseTokenGenerator(secret);
-  var token = tokenGenerator.createToken(opts);
-  return token;
-}

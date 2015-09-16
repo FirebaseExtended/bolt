@@ -1,0 +1,9 @@
+type Child {
+  age: Number
+}
+
+type Parent {
+  children: Child[]
+}
+
+path /parents is Parent[] {}

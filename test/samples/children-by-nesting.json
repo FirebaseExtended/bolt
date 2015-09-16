@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "parents": {
+      "$parent": {
+        "$child": {
+          ".validate": "newData.child('age').isNumber()"
+        }
+      }
+    }
+  }
+}

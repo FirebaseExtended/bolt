@@ -21,19 +21,22 @@ var Promise = require('promise');
 var https = require('https');
 var util = require('./util');
 var querystring = require('querystring');
+var uuid = require('node-uuid');
+var FirebaseTokenGenerator = require('firebase-token-generator');
 
 var FIREBASE_HOST = 'firebaseio.com';
 
 module.exports = {
-    "Client": Client,
-
-    RULES_LOCATION: '/.settings/rules',
-    TIMESTAMP: {".sv": "timestamp"},
+  "Client": Client,
+  "generateUidAuthToken": generateUidAuthToken,
+  RULES_LOCATION: '/.settings/rules',
+  TIMESTAMP: {".sv": "timestamp"},
 };
 
-function Client(appName, authToken) {
+function Client(appName, authToken, uid) {
   this.appName = appName;
   this.authToken = authToken;
+  this.uid = uid;
 }
 
 util.methods(Client, {
@@ -128,4 +131,14 @@ function request(options, content, debug) {
       reject(error);
     });
   });
+}
+
+// opts { debug: Boolean, admin: Boolean }
+function generateUidAuthToken(secret, opts) {
+  opts = util.extend({ debug: false, admin: false }, opts);
+
+  var tokenGenerator = new FirebaseTokenGenerator(secret);
+  var uid = uuid.v4();
+  var token = tokenGenerator.createToken({ uid: uid }, opts);
+  return { uid: uid, token: token };
 }

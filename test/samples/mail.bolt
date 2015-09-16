@@ -1,54 +1,40 @@
-// Functionally similar rules to
+// Mail.bolt - Inbox and Outbox Rules.
+//
+// These rules support putting Messages in an Inbox (for another user)
+// and making a record of all email sent in an outbox.
+//
+// Design goals:
+//
+// - Anyone can send a message to anybody by posting in the users inbox, as long as they have
+//   the correct from field.
+// - Cannot forge the from field of a message.
+// - Cannot alter a message once created (it can only be deleted in-toto).
+//
+// Functionally similar rules to the corresponding rules defined in the Blaze Compiler:
 // https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
 
 type Message {
-  from: String
-  to: String
-  message: String
+  from: String,
+  to: String,
+  message: String,
 
   validate() {
-    return isCurrentUser(this.from);
+    return isNew(this) && isCurrentUser(this.from);
   }
-
-  // extensible(prop) { return false; }
 }
 
-// The inbox is someone's incoming mail.
+// Inbox
 path /users/$userid/inbox/$msg is Message {
-  // Users can read their own inbox
-  read() { return isCurrentUser($userid); }
-
-  // Anyone can send a message to anybody by posting in the users inbox, as long as they have
-  // the correct sender field.
-  write() {
-    return isCreating(data) ||
-      isUpdating(data) && isCurrentUser($userid);
-  }
-
+  read() = isCurrentUser($userid);
+  write() = isNew(this) || isCurrentUser($userid);
 }
 
-// The outbox is for recording what has been sent by a user.
+// Outbox
 path /users/$userid/outbox/$msg is Message {
-  read() { return isCurrentUser($userid); }
-
-  write() {
-    return isCreating(data) ||
-      isUpdating(data) && isCurrentUser($userid);
-  }
+  read() = isCurrentUser($userid);
+  write() = isCurrentUser($userid);
 }
 
-function isCreating(old) {
-  return old == null;
-}
+isNew(ref) = prior(ref) == null;
 
-function isUpdating(old) {
-  return old != null;
-}
-
-function isCurrentUser(userid) {
-  return currentUser() == userid;
-}
-
-function currentUser() {
-  return auth.username;
-}
+isCurrentUser(userid) = auth != null && auth.uid == userid;
