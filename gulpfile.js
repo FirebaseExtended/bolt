@@ -70,8 +70,8 @@ gulp.task('tslint', function() {
   return gulp.src(TS_SOURCES)
     .pipe(tslint())
     .pipe(tslint.report('prose', {
-        emitError: false
-      }));
+      emitError: false
+    }));
 });
 
 
