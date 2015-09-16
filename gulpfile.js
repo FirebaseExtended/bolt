@@ -112,9 +112,12 @@ gulp.task('build-peg', function() {
  * We have some raw JS source, so we copy that over to the lib directory
  */
 gulp.task('copy-js', function() {
-  return gulp.src('src/util.js')
-    .pipe(gulp.dest('lib'));
+  return merge([
+    gulp.src('src/util.js').pipe(gulp.dest('lib')),
+    gulp.src('test/auth-secrets.js').pipe(gulp.dest('lib-test'))
+  ]);
 });
+
 
 gulp.task('browserify-bolt', ['compile', 'build-peg'], function() {
   return browserifyToDist('lib/bolt.js', { standalone: 'bolt' });
