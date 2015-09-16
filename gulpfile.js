@@ -32,7 +32,8 @@ var peg = require('gulp-peg');
 var JS_SOURCES = ['gulpfile.js',
                   'bin/firebase-bolt',
                   'src/util.js'];
-var TS_SOURCES = ['src/*.ts'];
+var TS_SOURCES = ['src/*.ts',
+                  'test/*.ts'];
 
 
 var ts = require('gulp-typescript');

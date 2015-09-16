@@ -22,7 +22,7 @@ var assert = require('chai').assert;
 var rest = require('./firebase-rest');
 
 // Browserify bug: https://github.com/substack/node-browserify/issues/1150
-var bolt = (typeof window != 'undefined' && window.bolt) || require('./bolt');
+var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
 
 var util = require('./util');
 var fileIO = require('./file-io');
@@ -155,13 +155,13 @@ util.methods(RulesSuite, {
 
   ensureUser: function(username) {
     if (!(username in this.users)) {
-      if (username == 'anon') {
+      if (username === 'anon') {
         this.users[username] = new rest.Client(this.appName);
       } else {
         var tokenInfo;
         tokenInfo = rest.generateUidAuthToken(this.appSecret,
                                               { debug: true,
-                                                admin: username == 'admin' });
+                                                admin: username === 'admin' });
         this.users[username] = new rest.Client(this.appName, tokenInfo.token, tokenInfo.uid);
       }
     }

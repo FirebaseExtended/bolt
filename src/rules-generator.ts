@@ -129,7 +129,7 @@ util.methods(Generator, {
     }
     this.convertExpressions(this.rules);
 
-    if (this.errorCount != 0) {
+    if (this.errorCount !== 0) {
       throw new Error(errors.generateFailed + this.errorCount + " errors.");
     }
 
@@ -240,7 +240,7 @@ util.methods(Generator, {
       return {};
     }
 
-    if (schema.derivedFrom.name != 'Any') {
+    if (schema.derivedFrom.name !== 'Any') {
       extendValidator(validator, this.ensureValidator(schema.derivedFrom.name));
     }
 
@@ -315,7 +315,7 @@ util.methods(Generator, {
       }
       var indices = [];
       for (i = 0; i < exp.value.length; i++) {
-        if (exp.value[i].type != 'String') {
+        if (exp.value[i].type !== 'String') {
           this.fatal(errors.badIndex + " (not " + exp.value[i].type + ")");
         } else {
           indices.push(exp.value[i].value);
@@ -348,8 +348,8 @@ util.methods(Generator, {
       if (prop in methodThisIs) {
         value = collapseHasChildren(value);
         value = this.getExpressionText(ast.andArray(value), methodThisIs[prop]);
-        if (prop == '.validate' && value == 'true' ||
-            (prop == '.read' || prop == '.write') && value == 'false') {
+        if (prop === '.validate' && value === 'true' ||
+            (prop === '.read' || prop === '.write') && value === 'false') {
           value = undefined;
         }
       }
@@ -413,14 +413,14 @@ util.methods(Generator, {
     }
 
     function valueExpression(exp2) {
-      if (exp2.valueType == 'Snapshot') {
+      if (exp2.valueType === 'Snapshot') {
         isModified = true;
       }
       return ast.ensureValue(exp2);
     }
 
     function booleanExpression(exp2) {
-      if (exp2.valueType == 'Snapshot') {
+      if (exp2.valueType === 'Snapshot') {
         isModified = true;
       }
       return ast.ensureBoolean(exp2);
@@ -444,13 +444,13 @@ util.methods(Generator, {
     switch (exp.type) {
     case 'op':
       // Ensure arguments are boolean (or values) where needed.
-      if (exp.op == 'value') {
+      if (exp.op === 'value') {
         args[0] = valueExpression(subExpression(exp.args[0]));
-      } else if (exp.op == '||' || exp.op == '&&' || exp.op == '!') {
+      } else if (exp.op === '||' || exp.op === '&&' || exp.op === '!') {
         for (i = 0; i < exp.args.length; i++) {
           args[i] = booleanExpression(subExpression(exp.args[i]));
         }
-      } else if (exp.op == '?:') {
+      } else if (exp.op === '?:') {
         args[0] = booleanExpression(subExpression(exp.args[0]));
         args[1] = subExpression(exp.args[1]);
         args[2] = subExpression(exp.args[2]);
@@ -471,7 +471,7 @@ util.methods(Generator, {
       var base;
       var accessor;
       base = subExpression(exp.base);
-      if (typeof exp.accessor == 'string') {
+      if (typeof exp.accessor === 'string') {
         accessor = exp.accessor;
       } else {
         accessor = valueExpression(subExpression(exp.accessor));
@@ -479,8 +479,8 @@ util.methods(Generator, {
       // snapshot references use child() wrapper - EXCEPT for reserved methods
       // TODO: Only do this if we are dereferencing a function call OR if
       // there is no shadowed property in the object.
-      if (base.valueType == 'Snapshot') {
-        if (accessor == 'parent') {
+      if (base.valueType === 'Snapshot') {
+        if (accessor === 'parent') {
           return ast.snapshotParent(base);
         } else if (!util.arrayIncludes(snapshotMethods, accessor)) {
           return ast.snapshotChild(base, accessor);
@@ -507,14 +507,14 @@ util.methods(Generator, {
           callArgs.unshift(ast.ensureValue(callee.self));
         }
 
-        if (fn.params.length != callArgs.length) {
+        if (fn.params.length !== callArgs.length) {
           this.fatal(errors.mismatchParams + " ( " +
                      ref.name + " expects " + fn.params.length +
                      " but actually passed " + callArgs.length + ")");
           return exp;
         }
 
-        if (fn.body.type == 'builtin') {
+        if (fn.body.type === 'builtin') {
           return fn.body.fn(callArgs, params);
         }
 
@@ -531,7 +531,7 @@ util.methods(Generator, {
       } else {
         // Not a global function - expand args.
         if (!this.allowUndefinedFunctions) {
-          var funcName = ref.type == 'ref' ? ref.accessor : ref.name;
+          var funcName = ref.type === 'ref' ? ref.accessor : ref.name;
           if (!(funcName in this.symbols.schema.String.methods ||
                 util.arrayIncludes(snapshotMethods, funcName))) {
             this.fatal(errors.undefinedFunction + decodeExpression(ref));
@@ -544,7 +544,7 @@ util.methods(Generator, {
           exp.ref = ref;
           exp.args = args;
           // TODO: Get rid of this hack (for data.parent().val())
-          if (exp.ref.valueType == 'Snapshot') {
+          if (exp.ref.valueType === 'Snapshot') {
             exp.valueType = 'Snapshot';
           }
         }
@@ -576,11 +576,11 @@ util.methods(Generator, {
 
   // Builtin function - convert string to RegExp
   makeRegExp: function(args, params) {
-    if (args.length != 1) {
+    if (args.length !== 1) {
       throw new Error(errors.application + "RegExp arguments.");
     }
     var exp = this.partialEval(args[0], params);
-    if (exp.type != 'String' || !/\/.*\//.test(exp.value)) {
+    if (exp.type !== 'String' || !/\/.*\//.test(exp.value)) {
       throw new Error(errors.coercion + decodeExpression(exp) + " => RegExp");
     }
     return ast.regexp(exp.value);
@@ -589,7 +589,7 @@ util.methods(Generator, {
   // Lookup globally defined function.
   lookupFunction: function(ref) {
     // Global function.
-    if (ref.type == 'var') {
+    if (ref.type === 'var') {
       var fn = this.symbols.functions[ref.name];
       if (!fn) {
         return undefined;
@@ -598,9 +598,9 @@ util.methods(Generator, {
     }
 
     // Method call.
-    if (ref.type == 'ref') {
+    if (ref.type === 'ref') {
       // TODO: Require static type validation before calling String methods.
-      if (ref.base.op != 'value' && ref.accessor in this.symbols.schema.String.methods) {
+      if (ref.base.op !== 'value' && ref.accessor in this.symbols.schema.String.methods) {
         return { self: ref.base, fn: this.symbols.schema.String.methods[ref.accessor] };
       }
     }
@@ -664,7 +664,7 @@ function decodeExpression(exp, outerPrecedence) {
     break;
 
   case 'ref':
-    if (typeof exp.accessor == 'string') {
+    if (typeof exp.accessor === 'string') {
       result = decodeExpression(exp.base) + '.' + exp.accessor;
     } else {
       result = decodeExpression(exp.base, innerPrecedence) +
@@ -682,9 +682,9 @@ function decodeExpression(exp, outerPrecedence) {
 
   case 'op':
     var rep = JS_OPS[exp.op].rep === undefined ? exp.op : JS_OPS[exp.op].rep;
-    if (exp.args.length == 1) {
+    if (exp.args.length === 1) {
       result = rep + decodeExpression(exp.args[0], innerPrecedence);
-    } else if (exp.args.length == 2) {
+    } else if (exp.args.length === 2) {
       result =
         decodeExpression(exp.args[0], innerPrecedence) +
         ' ' + rep + ' ' +
@@ -692,7 +692,7 @@ function decodeExpression(exp, outerPrecedence) {
         // down on the right hand side to force () for right-associating
         // operations.
         decodeExpression(exp.args[1], innerPrecedence + 1);
-    } else if (exp.args.length == 3) {
+    } else if (exp.args.length === 3) {
       result =
         decodeExpression(exp.args[0], innerPrecedence) + ' ? ' +
         decodeExpression(exp.args[1], innerPrecedence) + ' : ' +
@@ -746,8 +746,8 @@ function extendValidator(target, src) {
     if (!src.hasOwnProperty(prop)) {
       continue;
     }
-    if (prop[0] == '.') {
-      if (target[prop] == undefined) {
+    if (prop[0] === '.') {
+      if (target[prop] === undefined) {
         target[prop] = [];
       }
       if (util.isType(src[prop], 'array')) {
@@ -773,7 +773,7 @@ function mapValidator(v, fn) {
     if (!v.hasOwnProperty(prop)) {
       continue;
     }
-    if (prop[0] == '.') {
+    if (prop[0] === '.') {
       v[prop] = fn(v[prop], prop);
       if (v[prop] === undefined) {
         delete v[prop];
@@ -792,19 +792,19 @@ function collapseHasChildren(exps) {
   var combined = [];
   var result = [];
   exps.forEach(function(exp) {
-    if (exp.type == 'call' && exp.ref.type == 'ref' && exp.ref.accessor == 'hasChildren') {
-      if (exp.args.length == 0) {
+    if (exp.type === 'call' && exp.ref.type === 'ref' && exp.ref.accessor === 'hasChildren') {
+      if (exp.args.length === 0) {
         hasHasChildren = true;
         return;
       }
       // Expect one argument of Array type.
-      if (exp.args.length != 1 || exp.args[0].type != 'Array') {
+      if (exp.args.length !== 1 || exp.args[0].type !== 'Array') {
         throw new Error(errors.application + "Invalid argument to hasChildren(): " +
                         exp.args[0].type);
       }
       exp.args[0].value.forEach(function(arg) {
         hasHasChildren = true;
-        if (arg.type != 'String') {
+        if (arg.type !== 'String') {
           throw new Error(errors.application + "Expect string argument to hasChildren(), not: " +
                           arg.type);
         }
@@ -822,6 +822,6 @@ function collapseHasChildren(exps) {
 
 // Generate this.hasChildren([props, ...])
 function hasChildrenExp(props) {
-  var args = props.length == 0 ? [] : [ast.array(props.map(ast.string))];
+  var args = props.length === 0 ? [] : [ast.array(props.map(ast.string))];
   return ast.call(ast.reference(ast.cast(ast.variable('this'), 'Any'), 'hasChildren'), args);
 }
