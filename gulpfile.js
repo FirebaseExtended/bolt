@@ -17,7 +17,9 @@
 
 var path = require('path');
 var gulp = require('gulp');
+var del = require('del');
 var eslint = require('gulp-eslint');
+var tslint = require('gulp-tslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
 var util = require('./src/util');
@@ -28,9 +30,10 @@ var gutil = require('gulp-util');
 var peg = require('gulp-peg');
 
 var JS_SOURCES = ['gulpfile.js',
-                  'lib/*.js',
                   'bin/firebase-bolt',
-                  'test/*.js'];
+                  'src/util.js'];
+var TS_SOURCES = ['src/*.ts',
+                  'test/*.ts'];
 
 
 var ts = require('gulp-typescript');
@@ -41,36 +44,46 @@ var sourcemaps = require('gulp-sourcemaps');
 var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js'];
 
 var TS_SETTINGS = {
-    sortOutput: true,
-    declarationFiles: true,
-    noExternalResolve: false,
-    module: 'commonjs'
+  sortOutput: true,
+  declarationFiles: true,
+  noExternalResolve: false,
+  module: 'commonjs'
 };
 
 var tsProject = ts.createProject(TS_SETTINGS);
 var tsTestProject = ts.createProject(TS_SETTINGS);
 
-/*
-TODO: TS output does not match out linting style
-REPLACE WITH TS EQUIVELENT ON TS SRCes
-gulp.task('lint', function() {
-  return gulp.src(JS_SOURCES.concat(['!lib/rules-parser.js']))
+gulp.task('clean', function(cb) {
+  del(['lib'], cb);
+});
+
+
+gulp.task('eslint', function() {
+  return gulp.src(JS_SOURCES)
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
 });
-*/
+
+gulp.task('tslint', function() {
+  return gulp.src(TS_SOURCES)
+    .pipe(tslint())
+    .pipe(tslint.report('full'));
+});
+
 
 gulp.task('compile', ['build-peg'], function() {
   var tsResult = gulp.src('lib/*.ts')
                     .pipe(sourcemaps.init())
                     .pipe(ts(tsProject));
-    return merge([ // Merge the two output streams, so this task is finished when the IO of both operations are done.
-        tsResult.dts.pipe(gulp.dest('dist/ts/')),
-        tsResult.js
-            .pipe(sourcemaps.write())
-            .pipe(gulp.dest('lib/'))
-    ]);
+  return merge([
+    // Merge the two output streams, so this task is finished
+    // when the IO of both operations are done.
+    // if we want the definition files: tsResult.dts.pipe(gulp.dest('dist/ts/')),
+    tsResult.js
+      .pipe(sourcemaps.write())
+      .pipe(gulp.dest('lib/'))
+  ]);
 });
 
 gulp.task('compile-test', ['compile'], function() {
@@ -78,7 +91,7 @@ gulp.task('compile-test', ['compile'], function() {
     .pipe(sourcemaps.init())
     .pipe(ts(tsTestProject))
     .pipe(sourcemaps.write())
-    .pipe(gulp.dest('test/'));   
+    .pipe(gulp.dest('test/'));
 });
 
 gulp.task('build', ['compile', 'compile-test', 'build-peg', 'browserify-bolt', 'copy-js']);
@@ -120,8 +133,6 @@ gulp.task('browserify', ['browserify-bolt',
                          'browserify-generator-test',
                          'browserify-mail-test']);
 
-
-
 // Runs the Mocha test suite
 gulp.task('test', ['build'], function() {
   return gulp.src(TEST_FILES)
@@ -131,7 +142,7 @@ gulp.task('test', ['build'], function() {
 gulp.task('default', ['build', 'test']);
 
 gulp.task('watch', ['default'], function() {
-    gulp.watch(['lib/*.ts', 'test/*.ts'], ['default']);
+  gulp.watch(['lib/*.ts', 'test/*.ts'], ['default']);
 });
 
 function browserifyToDist(entry, opts) {

@@ -25,10 +25,10 @@ var querystring = require('querystring');
 var FIREBASE_HOST = 'firebaseio.com';
 
 module.exports = {
-  "Client": Client,
+    "Client": Client,
 
-  RULES_LOCATION: '/.settings/rules',
-  TIMESTAMP: {".sv": "timestamp"},
+    RULES_LOCATION: '/.settings/rules',
+    TIMESTAMP: {".sv": "timestamp"},
 };
 
 function Client(appName, authToken) {
