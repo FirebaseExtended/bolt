@@ -34,7 +34,7 @@ suite("Rules Generator Tests", function() {
   suite("Basic Samples", function() {
     var tests = [
       { data: "path / {read() { return true; } write() { return true; }}",
-        expect: { rules: {".read": "truegulp", ".write": "true"} }
+        expect: { rules: {".read": "true", ".write": "true"} }
       },
       { data: "path / {read() { return true; }}",
         expect: { rules: {".read": "true"} }

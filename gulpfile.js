@@ -41,8 +41,8 @@ var merge = require('merge2');
 var sourcemaps = require('gulp-sourcemaps');
 
 
-var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js',
-                  'test/ast-test.js', 'test/util-test.js'];
+var TEST_FILES = ['lib-test/generator-test.js', 'lib-test/parser-test.js',
+                  'lib-test/ast-test.js', 'lib-test/util-test.js'];
 
 var TS_SETTINGS = {
   sortOutput: true,
@@ -55,7 +55,7 @@ var tsProject = ts.createProject(TS_SETTINGS);
 var tsTestProject = ts.createProject(TS_SETTINGS);
 
 gulp.task('clean', function(cb) {
-  del(['lib'], cb);
+  del(['lib', 'lib-test'], cb);
 });
 
 
@@ -76,7 +76,7 @@ gulp.task('tslint', function() {
 
 
 gulp.task('compile', ['build-peg'], function() {
-  var tsResult = gulp.src('lib/*.ts')
+  var tsResult = gulp.src('src/*.ts')
                     .pipe(sourcemaps.init())
                     .pipe(ts(tsProject));
   return merge([
@@ -94,7 +94,7 @@ gulp.task('compile-test', ['compile'], function() {
     .pipe(sourcemaps.init())
     .pipe(ts(tsTestProject))
     .pipe(sourcemaps.write())
-    .pipe(gulp.dest('test/'));
+    .pipe(gulp.dest('lib-test/'));
 });
 
 gulp.task('build',

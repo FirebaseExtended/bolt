@@ -3,5 +3,6 @@
 bower_components/
 src/
 lib/
+lib-test/
 dist/
 npm-debug.log
