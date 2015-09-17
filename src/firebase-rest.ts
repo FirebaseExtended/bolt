@@ -18,7 +18,8 @@
 /// <reference path="../typings/node.d.ts" />
 
 var Promise = require('promise');
-var https = require('https');
+import https = require('https');
+import http = require('http');
 var util = require('./util');
 var querystring = require('querystring');
 var uuid = require('node-uuid');
@@ -63,7 +64,7 @@ util.methods(Client, {
       method: opt.method
     };
 
-    var query = {};
+    var query: any = {};
     if (opt.print) {
       query.print = opt.print;
     }
@@ -103,7 +104,8 @@ function request(options, content, debug) {
   }
 
   return new Promise(function(resolve, reject) {
-    var req = https.request(options, function(res) {
+    // TODO: Why isn't this argument typed as per https.request?
+    var req = https.request(options, function(res: http.ClientResponse) {
       var chunks = [];
 
       res.on('data', function(body) {
