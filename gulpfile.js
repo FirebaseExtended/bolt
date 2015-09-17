@@ -22,7 +22,6 @@ var eslint = require('gulp-eslint');
 var tslint = require('gulp-tslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
-var util = require('./src/util');
 
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
@@ -30,8 +29,7 @@ var gutil = require('gulp-util');
 var peg = require('gulp-peg');
 
 var JS_SOURCES = ['gulpfile.js',
-                  'bin/firebase-bolt',
-                  'src/util.js'];
+                  'bin/firebase-bolt'];
 var TS_SOURCES = ['src/*.ts',
                   'test/*.ts'];
 
@@ -113,7 +111,6 @@ gulp.task('build-peg', function() {
  */
 gulp.task('copy-js', function() {
   return merge([
-    gulp.src('src/util.js').pipe(gulp.dest('lib')),
     gulp.src('test/auth-secrets.js').pipe(gulp.dest('lib-test'))
   ]);
 });
@@ -169,7 +166,7 @@ function browserifyToDist(entry, opts) {
   //   standalone: name of exported module
   //   exclude: Don't include namespace.
   //   debug: Include sourcemap in output.
-  opts = util.extend({}, opts, { entries: [entry], debug: true });
+  opts = extend({}, opts, { entries: [entry], debug: true });
   var exclude = opts.exclude;
   delete opts.exclude;
   var b = browserify(opts);
@@ -181,4 +178,24 @@ function browserifyToDist(entry, opts) {
     .pipe(source(path.basename(entry)))
     .on('error', gutil.log)
     .pipe(gulp.dest('dist'));
+}
+
+function extend(dest) {
+  var i;
+  var src;
+  var prop;
+
+  if (dest === undefined) {
+    dest = {};
+  }
+  for (i = 1; i < arguments.length; i++) {
+    src = arguments[i];
+    for (prop in src) {
+      if (src.hasOwnProperty(prop)) {
+        dest[prop] = src[prop];
+      }
+    }
+  }
+
+  return dest;
 }
