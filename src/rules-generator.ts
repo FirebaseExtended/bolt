@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/// <reference path="../typings/node.d.ts" />
 var util = require('./util');
 var ast = require('./ast');
 
