@@ -145,11 +145,11 @@ function snapshotParent(base) {
   if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
-  return cast(reference(cast(base), 'parent'), 'Snapshot');
+  return cast(reference(cast(base, 'Any'), 'parent'), 'Snapshot');
 }
 
 function snapshotValue(exp) {
-  return call(reference(cast(exp), 'val'), []);
+  return call(reference(cast(exp, 'Any'), 'val'), []);
 }
 
 function ensureValue(exp) {
@@ -193,12 +193,12 @@ function isOp(opType, exp) {
 
 // Return a generating function to make an operator exp node.
 function opGen(opType: string, arity: number = 2) {
-  return function(/* variable */) {
-    if (arguments.length !== arity) {
-      throw new Error("Operator has " + arguments.length +
+  return function(...args) {
+    if (args.length !== arity) {
+      throw new Error("Operator has " + args.length +
                       " arguments (expecting " + arity + ").");
     }
-    return op(opType, util.copyArray(arguments));
+    return op(opType, args);
   };
 }
 

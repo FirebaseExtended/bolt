@@ -16,8 +16,8 @@
 /// <reference path="../typings/node.d.ts" />
 
 var Promise = require('promise');
-var fs = require('fs');
-
+import fs = require('fs');
+// TODO: Trying to use import says util.ts is not a module???
 var util = require('./util');
 
 module.exports = {
@@ -52,7 +52,7 @@ function writeFile(path, data) {
   return request('PUT', path, data) || writeFS(path, data);
 }
 
-function request(method, url, data ?: string) {
+function request(method, url, data?) {
   if (!global.XMLHttpRequest) {
     return undefined;
   }

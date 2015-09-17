@@ -70,7 +70,7 @@ function internalType(value) {
 }
 
 function isType(value, type) {
-  return typeOf(value) == type;
+  return typeOf(value) === type;
 }
 
 // Return one of the baseTypes as a string
@@ -89,7 +89,7 @@ function typeOf(value) {
 }
 
 function isThenable(obj) {
-  return typeOf(obj) == 'object' && 'then' in obj && typeof(obj.then) == 'function';
+  return typeOf(obj) === 'object' && 'then' in obj && typeof(obj.then) === 'function';
 }
 
 // Converts a synchronous function to one allowing Promises
@@ -166,7 +166,7 @@ function quoteString(s) {
 }
 
 function arrayIncludes(a, e) {
-  return a.indexOf(e) != -1;
+  return a.indexOf(e) !== -1;
 }
 
 // Like Python list.extend
@@ -191,7 +191,7 @@ function ensureObjectPath(obj, parts) {
 
 // Remove all empty, '{}',  children - returns true iff obj is empty.
 function pruneEmptyChildren(obj) {
-  if (obj.constructor != Object) {
+  if (obj.constructor !== Object) {
     return false;
   }
   var hasChildren = false;
