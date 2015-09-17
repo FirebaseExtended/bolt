@@ -161,7 +161,7 @@ gulp.task('test', ['eslint', 'tslint', 'build'], function() {
 gulp.task('default', ['test']);
 
 gulp.task('watch', ['default'], function() {
-  gulp.watch(['lib/*.ts', 'test/*.ts'], ['default']);
+  gulp.watch(['src/*', 'test/*'], ['default']);
 });
 
 function browserifyToDist(entry, opts) {
