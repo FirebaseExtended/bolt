@@ -27,14 +27,10 @@ var FirebaseTokenGenerator = require('firebase-token-generator');
 
 var FIREBASE_HOST = 'firebaseio.com';
 
-module.exports = {
-  "Client": Client,
-  "generateUidAuthToken": generateUidAuthToken,
-  RULES_LOCATION: '/.settings/rules',
-  TIMESTAMP: {".sv": "timestamp"}
-};
+export var RULES_LOCATION =  '/.settings/rules';
+export var TIMESTAMP = {".sv": "timestamp"};
 
-function Client(appName, authToken, uid) {
+export function Client(appName, authToken?, uid?) {
   this.appName = appName;
   this.authToken = authToken;
   this.uid = uid;
@@ -136,7 +132,7 @@ function request(options, content, debug) {
 }
 
 // opts { debug: Boolean, admin: Boolean }
-function generateUidAuthToken(secret, opts) {
+export function generateUidAuthToken(secret, opts) {
   opts = util.extend({ debug: false, admin: false }, opts);
 
   var tokenGenerator = new FirebaseTokenGenerator(secret);

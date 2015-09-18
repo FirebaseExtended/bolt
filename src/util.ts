@@ -13,32 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var Promise = require('promise');
+import Promise = require('promise');
 
-module.exports = {
-  'extend': extend,
-  'extendArray': extendArray,
-  'methods': methods,
-  'copyArray': copyArray,
-  'arrayIncludes': arrayIncludes,
-  'typeOf': typeOf,
-  'isType': isType,
-  'isThenable': isThenable,
-  'maybePromise': maybePromise,
-  'ensureExtension': ensureExtension,
-  'getProp': maybePromise(function(obj, prop) { return obj[prop]; }),
-  'prettyJSON': prettyJSON,
-  'deepExtend': deepExtend,
-  'quoteString': quoteString,
-  'ensureObjectPath': ensureObjectPath,
-  'pruneEmptyChildren': pruneEmptyChildren,
-};
-
-function methods(ctor, obj) {
+export function methods(ctor, obj) {
   extend(ctor.prototype, obj);
 }
 
-function extend(dest) {
+export function extend(dest, ...srcs) {
   var i;
   var source;
   var prop;
@@ -46,8 +27,8 @@ function extend(dest) {
   if (dest === undefined) {
     dest = {};
   }
-  for (i = 1; i < arguments.length; i++) {
-    source = arguments[i];
+  for (i = 0; i < srcs.length; i++) {
+    source = srcs[i];
     for (prop in source) {
       if (source.hasOwnProperty(prop)) {
         dest[prop] = source[prop];
@@ -58,7 +39,7 @@ function extend(dest) {
   return dest;
 }
 
-function copyArray(arg) {
+export function copyArray(arg) {
   return Array.prototype.slice.call(arg);
 }
 
@@ -69,12 +50,12 @@ function internalType(value) {
   return Object.prototype.toString.call(value).match(/\[object (.*)\]/)[1].toLowerCase();
 }
 
-function isType(value, type) {
+export function isType(value, type) {
   return typeOf(value) === type;
 }
 
 // Return one of the baseTypes as a string
-function typeOf(value) {
+export function typeOf(value) {
   if (value === undefined) {
     return 'undefined';
   }
@@ -88,7 +69,7 @@ function typeOf(value) {
   return type;
 }
 
-function isThenable(obj) {
+export function isThenable(obj) {
   return typeOf(obj) === 'object' && 'then' in obj && typeof(obj.then) === 'function';
 }
 
@@ -99,7 +80,7 @@ function isThenable(obj) {
 //
 // If none of the arguments are Thenables, then the wrapped
 // function returns a synchronous value (not wrapped in a Promise).
-function maybePromise(fn) {
+export function maybePromise(fn) {
   return function() {
     var self = this;
     var args = copyArray(arguments);
@@ -114,11 +95,15 @@ function maybePromise(fn) {
   };
 }
 
+export var getProp =  maybePromise(function(obj, prop) {
+  return obj[prop];
+});
+
 function ensureExtension(fileName, extension) {
   return fileName + '.' + extension;
 }
 
-function prettyJSON(o) {
+export function prettyJSON(o) {
   return JSON.stringify(o, null, 2);
 }
 
@@ -155,7 +140,7 @@ var specialQuotes = {
   '\r': '\\r'
 };
 
-function quoteString(s) {
+export function quoteString(s) {
   s = s.replace(quotableCharacters, function(c) {
     if (specialQuotes[c]) {
       return specialQuotes[c];
@@ -165,12 +150,12 @@ function quoteString(s) {
   return "'" + s + "'";
 }
 
-function arrayIncludes(a, e) {
+export function arrayIncludes(a, e) {
   return a.indexOf(e) !== -1;
 }
 
 // Like Python list.extend
-function extendArray(target, src) {
+export function extendArray(target, src) {
   if (target === undefined) {
     target = [];
   }
@@ -178,7 +163,7 @@ function extendArray(target, src) {
   return target;
 }
 
-function ensureObjectPath(obj, parts) {
+export function ensureObjectPath(obj, parts) {
   for (var i = 0; i < parts.length; i++) {
     var name = parts[i];
     if (!(name in obj)) {
@@ -190,7 +175,7 @@ function ensureObjectPath(obj, parts) {
 }
 
 // Remove all empty, '{}',  children - returns true iff obj is empty.
-function pruneEmptyChildren(obj) {
+export function pruneEmptyChildren(obj) {
   if (obj.constructor !== Object) {
     return false;
   }

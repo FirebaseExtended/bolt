@@ -15,15 +15,16 @@
  */
 /// <reference path="../typings/node.d.ts" />
 /// <reference path="../typings/mocha.d.ts" />
+/// <reference path="../typings/chai.d.ts" />
 
 var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../lib/bolt');
 var parse = bolt.parse;
-var generator = require('../lib/rules-generator');
-var ast = require('../lib/ast');
-var fileio = require('../lib/file-io');
-var helper = require('./test-helper');
+import generator = require('../lib/rules-generator');
+import ast = require('../lib/ast');
+import fileio = require('../lib/file-io');
+import helper = require('./test-helper');
 
-var chai = require('chai');
+import chai = require('chai');
 chai.config.truncateThreshold = 1000;
 var assert = chai.assert;
 

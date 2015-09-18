@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 /// <reference path="../typings/node.d.ts" />
-var util = require('./util');
-var ast = require('./ast');
-
-module.exports = {
-  'Generator': Generator,
-  'decodeExpression': decodeExpression,
-  'extendValidator': extendValidator,
-  'mapValidator': mapValidator,
-};
+import util = require('./util');
+import ast = require('./ast');
 
 var errors = {
   badIndex: "The index function must return a String or an array of Strings.",
@@ -77,7 +70,7 @@ var snapshotMethods = ['parent', 'child', 'hasChildren', 'val', 'isString', 'isN
 //   functions: {}
 //   schema: {}
 //   paths: {}
-function Generator(symbols) {
+export function Generator(symbols) {
   this.symbols = symbols;
   this.log = symbols.log;
   this.validators = {};
@@ -395,7 +388,7 @@ util.methods(Generator, {
   // - Replace local and global variables.
   // - Expand snapshot references using child('ref').
   // - Coerce snapshot references to values as needed.
-  partialEval: function(exp, params, functionCalls) {
+  partialEval: function(exp, params?, functionCalls?) {
     var innerParams = {};
     var args = [];
     var i;
@@ -638,7 +631,7 @@ util.methods(Generator, {
 });
 
 // From an AST, decode as an expression (string).
-function decodeExpression(exp, outerPrecedence) {
+export function decodeExpression(exp, outerPrecedence?) {
   if (outerPrecedence === undefined) {
     outerPrecedence = 0;
   }
@@ -743,7 +736,7 @@ function precedenceOf(exp) {
 }
 
 // Merge all .X terms into target.
-function extendValidator(target, src) {
+export function extendValidator(target, src) {
   if (src === undefined) {
     throw new Error(errors.application + "Illegal validation source.");
   }
@@ -773,7 +766,7 @@ function extendValidator(target, src) {
 
 // Call fn(value, prop) on all '.props' and assiging the value back into the
 // validator.
-function mapValidator(v, fn) {
+export function mapValidator(v, fn) {
   for (var prop in v) {
     if (!v.hasOwnProperty(prop)) {
       continue;

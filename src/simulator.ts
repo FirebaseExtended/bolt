@@ -16,12 +16,18 @@
  * limitations under the License.
  */
 /// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/chai.d.ts" />
+/// <reference path="../typings/mocha.d.ts" />
+/// <reference path="../typings/es6-promise.d.ts" />
 
-var Promise = require('promise');
-var assert = require('chai').assert;
-var rest = require('./firebase-rest');
+import Promise = require('promise');
+import chai = require('chai');
+var assert = chai.assert;
+import rest = require('./firebase-rest');
 
 // Browserify bug: https://github.com/substack/node-browserify/issues/1150
+interface Window { bolt: any; }
+declare var window: Window;
 var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
 
 var util = require('./util');

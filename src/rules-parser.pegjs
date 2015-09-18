@@ -17,8 +17,7 @@
  */
 
 {
-  "use strict";
-  var ast = require('./ast');
+  import ast = require('./ast');
 
   var errorCount = 0;
 
