@@ -86,7 +86,7 @@ gulp.task('ts-compile-test', ['ts-compile'], function() {
     .pipe(gulp.dest('lib/test/'));
 });
 
-gulp.task('build', ['lint', 'ts-compile', 'ts-compile-test', 'browserify-bolt']);
+gulp.task('build', ['ts-compile', 'ts-compile-test', 'browserify-bolt']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
