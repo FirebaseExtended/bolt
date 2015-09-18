@@ -308,7 +308,7 @@ suite("Rules Parser Tests", function() {
     var files = ["all_access", "userdoc", "mail", "children"];
 
     helper.dataDrivenTest(files, function(data) {
-      var filename = 'test/samples/' + data + '.' + BOLT_EXTENSION;
+      var filename = 'samples/' + data + '.' + BOLT_EXTENSION;
       return readFile(filename)
         .then(function(response) {
           var result = parse(response.content);

@@ -25,7 +25,7 @@ rulesSuite("Mail", function(test) {
   var uid = test.uid;
 
   test.database(secrets.APP, secrets.SECRET);
-  test.rules('test/samples/mail');
+  test.rules('samples/mail');
 
   test("Inbox tests.", function(rules) {
     rules

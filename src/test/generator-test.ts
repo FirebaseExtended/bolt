@@ -73,7 +73,7 @@ suite("Rules Generator Tests", function() {
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
-      filename = 'test/samples/' + filename + '.' + bolt.FILE_EXTENSION;
+      filename = 'samples/' + filename + '.' + bolt.FILE_EXTENSION;
       return fileio.readFile(filename)
         .then(function(response) {
           var result = parse(response.content);
