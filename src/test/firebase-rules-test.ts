@@ -19,7 +19,7 @@
 import chai = require('chai');
 var assert = chai.assert;
 import rest = require('../firebase-rest');
-var secrets = require('./auth-secrets');
+var secrets = require('../../auth-secrets');
 
 suite("Firebase Rules Tests", function() {
   var client = new rest.Client(secrets.APP, secrets.SECRET);

@@ -22,9 +22,10 @@ var eslint = require('gulp-eslint');
 var tslint = require('gulp-tslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
-
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
+var ts = require('gulp-typescript');
+var sourcemaps = require('gulp-sourcemaps');
 
 var peg = require('gulp-peg');
 
@@ -33,12 +34,7 @@ var JS_SOURCES = ['gulpfile.js',
 var TS_SOURCES = ['src/*.ts',
                   'src/test/*.ts'];
 
-
-var ts = require('gulp-typescript');
-var merge = require('merge2');
-var sourcemaps = require('gulp-sourcemaps');
-
-
+// Subset of tests required for 'gulp test'.
 var TEST_FILES = ['lib/test/generator-test.js', 'lib/test/parser-test.js',
                   'lib/test/ast-test.js', 'lib/test/util-test.js'];
 
@@ -49,13 +45,9 @@ var TS_SETTINGS = {
   module: 'commonjs'
 };
 
-var tsProject = ts.createProject(TS_SETTINGS);
-var tsTestProject = ts.createProject(TS_SETTINGS);
-
 gulp.task('clean', function(cb) {
   del(['lib', 'dist'], cb);
 });
-
 
 gulp.task('eslint', function() {
   return gulp.src(JS_SOURCES)
@@ -72,22 +64,21 @@ gulp.task('tslint', function() {
     }));
 });
 
+gulp.task('lint', ['eslint', 'tslint']);
 
-gulp.task('compile', ['build-peg'], function() {
-  var tsResult = gulp.src('src/*.ts')
-                    .pipe(sourcemaps.init())
-                    .pipe(ts(tsProject));
-  return merge([
-    // Merge the two output streams, so this task is finished
-    // when the IO of both operations are done.
-    // if we want the definition files: tsResult.dts.pipe(gulp.dest('dist/ts/')),
-    tsResult.js
-      .pipe(sourcemaps.write())
-      .pipe(gulp.dest('lib/'))
-  ]);
+gulp.task('ts-compile', ['build-peg'], function() {
+  var tsProject = ts.createProject(TS_SETTINGS);
+
+  return gulp.src('src/*.ts')
+    .pipe(sourcemaps.init())
+    .pipe(ts(tsProject))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest('lib/'));
 });
 
-gulp.task('compile-test', ['compile'], function() {
+gulp.task('ts-compile-test', ['ts-compile'], function() {
+  var tsTestProject = ts.createProject(TS_SETTINGS);
+
   return gulp.src('src/test/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsTestProject))
@@ -95,9 +86,7 @@ gulp.task('compile-test', ['compile'], function() {
     .pipe(gulp.dest('lib/test/'));
 });
 
-gulp.task('build',
-    ['eslint', 'tslint', 'compile', 'compile-test', 'build-peg', 'browserify-bolt', 'copy-js']
-);
+gulp.task('build', ['lint', 'ts-compile', 'ts-compile-test', 'browserify-bolt']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
@@ -105,18 +94,7 @@ gulp.task('build-peg', function() {
     .pipe(gulp.dest('lib'));
 });
 
-
-/**
- * We have some raw JS source, so we copy that over to the lib directory
- */
-gulp.task('copy-js', function() {
-  return merge([
-    gulp.src('src/test/auth-secrets.js').pipe(gulp.dest('lib/test'))
-  ]);
-});
-
-
-gulp.task('browserify-bolt', ['compile', 'build-peg'], function() {
+gulp.task('browserify-bolt', ['ts-compile'], function() {
   return browserifyToDist('lib/bolt.js', { standalone: 'bolt' });
 });
 
@@ -150,7 +128,7 @@ gulp.task('browserify', ['browserify-bolt',
                         ]);
 
 // Runs the Mocha test suite
-gulp.task('test', ['eslint', 'tslint', 'build'], function() {
+gulp.task('test', ['lint', 'build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });

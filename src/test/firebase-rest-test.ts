@@ -18,7 +18,7 @@
 
 import Promise = require('promise');
 import rest = require('../firebase-rest');
-var secrets = require('./auth-secrets');
+var secrets = require('../../auth-secrets');
 
 var TEST_LOCATION = '/rest-test';
 

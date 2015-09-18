@@ -6,3 +6,4 @@ lib/
 lib-test/
 dist/
 npm-debug.log
+auth-secrets.js

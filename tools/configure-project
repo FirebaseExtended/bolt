@@ -5,4 +5,4 @@ set -e
 cd $PROJ_DIR
 
 npm install
-ensure-secret.py test/auth-secrets.js
+ensure-secret.py auth-secrets.js
