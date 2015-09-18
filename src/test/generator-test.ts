@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/mocha.d.ts" />
+/// <reference path="../typings/chai.d.ts" />
 
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
+interface Window { bolt: any; }
+declare var window: Window;
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
 var parse = bolt.parse;
-var generator = require('../lib/rules-generator');
-var ast = require('../lib/ast');
-var fileio = require('../lib/file-io');
-var helper = require('./test-helper');
+import generator = require('../rules-generator');
+import ast = require('../ast');
+import fileio = require('../file-io');
+import helper = require('./test-helper');
 
-var chai = require('chai');
+import chai = require('chai');
 chai.config.truncateThreshold = 1000;
 var assert = chai.assert;
 
@@ -69,7 +73,7 @@ suite("Rules Generator Tests", function() {
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
-      filename = 'test/samples/' + filename + '.' + bolt.FILE_EXTENSION;
+      filename = 'samples/' + filename + '.' + bolt.FILE_EXTENSION;
       return fileio.readFile(filename)
         .then(function(response) {
           var result = parse(response.content);
@@ -364,7 +368,7 @@ suite("Rules Generator Tests", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       generator.mapValidator(data, function(value, prop) {
-        if (value == 2) {
+        if (value === 2) {
           return undefined;
         }
         return value + 1;

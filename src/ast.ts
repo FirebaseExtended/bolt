@@ -15,88 +15,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="typings/node.d.ts" />
 
-var util = require('./util');
+import util = require('./util');
 
-var string = valueGen('String');
-var eq = opGen('==');
-var boolean = valueGen('Boolean');
+export var string = valueGen('String');
+export var boolean = valueGen('Boolean');
+export var number = valueGen('Number');
+export var array = valueGen('Array');
+export var regexp = valueGen('RegExp');
 
-module.exports = {
-  'variable': variable,
-  'literal': literal,
-  'nullType': nullType,
-  'reference': reference,
-  'call': call,
-  'builtin': builtin,
-
-  // TODO: Moves these out of ast.js
-  'snapshotVariable': snapshotVariable,
-  'snapshotChild': snapshotChild,
-  'snapshotParent': snapshotParent,
-  'snapshotValue': snapshotValue,
-
-  'cast': cast,
-  'ensureValue': ensureValue,
-  'ensureBoolean': ensureBoolean,
-  'method': method,
-
-  'number': valueGen('Number'),
-  'boolean': boolean,
-  'string': string,
-  'array': valueGen('Array'),
-  'regexp': valueGen('RegExp'),
-
-  'op': op,
-  'neg': opGen('neg', 1),
-  'not': opGen('!', 1),
-  'mult': opGen('*'),
-  'div': opGen('/'),
-  'mod': opGen('%'),
-  'add': opGen('+'),
-  'sub': opGen('-'),
-  'lt': opGen('<'),
-  'lte': opGen('<='),
-  'gt': opGen('>'),
-  'gte': opGen('>='),
-  'eq': eq,
-  'ne': opGen('!='),
-  'and': opGen('&&'),
-  'or': opGen('||'),
-  'ternary': opGen('?:', 3),
-  'value': opGen('value', 1),
-
-  'andArray': leftAssociateGen('&&', boolean(true), boolean(false)),
-  'orArray': leftAssociateGen('||', boolean(false), boolean(true)),
-  'flatten': flatten,
-
-  // Type operators
-  'typeType': typeType,
-  'unionType': unionType,
-
-  'getTypeNames': getTypeNames,
-
-  'Symbols': Symbols
-};
+export var neg = opGen('neg', 1);
+export var not = opGen('!', 1);
+export var mult = opGen('*');
+export var div = opGen('/');
+export var mod = opGen('%');
+export var add = opGen('+');
+export var sub = opGen('-');
+export var eq = opGen('==');
+export var lt = opGen('<');
+export var lte = opGen('<=');
+export var gt = opGen('>');
+export var gte = opGen('>=');
+export var ne = opGen('!=');
+export var and = opGen('&&');
+export var or = opGen('||');
+export var ternary = opGen('?:', 3);
+export var value = opGen('value', 1);
 
 var errors = {
-  typeMismatch: "Unexpected type: ",
+  typeMismatch: "Unexpected type: "
 };
 
-function variable(name) {
+export function variable(name) {
   return { type: 'var', valueType: 'Any', name: name };
 }
 
-function literal(name) {
+export function literal(name) {
   return { type: 'literal', valueType: 'Any', name: name };
 }
 
-function nullType() {
+export function nullType() {
   return { type: 'Null', valueType: 'Null' };
 }
 
-function reference(base, prop) {
+export function reference(base, prop) {
   return {
     type: 'ref',
     valueType: 'Any',
@@ -111,56 +74,56 @@ function reference(base, prop) {
 // valueType is a string indicating the type of evaluating an expression (e.g.
 // 'Snapshot') - used to know when type coercion is needed in the context
 // of parent expressions.
-function cast(base, valueType) {
+export function cast(base, valueType) {
   var result = util.extend({}, base);
   result.valueType = valueType;
   return result;
 }
 
-function call(ref, args) {
+export function call(ref, args?) {
   args = args || [];
   return { type: 'call', valueType: 'Any', ref: ref, args: args };
 }
 
-function builtin(fn) {
+export function builtin(fn) {
   return { type: 'builtin', valueType: 'Any', fn: fn };
 }
 
-function snapshotVariable(name) {
+export function snapshotVariable(name) {
   return cast(variable(name), 'Snapshot');
 }
 
-function snapshotChild(base, accessor) {
-  if (typeof accessor == 'string') {
+export function snapshotChild(base, accessor) {
+  if (typeof accessor === 'string') {
     accessor = string(accessor);
   }
-  if (base.valueType != 'Snapshot') {
+  if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
   var result = cast(call(reference(base, 'child'), [accessor]), 'Snapshot');
   return result;
 }
 
-function snapshotParent(base) {
-  if (base.valueType != 'Snapshot') {
+export function snapshotParent(base) {
+  if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
-  return cast(reference(cast(base), 'parent'), 'Snapshot');
+  return cast(reference(cast(base, 'Any'), 'parent'), 'Snapshot');
 }
 
-function snapshotValue(exp) {
-  return call(reference(cast(exp), 'val'), []);
+export function snapshotValue(exp) {
+  return call(reference(cast(exp, 'Any'), 'val'), []);
 }
 
-function ensureValue(exp) {
-  if (exp.valueType == 'Snapshot') {
+export function ensureValue(exp) {
+  if (exp.valueType === 'Snapshot') {
     return snapshotValue(exp);
   }
   return exp;
 }
 
 // Ensure expression is a boolean (when used in a boolean context).
-function ensureBoolean(exp) {
+export function ensureBoolean(exp) {
   exp = ensureValue(exp);
   if (isCall(exp, 'val')) {
     exp = eq(exp, boolean(true));
@@ -168,42 +131,42 @@ function ensureBoolean(exp) {
   return exp;
 }
 
-function isCall(exp, methodName) {
-  return exp.type == 'call' && exp.ref.type == 'ref' && exp.ref.accessor == methodName;
+export function isCall(exp, methodName) {
+  return exp.type === 'call' && exp.ref.type === 'ref' && exp.ref.accessor === methodName;
 }
 
 // Return value generating function for a given Type.
 function valueGen(typeName) {
-  return function(value) {
+  return function(val) {
     return {
       type: typeName,      // Exp type identifying a constant value of this Type.
       valueType: typeName, // The type of the result of evaluating this expression.
-      value: value         // The (constant) value itself.
+      value: val           // The (constant) value itself.
     };
   };
 }
 
 function cmpValues(v1, v2) {
-  return v1.typeName == v2.typeName && v1.value == v2.value;
+  return v1.typeName === v2.typeName && v1.value === v2.value;
 }
 
 function isOp(opType, exp) {
-  return exp.type == 'op' && exp.op == opType;
+  return exp.type === 'op' && exp.op === opType;
 }
 
 // Return a generating function to make an operator exp node.
-function opGen(opType, arity) {
-  if (arity === undefined) {
-    arity = 2;
-  }
-  return function(/* variable */) {
-    if (arguments.length != arity) {
-      throw new Error("Operator has " + arguments.length +
+function opGen(opType: string, arity: number = 2) {
+  return function(...args) {
+    if (args.length !== arity) {
+      throw new Error("Operator has " + args.length +
                       " arguments (expecting " + arity + ").");
     }
-    return op(opType, util.copyArray(arguments));
+    return op(opType, args);
   };
 }
+
+export var andArray = leftAssociateGen('&&', boolean(true), boolean(false));
+export var orArray = leftAssociateGen('||', boolean(false), boolean(true));
 
 // Create an expression builder function which operates on arrays of values.
 // Returns new expression like v1 op v2 op v3 ...
@@ -246,7 +209,7 @@ function leftAssociateGen(opType, identityValue, zeroValue) {
       result.push(flat[i]);
     }
 
-    if (result.length == 0) {
+    if (result.length === 0) {
       return identityValue;
     }
 
@@ -256,7 +219,7 @@ function leftAssociateGen(opType, identityValue, zeroValue) {
 }
 
 // Flatten the top level tree of op into a single flat array of expressions.
-function flatten(opType, exp, flat) {
+export function flatten(opType, exp, flat?) {
   var i;
 
   if (flat === undefined) {
@@ -275,7 +238,7 @@ function flatten(opType, exp, flat) {
   return flat;
 }
 
-function op(opType, args) {
+export function op(opType, args) {
   return {
     type: 'op',     // This is (multi-argument) operator.
     valueType: 'Any',
@@ -285,22 +248,22 @@ function op(opType, args) {
 }
 
 // Warning: NOT an expression type!
-function method(params, body) {
+export function method(params, body) {
   return {
     params: params,
     body: body
   };
 }
 
-function typeType(typeName) {
+export function typeType(typeName) {
   return { type: "type", name: typeName };
 }
 
-function unionType(types) {
+export function unionType(types) {
   return { type: "union", types: types };
 }
 
-function getTypeNames(type) {
+export function getTypeNames(type) {
   switch (type.type) {
   case 'type':
     return [type.name];
@@ -311,13 +274,13 @@ function getTypeNames(type) {
   }
 }
 
-function Symbols() {
+export function Symbols() {
   this.functions = {};
   this.paths = {};
   this.schema = {};
   this.log = {
     error: function(s) { console.error(s); },
-    warn: function(s) { console.warn(s); },
+    warn: function(s) { console.warn(s); }
   };
 }
 
@@ -372,7 +335,7 @@ util.methods(Symbols, {
     }
     visited[descendant] = true;
 
-    if (descendant == ancestor) {
+    if (descendant === ancestor) {
       return true;
     }
 

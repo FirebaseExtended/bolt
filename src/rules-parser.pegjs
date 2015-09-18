@@ -17,7 +17,6 @@
  */
 
 {
-  "use strict";
   var ast = require('./ast');
 
   var errorCount = 0;

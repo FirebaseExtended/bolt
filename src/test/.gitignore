@@ -1,0 +1,3 @@
+# IntelliJ by default generates .js and .js.map in same directory as .ts source
+*.js*
+auth-secrets.js
