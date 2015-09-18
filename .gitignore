@@ -1,5 +1,8 @@
 .DS_Store
+.idea
 bower_components/
 node_modules/
+lib/
+lib-test/
 dist/
 npm-debug.log

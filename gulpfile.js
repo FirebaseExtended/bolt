@@ -17,10 +17,11 @@
 
 var path = require('path');
 var gulp = require('gulp');
+var del = require('del');
 var eslint = require('gulp-eslint');
+var tslint = require('gulp-tslint');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream');
-var util = require('./lib/util');
 
 var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
@@ -28,21 +29,75 @@ var gutil = require('gulp-util');
 var peg = require('gulp-peg');
 
 var JS_SOURCES = ['gulpfile.js',
-                  'lib/*.js',
-                  'bin/firebase-bolt',
-                  'test/*.js'];
+                  'bin/firebase-bolt'];
+var TS_SOURCES = ['src/*.ts',
+                  'src/test/*.ts'];
 
-var TEST_FILES = ['test/generator-test.js', 'test/parser-test.js',
-                  'test/ast-test.js', 'test/util-test.js'];
 
-gulp.task('lint', function() {
-  return gulp.src(JS_SOURCES.concat(['!lib/rules-parser.js']))
+var ts = require('gulp-typescript');
+var merge = require('merge2');
+var sourcemaps = require('gulp-sourcemaps');
+
+
+var TEST_FILES = ['lib/test/generator-test.js', 'lib/test/parser-test.js',
+                  'lib/test/ast-test.js', 'lib/test/util-test.js'];
+
+var TS_SETTINGS = {
+  sortOutput: true,
+  declarationFiles: true,
+  noExternalResolve: false,
+  module: 'commonjs'
+};
+
+var tsProject = ts.createProject(TS_SETTINGS);
+var tsTestProject = ts.createProject(TS_SETTINGS);
+
+gulp.task('clean', function(cb) {
+  del(['lib', 'dist'], cb);
+});
+
+
+gulp.task('eslint', function() {
+  return gulp.src(JS_SOURCES)
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
 });
 
-gulp.task('build', ['build-peg', 'browserify-bolt']);
+gulp.task('tslint', function() {
+  return gulp.src(TS_SOURCES)
+    .pipe(tslint())
+    .pipe(tslint.report('prose', {
+      emitError: false
+    }));
+});
+
+
+gulp.task('compile', ['build-peg'], function() {
+  var tsResult = gulp.src('src/*.ts')
+                    .pipe(sourcemaps.init())
+                    .pipe(ts(tsProject));
+  return merge([
+    // Merge the two output streams, so this task is finished
+    // when the IO of both operations are done.
+    // if we want the definition files: tsResult.dts.pipe(gulp.dest('dist/ts/')),
+    tsResult.js
+      .pipe(sourcemaps.write())
+      .pipe(gulp.dest('lib/'))
+  ]);
+});
+
+gulp.task('compile-test', ['compile'], function() {
+  return gulp.src('src/test/*.ts')
+    .pipe(sourcemaps.init())
+    .pipe(ts(tsTestProject))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest('lib/test/'));
+});
+
+gulp.task('build',
+    ['eslint', 'tslint', 'compile', 'compile-test', 'build-peg', 'browserify-bolt', 'copy-js']
+);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
@@ -50,29 +105,40 @@ gulp.task('build-peg', function() {
     .pipe(gulp.dest('lib'));
 });
 
-gulp.task('browserify-bolt', ['build-peg'], function() {
+
+/**
+ * We have some raw JS source, so we copy that over to the lib directory
+ */
+gulp.task('copy-js', function() {
+  return merge([
+    gulp.src('src/test/auth-secrets.js').pipe(gulp.dest('lib/test'))
+  ]);
+});
+
+
+gulp.task('browserify-bolt', ['compile', 'build-peg'], function() {
   return browserifyToDist('lib/bolt.js', { standalone: 'bolt' });
 });
 
 // TODO: Use source to pipe glob of test files through browserify.
 gulp.task('browserify-parser-test', function() {
-  return browserifyToDist('test/parser-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/parser-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-generator-test', function() {
-  return browserifyToDist('test/generator-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/generator-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-mail-test', function() {
-  return browserifyToDist('test/mail-test', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/mail-test', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-ast-test', function() {
-  return browserifyToDist('test/ast-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/ast-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-util-test', function() {
-  return browserifyToDist('test/util-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/util-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify', ['browserify-bolt',
@@ -84,19 +150,23 @@ gulp.task('browserify', ['browserify-bolt',
                         ]);
 
 // Runs the Mocha test suite
-gulp.task('test', ['lint', 'build'], function() {
+gulp.task('test', ['eslint', 'tslint', 'build'], function() {
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
 
 gulp.task('default', ['test']);
 
+gulp.task('watch', ['default'], function() {
+  gulp.watch(['src/*', 'src/test/*'], ['default']);
+});
+
 function browserifyToDist(entry, opts) {
   // Browserify options include:
   //   standalone: name of exported module
   //   exclude: Don't include namespace.
   //   debug: Include sourcemap in output.
-  opts = util.extend({}, opts, { entries: [entry], debug: true });
+  opts = extend({}, opts, { entries: [entry], debug: true });
   var exclude = opts.exclude;
   delete opts.exclude;
   var b = browserify(opts);
@@ -108,4 +178,24 @@ function browserifyToDist(entry, opts) {
     .pipe(source(path.basename(entry)))
     .on('error', gutil.log)
     .pipe(gulp.dest('dist'));
+}
+
+function extend(dest) {
+  var i;
+  var src;
+  var prop;
+
+  if (dest === undefined) {
+    dest = {};
+  }
+  for (i = 1; i < arguments.length; i++) {
+    src = arguments[i];
+    for (prop in src) {
+      if (src.hasOwnProperty(prop)) {
+        dest[prop] = src[prop];
+      }
+    }
+  }
+
+  return dest;
 }
