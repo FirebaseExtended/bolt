@@ -24,7 +24,7 @@ import helper = require('./test-helper');
 
 interface Window { bolt: any; }
 declare var window: Window;
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../lib/bolt');
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;
 var BOLT_EXTENSION = bolt.FILE_EXTENSION;

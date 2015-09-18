@@ -16,8 +16,9 @@
 /// <reference path="../typings/node.d.ts" />
 /// <reference path="../typings/mocha.d.ts" />
 
-var assert = require('chai').assert;
-var rest = require('../lib/firebase-rest');
+import chai = require('chai');
+var assert = chai.assert;
+import rest = require('../firebase-rest');
 var secrets = require('./auth-secrets');
 
 suite("Firebase Rules Tests", function() {

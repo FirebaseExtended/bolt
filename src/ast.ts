@@ -219,7 +219,7 @@ function leftAssociateGen(opType, identityValue, zeroValue) {
 }
 
 // Flatten the top level tree of op into a single flat array of expressions.
-export function flatten(opType, exp, flat) {
+export function flatten(opType, exp, flat?) {
   var i;
 
   if (flat === undefined) {
