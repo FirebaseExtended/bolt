@@ -238,7 +238,7 @@ export function flatten(opType, exp, flat?) {
   return flat;
 }
 
-function op(opType, args) {
+export function op(opType, args) {
   return {
     type: 'op',     // This is (multi-argument) operator.
     valueType: 'Any',

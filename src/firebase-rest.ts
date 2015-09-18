@@ -86,7 +86,7 @@ util.methods(Client, {
 
 var ridNext = 0;
 
-function request(options, content, debug) {
+function request(options, content, debug): Promise<string> {
   ridNext += 1;
   var rid = ridNext;
 
@@ -111,7 +111,7 @@ function request(options, content, debug) {
       });
 
       res.on('end', function() {
-        var result = chunks.join('');
+        var result: string = chunks.join('');
         log("Result (" + res.statusCode + "): '" + result + "'");
         if (Math.floor(res.statusCode / 100) !== 2) {
           reject(new Error("Status = " + res.statusCode + " " + result));

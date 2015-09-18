@@ -25,9 +25,14 @@ export var readJSONFile = util.maybePromise(readJSONFileSync);
 export var writeFile = util.maybePromise(writeFileSync);
 export var writeJSONFile = util.maybePromise(writeJSONFileSync);
 
+interface ReadFileResult {
+  content: string;
+  url: string;
+}
+
 function readJSONFileSync(path, fnFallback) {
   return readFileSync(path)
-    .then(function(response) {
+    .then(function(response: ReadFileResult) {
       return JSON.parse(response.content);
     })
     .catch(function(error) {
