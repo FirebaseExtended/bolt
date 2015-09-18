@@ -23,7 +23,7 @@ var util = require('../lib/util');
 suite("Util", function() {
   suite("pruneEmptyChildren", function() {
     function T() {
-      return true;
+      this.x = 'dummy';
     }
 
     var tests = [

@@ -13,22 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
 
-var Promise = require('promise');
+import Promise = require('promise');
 import fs = require('fs');
-// TODO: Trying to use import says util.ts is not a module???
-var util = require('./util');
+import util = require('./util');
 
-module.exports = {
-  'readFile': util.maybePromise(readFile),
-  'readJSONFile': util.maybePromise(readJSONFile),
-  'writeFile': util.maybePromise(writeFile),
-  'writeJSONFile': util.maybePromise(writeJSONFile)
-};
+export var readFile = util.maybePromise(readFileSync);
+export var readJSONFile = util.maybePromise(readJSONFileSync);
+export var writeFile = util.maybePromise(writeFileSync);
+export var writeJSONFile = util.maybePromise(writeJSONFileSync);
 
-function readJSONFile(path, fnFallback) {
-  return readFile(path)
+function readJSONFileSync(path, fnFallback) {
+  return readFileSync(path)
     .then(function(response) {
       return JSON.parse(response.content);
     })
@@ -40,15 +38,15 @@ function readJSONFile(path, fnFallback) {
     });
 }
 
-function writeJSONFile(path, data) {
-  return writeFile(path, util.prettyJSON(data));
+function writeJSONFileSync(path, data) {
+  return writeFileSync(path, util.prettyJSON(data));
 }
 
-function readFile(path) {
+function readFileSync(path) {
   return request('GET', path) || readFS(path);
 }
 
-function writeFile(path, data) {
+function writeFileSync(path, data) {
   return request('PUT', path, data) || writeFS(path, data);
 }
 

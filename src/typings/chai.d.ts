@@ -366,6 +366,8 @@ declare module Chai {
 
     export interface Config {
         includeStack: boolean;
+        // Missing config option added - mckoss
+        truncateThreshold: number;
     }
 
     export class AssertionError {

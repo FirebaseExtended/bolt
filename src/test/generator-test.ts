@@ -17,11 +17,13 @@
 /// <reference path="../typings/mocha.d.ts" />
 /// <reference path="../typings/chai.d.ts" />
 
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../lib/bolt');
+interface Window { bolt: any; }
+declare var window: Window;
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
 var parse = bolt.parse;
-import generator = require('../lib/rules-generator');
-import ast = require('../lib/ast');
-import fileio = require('../lib/file-io');
+import generator = require('../rules-generator');
+import ast = require('../ast');
+import fileio = require('../file-io');
 import helper = require('./test-helper');
 
 import chai = require('chai');

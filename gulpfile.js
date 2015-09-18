@@ -31,7 +31,7 @@ var peg = require('gulp-peg');
 var JS_SOURCES = ['gulpfile.js',
                   'bin/firebase-bolt'];
 var TS_SOURCES = ['src/*.ts',
-                  'test/*.ts'];
+                  'src/test/*.ts'];
 
 
 var ts = require('gulp-typescript');
@@ -39,8 +39,8 @@ var merge = require('merge2');
 var sourcemaps = require('gulp-sourcemaps');
 
 
-var TEST_FILES = ['lib-test/generator-test.js', 'lib-test/parser-test.js',
-                  'lib-test/ast-test.js', 'lib-test/util-test.js'];
+var TEST_FILES = ['lib/test/generator-test.js', 'lib/test/parser-test.js',
+                  'lib/test/ast-test.js', 'lib/test/util-test.js'];
 
 var TS_SETTINGS = {
   sortOutput: true,
@@ -53,7 +53,7 @@ var tsProject = ts.createProject(TS_SETTINGS);
 var tsTestProject = ts.createProject(TS_SETTINGS);
 
 gulp.task('clean', function(cb) {
-  del(['lib', 'lib-test', 'dist'], cb);
+  del(['lib', 'dist'], cb);
 });
 
 
@@ -88,11 +88,11 @@ gulp.task('compile', ['build-peg'], function() {
 });
 
 gulp.task('compile-test', ['compile'], function() {
-  return gulp.src('test/*.ts')
+  return gulp.src('src/test/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsTestProject))
     .pipe(sourcemaps.write())
-    .pipe(gulp.dest('lib-test/'));
+    .pipe(gulp.dest('lib/test/'));
 });
 
 gulp.task('build',
@@ -111,7 +111,7 @@ gulp.task('build-peg', function() {
  */
 gulp.task('copy-js', function() {
   return merge([
-    gulp.src('test/auth-secrets.js').pipe(gulp.dest('lib-test'))
+    gulp.src('src/test/auth-secrets.js').pipe(gulp.dest('lib/test'))
   ]);
 });
 
@@ -122,23 +122,23 @@ gulp.task('browserify-bolt', ['compile', 'build-peg'], function() {
 
 // TODO: Use source to pipe glob of test files through browserify.
 gulp.task('browserify-parser-test', function() {
-  return browserifyToDist('test/parser-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/parser-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-generator-test', function() {
-  return browserifyToDist('test/generator-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/generator-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-mail-test', function() {
-  return browserifyToDist('test/mail-test', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/mail-test', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-ast-test', function() {
-  return browserifyToDist('test/ast-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/ast-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify-util-test', function() {
-  return browserifyToDist('test/util-test.js', { exclude: 'bolt' });
+  return browserifyToDist('lib/test/util-test.js', { exclude: 'bolt' });
 });
 
 gulp.task('browserify', ['browserify-bolt',
@@ -158,7 +158,7 @@ gulp.task('test', ['eslint', 'tslint', 'build'], function() {
 gulp.task('default', ['test']);
 
 gulp.task('watch', ['default'], function() {
-  gulp.watch(['src/*', 'test/*'], ['default']);
+  gulp.watch(['src/*', 'src/test/*'], ['default']);
 });
 
 function browserifyToDist(entry, opts) {

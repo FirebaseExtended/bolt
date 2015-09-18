@@ -16,10 +16,14 @@
 /// <reference path="../typings/node.d.ts" />
 /// <reference path="../typings/mocha.d.ts" />
 
-var assert = require('chai').assert;
-var readFile = require('../lib/file-io').readFile;
-var helper = require('./test-helper');
+import chai = require('chai');
+var assert = chai.assert;
+import fileIO = require('../file-io');
+var readFile = fileIO.readFile;
+import helper = require('./test-helper');
 
+interface Window { bolt: any; }
+declare var window: Window;
 var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../lib/bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;

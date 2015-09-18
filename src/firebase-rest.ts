@@ -15,14 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
+/// <reference path="typings/node-uuid.d.ts" />
 
-var Promise = require('promise');
+import Promise = require('promise');
 import https = require('https');
 import http = require('http');
-var util = require('./util');
-var querystring = require('querystring');
-var uuid = require('node-uuid');
+import util = require('./util');
+import querystring = require('querystring');
+import uuid = require('node-uuid');
 var FirebaseTokenGenerator = require('firebase-token-generator');
 
 var FIREBASE_HOST = 'firebaseio.com';

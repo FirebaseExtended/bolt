@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
+
 import Promise = require('promise');
 
 export function methods(ctor, obj) {
@@ -81,11 +84,10 @@ export function isThenable(obj) {
 // If none of the arguments are Thenables, then the wrapped
 // function returns a synchronous value (not wrapped in a Promise).
 export function maybePromise(fn) {
-  return function() {
+  return function(...args) {
     var self = this;
-    var args = copyArray(arguments);
     if (!args.some(isThenable)) {
-      return fn.apply(self, arguments);
+      return fn.apply(self, args);
     }
 
     return Promise.all(args)

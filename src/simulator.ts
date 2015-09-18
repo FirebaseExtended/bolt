@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="../typings/chai.d.ts" />
-/// <reference path="../typings/mocha.d.ts" />
-/// <reference path="../typings/es6-promise.d.ts" />
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/chai.d.ts" />
+/// <reference path="typings/mocha.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
 
 import Promise = require('promise');
 import chai = require('chai');

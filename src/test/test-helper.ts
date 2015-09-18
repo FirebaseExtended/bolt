@@ -15,13 +15,8 @@
  */
 /// <reference path="../typings/node.d.ts" />
 
-var util = require('../lib/util');
-var gen = require('../lib/rules-generator');
-
-module.exports = {
-  'dataDrivenTest': dataDrivenTest,
-  'expFormat': expFormat,
-};
+import util = require('../util');
+import gen = require('../rules-generator');
 
 /*
  * Run data drive test with tests is one of these formats:
@@ -31,7 +26,7 @@ module.exports = {
  *
  * Calls testIt(data, expect) for each test.
  */
-function dataDrivenTest(tests, testIt, formatter) {
+export function dataDrivenTest(tests, testIt, formatter?) {
   var data;
   var expect;
   var label;
@@ -80,7 +75,7 @@ function format(o) {
   }
 }
 
-function expFormat(x) {
+export function expFormat(x) {
   if (util.isType(x, 'array')) {
     return '[' + x.map(expFormat).join(', ') + ']';
   }

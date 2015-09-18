@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 /// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/es6-promise.d.ts" />
 
-// var assert = require('chai').assert;
-var Promise = require('promise');
-var rest = require('../lib/firebase-rest');
+import Promise = require('promise');
+import rest = require('../firebase-rest');
 var secrets = require('./auth-secrets');
 
 var TEST_LOCATION = '/rest-test';

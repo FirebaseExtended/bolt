@@ -17,7 +17,7 @@
  */
 
 {
-  import ast = require('./ast');
+  var ast = require('./ast');
 
   var errorCount = 0;
 
