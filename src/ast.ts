@@ -137,11 +137,11 @@ export function isCall(exp, methodName) {
 
 // Return value generating function for a given Type.
 function valueGen(typeName) {
-  return function(value) {
+  return function(val) {
     return {
       type: typeName,      // Exp type identifying a constant value of this Type.
       valueType: typeName, // The type of the result of evaluating this expression.
-      value: value         // The (constant) value itself.
+      value: val           // The (constant) value itself.
     };
   };
 }

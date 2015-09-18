@@ -99,7 +99,7 @@ export var getProp =  maybePromise(function(obj, prop) {
   return obj[prop];
 });
 
-function ensureExtension(fileName, extension) {
+export function ensureExtension(fileName, extension) {
   return fileName + '.' + extension;
 }
 
