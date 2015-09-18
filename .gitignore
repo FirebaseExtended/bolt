@@ -3,7 +3,6 @@
 bower_components/
 node_modules/
 lib/
-lib-test/
 dist/
 npm-debug.log
 auth-secrets.js
