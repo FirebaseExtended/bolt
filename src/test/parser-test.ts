@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/mocha.d.ts" />
 
-var assert = require('chai').assert;
-var readFile = require('../lib/file-io').readFile;
-var helper = require('./test-helper');
+import chai = require('chai');
+var assert = chai.assert;
+import fileIO = require('../file-io');
+var readFile = fileIO.readFile;
+import helper = require('./test-helper');
 
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
+interface Window { bolt: any; }
+declare var window: Window;
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;
 var BOLT_EXTENSION = bolt.FILE_EXTENSION;
@@ -303,7 +308,7 @@ suite("Rules Parser Tests", function() {
     var files = ["all_access", "userdoc", "mail", "children"];
 
     helper.dataDrivenTest(files, function(data) {
-      var filename = 'test/samples/' + data + '.' + BOLT_EXTENSION;
+      var filename = 'samples/' + data + '.' + BOLT_EXTENSION;
       return readFile(filename)
         .then(function(response) {
           var result = parse(response.content);

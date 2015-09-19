@@ -13,46 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
 
-var Promise = require('promise');
-var fs = require('fs');
+import Promise = require('promise');
+import fs = require('fs');
+import util = require('./util');
 
-var util = require('./util');
+export var readFile = util.maybePromise(readFileSync);
+export var readJSONFile = util.maybePromise(readJSONFileSync);
+export var writeFile = util.maybePromise(writeFileSync);
+export var writeJSONFile = util.maybePromise(writeJSONFileSync);
 
-module.exports = {
-  'readFile': util.maybePromise(readFile),
-  'readJSONFile': util.maybePromise(readJSONFile),
-  'writeFile': util.maybePromise(writeFile),
-  'writeJSONFile': util.maybePromise(writeJSONFile),
-};
+interface ReadFileResult {
+  content: string;
+  url: string;
+}
 
-function readJSONFile(path, fnFallback) {
-  return readFile(path)
-    .then(function(response) {
+function readJSONFileSync(path, fnFallback) {
+  return readFileSync(path)
+    .then(function(response: ReadFileResult) {
       return JSON.parse(response.content);
     })
     .catch(function(error) {
-      if (error.code == 'ENOENT' && typeof fnFallback == 'function') {
+      if (error.code === 'ENOENT' && typeof fnFallback === 'function') {
         return fnFallback();
       }
       throw error;
     });
 }
 
-function writeJSONFile(path, data) {
-  return writeFile(path, util.prettyJSON(data));
+function writeJSONFileSync(path, data) {
+  return writeFileSync(path, util.prettyJSON(data));
 }
 
-function readFile(path) {
+function readFileSync(path) {
   return request('GET', path) || readFS(path);
 }
 
-function writeFile(path, data) {
+function writeFileSync(path, data) {
   return request('PUT', path, data) || writeFS(path, data);
 }
 
-function request(method, url, data) {
+function request(method, url, data?) {
   if (!global.XMLHttpRequest) {
     return undefined;
   }
@@ -63,7 +66,7 @@ function request(method, url, data) {
     req.open(method, '/' + url);
 
     req.onload = function() {
-      if (req.status == 200) {
+      if (req.status === 200) {
         resolve({content: req.response, url: url});
       } else {
         reject(new Error(url + " " + req.statusText));

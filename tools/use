@@ -10,6 +10,7 @@ source $TOOLS_DIR/usefuncs
 # Add build tools to PATH
 #
 PATH="$PROJ_DIR/bin:$(cd $PROJ_DIR; npm bin):$PATH"
+CDPATH="$PROJ_DIR/src:$CDPATH"
 export NODE_PATH="$PROJ_DIR/lib"
 
 #

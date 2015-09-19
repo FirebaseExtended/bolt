@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/mocha.d.ts" />
 
-var assert = require('chai').assert;
-var rest = require('../lib/firebase-rest');
-var secrets = require('./auth-secrets');
+import chai = require('chai');
+var assert = chai.assert;
+import rest = require('../firebase-rest');
+var secrets = require('../../auth-secrets');
 
 suite("Firebase Rules Tests", function() {
   var client = new rest.Client(secrets.APP, secrets.SECRET);

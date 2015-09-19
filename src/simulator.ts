@@ -15,14 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/chai.d.ts" />
+/// <reference path="typings/mocha.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
 
-var Promise = require('promise');
-var assert = require('chai').assert;
-var rest = require('./firebase-rest');
+import Promise = require('promise');
+import chai = require('chai');
+var assert = chai.assert;
+import rest = require('./firebase-rest');
 
 // Browserify bug: https://github.com/substack/node-browserify/issues/1150
-var bolt = (typeof window != 'undefined' && window.bolt) || require('./bolt');
+interface Window { bolt: any; }
+declare var window: Window;
+var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
 
 var util = require('./util');
 var fileIO = require('./file-io');
@@ -82,6 +88,7 @@ util.methods(RulesSuite, {
       });
 
       test("Initialization.", function() {
+        // pass
       });
 
       test("Rules test.", function() {
@@ -154,19 +161,19 @@ util.methods(RulesSuite, {
 
   ensureUser: function(username) {
     if (!(username in this.users)) {
-      if (username == 'anon') {
+      if (username === 'anon') {
         this.users[username] = new rest.Client(this.appName);
       } else {
         var tokenInfo;
         tokenInfo = rest.generateUidAuthToken(this.appSecret,
                                               { debug: true,
-                                                admin: username == 'admin' });
+                                                admin: username === 'admin' });
         this.users[username] = new rest.Client(this.appName, tokenInfo.token, tokenInfo.uid);
       }
     }
 
     return this.users[username];
-  },
+  }
 });
 
 function RulesTest(testName, suite, fnTest) {

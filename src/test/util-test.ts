@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+import chai = require('chai');
+var assert = chai.assert;
+import helper = require('./test-helper');
 
-var assert = require('chai').assert;
-var helper = require('./test-helper');
-
-var util = require('../lib/util');
+var util = require('../util');
 
 suite("Util", function() {
   suite("pruneEmptyChildren", function() {
     function T() {
+      this.x = 'dummy';
     }
 
     var tests = [
