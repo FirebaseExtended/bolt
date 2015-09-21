@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/// <reference path="typings/node.d.ts" />
+
 var parser = require('./rules-parser');
 var generator = require('./rules-generator');
 var simulator = require('./simulator');
@@ -37,7 +39,7 @@ util.extend(module.exports, {
 // Usage:
 //   json = bolt.generate(bolt-text)
 function generate(symbols) {
-  if (typeof symbols == 'string') {
+  if (typeof symbols === 'string') {
     symbols = parser.parse(symbols);
   }
   var gen = new generator.Generator(symbols);

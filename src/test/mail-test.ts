@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var bolt = (typeof(window) != 'undefined' && window.bolt) || require('../lib/bolt');
+/// <reference path="../typings/node.d.ts" />
+
+interface Window { bolt: any; }
+declare var window: Window;
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
 var rulesSuite = bolt.rulesSuite;
-var secrets = require('./auth-secrets');
+var secrets = require('../../auth-secrets');
 
 rulesSuite("Mail", function(test) {
   var uid = test.uid;
 
   test.database(secrets.APP, secrets.SECRET);
-  test.rules('test/samples/mail');
+  test.rules('samples/mail');
 
   test("Inbox tests.", function(rules) {
     rules

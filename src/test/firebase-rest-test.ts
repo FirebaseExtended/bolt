@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+/// <reference path="../typings/node.d.ts" />
+/// <reference path="../typings/es6-promise.d.ts" />
 
-//var assert = require('chai').assert;
-var Promise = require('promise');
-var rest = require('../lib/firebase-rest');
-var secrets = require('./auth-secrets');
+import Promise = require('promise');
+import rest = require('../firebase-rest');
+var secrets = require('../../auth-secrets');
 
 var TEST_LOCATION = '/rest-test';
 

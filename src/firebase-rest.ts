@@ -15,25 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
-var Promise = require('promise');
-var https = require('https');
-var util = require('./util');
-var querystring = require('querystring');
-var uuid = require('node-uuid');
+/// <reference path="typings/node.d.ts" />
+/// <reference path="typings/es6-promise.d.ts" />
+/// <reference path="typings/node-uuid.d.ts" />
+
+import Promise = require('promise');
+import https = require('https');
+import http = require('http');
+import util = require('./util');
+import querystring = require('querystring');
+import uuid = require('node-uuid');
 var FirebaseTokenGenerator = require('firebase-token-generator');
 
 var FIREBASE_HOST = 'firebaseio.com';
 
-module.exports = {
-  "Client": Client,
-  "generateUidAuthToken": generateUidAuthToken,
+export var RULES_LOCATION =  '/.settings/rules';
+export var TIMESTAMP = {".sv": "timestamp"};
 
-  RULES_LOCATION: '/.settings/rules',
-  TIMESTAMP: {".sv": "timestamp"},
-};
-
-function Client(appName, authToken, uid) {
+export function Client(appName, authToken?, uid?) {
   this.appName = appName;
   this.authToken = authToken;
   this.uid = uid;
@@ -63,7 +62,7 @@ util.methods(Client, {
       method: opt.method,
     };
 
-    var query = {};
+    var query: any = {};
     if (opt.print) {
       query.print = opt.print;
     }
@@ -80,14 +79,14 @@ util.methods(Client, {
 
     return request(options, content, this.debug)
       .then(function(body) {
-        return body == '' ? null : JSON.parse(body);
+        return body === '' ? null : JSON.parse(body);
       });
-  },
+  }
 });
 
 var ridNext = 0;
 
-function request(options, content, debug) {
+function request(options, content, debug): Promise<string> {
   ridNext += 1;
   var rid = ridNext;
 
@@ -103,7 +102,8 @@ function request(options, content, debug) {
   }
 
   return new Promise(function(resolve, reject) {
-    var req = https.request(options, function(res) {
+    // TODO: Why isn't this argument typed as per https.request?
+    var req = https.request(options, function(res: http.ClientResponse) {
       var chunks = [];
 
       res.on('data', function(body) {
@@ -111,9 +111,9 @@ function request(options, content, debug) {
       });
 
       res.on('end', function() {
-        var result = chunks.join('');
+        var result: string = chunks.join('');
         log("Result (" + res.statusCode + "): '" + result + "'");
-        if (Math.floor(res.statusCode / 100) != 2) {
+        if (Math.floor(res.statusCode / 100) !== 2) {
           reject(new Error("Status = " + res.statusCode + " " + result));
         } else {
           resolve(result);
@@ -134,7 +134,7 @@ function request(options, content, debug) {
 }
 
 // opts { debug: Boolean, admin: Boolean }
-function generateUidAuthToken(secret, opts) {
+export function generateUidAuthToken(secret, opts) {
   opts = util.extend({ debug: false, admin: false }, opts);
 
   var tokenGenerator = new FirebaseTokenGenerator(secret);
