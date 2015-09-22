@@ -38,10 +38,14 @@ var TS_SOURCES = ['src/*.ts',
 var TEST_FILES = ['lib/test/generator-test.js', 'lib/test/parser-test.js',
                   'lib/test/ast-test.js', 'lib/test/util-test.js'];
 
+// Ignore ts-compile errors while watching (but not in normal builds).
+var watching = false;
+
 var TS_SETTINGS = {
   sortOutput: true,
   declarationFiles: true,
   noExternalResolve: false,
+  noEmitOnError: true,
   module: 'commonjs'
 };
 
@@ -59,9 +63,7 @@ gulp.task('eslint', function() {
 gulp.task('tslint', function() {
   return gulp.src(TS_SOURCES)
     .pipe(tslint())
-    .pipe(tslint.report('prose', {
-      emitError: false
-    }));
+    .pipe(tslint.report('prose'));
 });
 
 gulp.task('lint', ['eslint', 'tslint']);
@@ -72,6 +74,12 @@ gulp.task('ts-compile', ['build-peg'], function() {
   return gulp.src('src/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsProject))
+    .on('error', function(error) {
+      // The compile task should be a hard failure and not continue dependent tasks.
+      if (!watching) {
+        process.exit(1);
+      }
+    })
     .pipe(sourcemaps.write())
     .pipe(gulp.dest('lib/'));
 });
@@ -135,8 +143,16 @@ gulp.task('test', ['lint', 'build'], function() {
 
 gulp.task('default', ['test']);
 
-gulp.task('watch', ['default'], function() {
+// Don't depend on 'build' in case current state is failing to compile - need to edit file
+// to kick off first watch build.
+gulp.task('watch', function() {
+  watching = true;
   gulp.watch(['src/*', 'src/test/*'], ['default']);
+});
+
+gulp.task('watch-build', function() {
+  watching = true;
+  gulp.watch(['src/*', 'src/test/*'], ['build', 'lint']);
 });
 
 function browserifyToDist(entry, opts) {
