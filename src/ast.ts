@@ -74,6 +74,23 @@ export interface Method {
   body: Exp;
 }
 
+export interface Path {
+  parts: string[];
+  isType: ExpType;
+  methods: { [name: string]: Method };
+};
+
+export interface Schema {
+  derivedFrom: ExpType | ExpUnionType;
+  properties: { [prop: string]: ExpType | ExpUnionType };
+  methods: { [name: string]: Method };
+};
+
+export interface Loggers {
+  error: (message: string) => void;
+  warn: (message: string) => void;
+};
+
 export var string = valueGen('String');
 export var boolean = valueGen('Boolean');
 export var number = valueGen('Number');
@@ -335,10 +352,7 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: { [name: string]: any };
   schema: { [name: string]: any };
-  log: {
-    error: (message: string) => void;
-    warn: (message: string) => void;
-  };
+  log: Loggers;
 
   constructor() {
     this.functions = {};
@@ -362,36 +376,36 @@ export class Symbols {
     this[type][name] = object;
   }
 
-  registerFunction(name, params, body) {
+  registerFunction(name: string, params: string[], body: Exp) {
     this.register('functions', name, method(params, body));
   }
 
-  registerPath(parts, isType, methods) {
+  registerPath(parts: string[], isType: ExpType | void, methods: { [name: string]: Method; }) {
     methods = methods || {};
 
     isType = isType || typeType('Any');
-    var p = {
+    var p: Path = {
       parts: parts,
-      isType: isType,
+      isType: <ExpType> isType,
       methods: methods
     };
     this.register('paths', '/' + parts.join('/'), p);
   }
 
-  registerSchema(name, derivedFrom, properties, methods) {
+  registerSchema(name: string, derivedFrom: ExpType | ExpUnionType | void, properties, methods) {
     methods = methods || {};
     properties = properties || {};
 
     derivedFrom = derivedFrom || typeType(Object.keys(properties).length > 0 ? 'Object' : 'Any');
-    var s = {
-      derivedFrom: derivedFrom,
+    var s: Schema = {
+      derivedFrom: <ExpType | ExpUnionType> derivedFrom,
       properties: properties,
       methods: methods
     };
     this.register('schema', name, s);
   }
 
-  isDerivedFrom(descendant, ancestor, visited) {
+  isDerivedFrom(descendant: string, ancestor: string, visited?: { [name: string]: boolean}) {
     if (!visited) {
       visited = {};
     }
@@ -411,7 +425,7 @@ export class Symbols {
     return this.isDerivedFrom(schema.derivedFrom.name, ancestor, visited);
   }
 
-  setLoggers(loggers) {
+  setLoggers(loggers: Loggers) {
     this.log = loggers;
   }
 }
