@@ -19,6 +19,61 @@
 
 import util = require('./util');
 
+export interface Exp {
+  type: string;
+  valueType: string;
+}
+
+export interface ExpValue extends Exp {
+  value: any;
+}
+
+export interface ExpNull extends Exp {
+}
+
+export interface ExpOp extends Exp {
+  op: string;
+  args: Exp[];
+}
+
+export interface ExpVariable extends Exp {
+  name: string;
+}
+
+export interface ExpLiteral extends Exp {
+  name: string;
+}
+
+export interface ExpReference extends Exp {
+  base: Exp;
+  // TODO: Why not restrict to Exp - which can be ast.string();
+  accessor: string | Exp;
+}
+
+export interface ExpCall extends Exp {
+  ref: ExpReference | ExpVariable;
+  args: Exp[];
+}
+
+export type BuiltinFunction = (args: Exp[], params: { [name: string]: Exp; }) => Exp;
+
+export interface ExpBuiltin extends Exp {
+  fn: BuiltinFunction;
+}
+
+export interface ExpType extends Exp {
+  name: string;
+}
+
+export interface ExpUnionType extends Exp {
+  types: ExpType[];
+}
+
+export interface Method {
+  params: string[];
+  body: Exp;
+}
+
 export var string = valueGen('String');
 export var boolean = valueGen('Boolean');
 export var number = valueGen('Number');
@@ -47,19 +102,19 @@ var errors = {
   typeMismatch: "Unexpected type: ",
 };
 
-export function variable(name) {
+export function variable(name): ExpVariable {
   return { type: 'var', valueType: 'Any', name: name };
 }
 
-export function literal(name) {
+export function literal(name): ExpLiteral {
   return { type: 'literal', valueType: 'Any', name: name };
 }
 
-export function nullType() {
+export function nullType(): ExpNull {
   return { type: 'Null', valueType: 'Null' };
 }
 
-export function reference(base, prop) {
+export function reference(base: Exp, prop: string | Exp): ExpReference {
   return {
     type: 'ref',
     valueType: 'Any',
@@ -74,48 +129,49 @@ export function reference(base, prop) {
 // valueType is a string indicating the type of evaluating an expression (e.g.
 // 'Snapshot') - used to know when type coercion is needed in the context
 // of parent expressions.
-export function cast(base, valueType) {
+export function cast(base: Exp, valueType: string): Exp {
   var result = util.extend({}, base);
   result.valueType = valueType;
   return result;
 }
 
-export function call(ref, args?) {
+export function call(ref: ExpReference | ExpVariable, args?: Exp[]): ExpCall {
   args = args || [];
   return { type: 'call', valueType: 'Any', ref: ref, args: args };
 }
 
-export function builtin(fn) {
+// TODO: Type of function signature does not fail this declaration?
+export function builtin(fn: BuiltinFunction): ExpBuiltin {
   return { type: 'builtin', valueType: 'Any', fn: fn };
 }
 
-export function snapshotVariable(name) {
-  return cast(variable(name), 'Snapshot');
+export function snapshotVariable(name: string): ExpVariable {
+  return <ExpVariable> cast(variable(name), 'Snapshot');
 }
 
-export function snapshotChild(base, accessor) {
+export function snapshotChild(base: Exp, accessor: string | Exp): Exp {
   if (typeof accessor === 'string') {
     accessor = string(accessor);
   }
   if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
-  var result = cast(call(reference(base, 'child'), [accessor]), 'Snapshot');
+  var result = cast(call(reference(base, 'child'), [<Exp> accessor]), 'Snapshot');
   return result;
 }
 
-export function snapshotParent(base) {
+export function snapshotParent(base: Exp): Exp {
   if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
   return cast(reference(cast(base, 'Any'), 'parent'), 'Snapshot');
 }
 
-export function snapshotValue(exp) {
+export function snapshotValue(exp): ExpCall {
   return call(reference(cast(exp, 'Any'), 'val'), []);
 }
 
-export function ensureValue(exp) {
+export function ensureValue(exp: Exp): Exp {
   if (exp.valueType === 'Snapshot') {
     return snapshotValue(exp);
   }
@@ -123,7 +179,7 @@ export function ensureValue(exp) {
 }
 
 // Ensure expression is a boolean (when used in a boolean context).
-export function ensureBoolean(exp) {
+export function ensureBoolean(exp: Exp): Exp {
   exp = ensureValue(exp);
   if (isCall(exp, 'val')) {
     exp = eq(exp, boolean(true));
@@ -131,12 +187,13 @@ export function ensureBoolean(exp) {
   return exp;
 }
 
-export function isCall(exp, methodName) {
-  return exp.type === 'call' && exp.ref.type === 'ref' && exp.ref.accessor === methodName;
+export function isCall(exp: Exp, methodName: string): boolean {
+  return exp.type === 'call' && (<ExpCall> exp).ref.type === 'ref' &&
+    (<ExpReference> (<ExpCall> exp).ref).accessor === methodName;
 }
 
 // Return value generating function for a given Type.
-function valueGen(typeName) {
+function valueGen(typeName: string): ((val: any) => ExpValue) {
   return function(val) {
     return {
       type: typeName,      // Exp type identifying a constant value of this Type.
@@ -146,16 +203,16 @@ function valueGen(typeName) {
   };
 }
 
-function cmpValues(v1, v2) {
-  return v1.typeName === v2.typeName && v1.value === v2.value;
+function cmpValues(v1: ExpValue, v2: ExpValue): boolean {
+  return v1.type === v2.type && v1.value === v2.value;
 }
 
-function isOp(opType, exp) {
-  return exp.type === 'op' && exp.op === opType;
+function isOp(opType: string, exp: Exp): boolean {
+  return exp.type === 'op' && (<ExpOp> exp).op === opType;
 }
 
 // Return a generating function to make an operator exp node.
-function opGen(opType: string, arity: number = 2) {
+function opGen(opType: string, arity: number = 2): ((...args: Exp[]) => ExpOp) {
   return function(...args) {
     if (args.length !== arity) {
       throw new Error("Operator has " + args.length +
@@ -179,8 +236,8 @@ export var orArray = leftAssociateGen('||', boolean(false), boolean(true));
 //
 //    [a && b, c && d] => (((a && b) && c) && d)
 //    (NOT (a && b) && (c && d))
-function leftAssociateGen(opType, identityValue, zeroValue) {
-  return function(a) {
+function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: ExpValue) {
+  return function(a: Exp[]): Exp {
     var i;
 
     function reducer(result, current) {
@@ -219,7 +276,7 @@ function leftAssociateGen(opType, identityValue, zeroValue) {
 }
 
 // Flatten the top level tree of op into a single flat array of expressions.
-export function flatten(opType, exp, flat?) {
+export function flatten(opType: string, exp: Exp, flat?: Exp[]): Exp[] {
   var i;
 
   if (flat === undefined) {
@@ -231,14 +288,14 @@ export function flatten(opType, exp, flat?) {
     return flat;
   }
 
-  for (i = 0; i < exp.args.length; i++) {
-    flatten(opType, exp.args[i], flat);
+  for (i = 0; i < (<ExpOp> exp).args.length; i++) {
+    flatten(opType, (<ExpOp> exp).args[i], flat);
   }
 
   return flat;
 }
 
-export function op(opType, args) {
+export function op(opType, args): ExpOp {
   return {
     type: 'op',     // This is (multi-argument) operator.
     valueType: 'Any',
@@ -248,44 +305,52 @@ export function op(opType, args) {
 }
 
 // Warning: NOT an expression type!
-export function method(params, body) {
+export function method(params: string[], body: Exp): Method {
   return {
     params: params,
     body: body
   };
 }
 
-export function typeType(typeName) {
-  return { type: "type", name: typeName };
+export function typeType(typeName: string): ExpType {
+  return { type: "type", valueType: "type", name: typeName };
 }
 
-export function unionType(types) {
-  return { type: "union", types: types };
+export function unionType(types: ExpType[]): ExpUnionType {
+  return { type: "union", valueType: "type", types: types };
 }
 
-export function getTypeNames(type) {
+export function getTypeNames(type: ExpType | ExpUnionType): string[] {
   switch (type.type) {
   case 'type':
-    return [type.name];
+    return [(<ExpType> type).name];
   case 'union':
-    return type.types.map(getTypeNames).reduce(util.extendArray);
+    return (<ExpUnionType> type).types.map(getTypeNames).reduce(util.extendArray);
   default:
     throw new Error("Unknown type: " + type.type);
   }
 }
 
-export function Symbols() {
-  this.functions = {};
-  this.paths = {};
-  this.schema = {};
-  this.log = {
-    error: function(s) { console.error(s); },
-    warn: function(s) { console.warn(s); },
+export class Symbols {
+  functions: { [name: string]: Method };
+  paths: { [name: string]: any };
+  schema: { [name: string]: any };
+  log: {
+    error: (message: string) => void;
+    warn: (message: string) => void;
   };
-}
 
-util.methods(Symbols, {
-  register: function(type, name, object) {
+  constructor() {
+    this.functions = {};
+    this.paths = {};
+    this.schema = {};
+    this.log = {
+      error: function(s) { console.error(s); },
+      warn: function(s) { console.warn(s); },
+    };
+  }
+
+  register(type: string, name: string, object: any) {
     if (!this[type]) {
       throw new Error("Invalid registration type: " + type);
     }
@@ -295,13 +360,13 @@ util.methods(Symbols, {
       return;
     }
     this[type][name] = object;
-  },
+  }
 
-  registerFunction: function(name, params, body) {
+  registerFunction(name, params, body) {
     this.register('functions', name, method(params, body));
-  },
+  }
 
-  registerPath: function(parts, isType, methods) {
+  registerPath(parts, isType, methods) {
     methods = methods || {};
 
     isType = isType || typeType('Any');
@@ -311,9 +376,9 @@ util.methods(Symbols, {
       methods: methods
     };
     this.register('paths', '/' + parts.join('/'), p);
-  },
+  }
 
-  registerSchema: function(name, derivedFrom, properties, methods) {
+  registerSchema(name, derivedFrom, properties, methods) {
     methods = methods || {};
     properties = properties || {};
 
@@ -324,9 +389,9 @@ util.methods(Symbols, {
       methods: methods
     };
     this.register('schema', name, s);
-  },
+  }
 
-  isDerivedFrom: function(descendant, ancestor, visited) {
+  isDerivedFrom(descendant, ancestor, visited) {
     if (!visited) {
       visited = {};
     }
@@ -344,9 +409,9 @@ util.methods(Symbols, {
       return false;
     }
     return this.isDerivedFrom(schema.derivedFrom.name, ancestor, visited);
-  },
+  }
 
-  setLoggers: function(loggers) {
+  setLoggers(loggers) {
     this.log = loggers;
   }
-});
+}
