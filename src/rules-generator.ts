@@ -33,8 +33,25 @@ var errors = {
   application: "Bolt application error: ",
 };
 
+/* TS does not allow for special properties to have distinct
+   types from the 'index' property given for the interface.  Boo.
+   '.read': ast.Exp[] | string;
+   '.write': ast.Exp[] | string;
+   '.validate': ast.Exp[] | string;
+   '.indexOn': string[];
+*/
+export type ValidatorValue = ast.Exp | ast.Exp[] | string | string[] | Validator;
+export interface Validator {
+  [name: string]: ValidatorValue;
+};
+
+interface OpPriority {
+  rep?: string;
+  p: number;
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-var JS_OPS = {
+var JS_OPS: { [op: string]: OpPriority; } = {
   'value': { rep: "", p: 16 },
 
   'neg': { rep: "-", p: 15},
@@ -70,26 +87,36 @@ var snapshotMethods = ['parent', 'child', 'hasChildren', 'val', 'isString', 'isN
 //   functions: {}
 //   schema: {}
 //   paths: {}
-export function Generator(symbols) {
-  this.symbols = symbols;
-  this.log = symbols.log;
-  this.validators = {};
-  this.rules = {};
-  this.errorCount = 0;
-  this.runSilently = false;
-  this.allowUndefinedFunctions = false;
+export class Generator {
+  symbols: ast.Symbols;
+  log: ast.Loggers;
+  validators: { [schemaName: string]: Validator; };
+  rules: Validator;
+  errorCount: number;
+  runSilently: boolean;
+  allowUndefinedFunctions: boolean;
+  globals: { [name: string]: ast.Exp; };
+  thisIs: string;
 
-  // TODO: globals should be part of this.symbols.
-  this.globals = {
-    "root": ast.cast(ast.literal('root'), 'Snapshot'),
-  };
-  this.globalStacks = {};
+  constructor(symbols: ast.Symbols) {
+    this.symbols = symbols;
+    this.log = symbols.log;
+    this.validators = {};
+    this.rules = {};
+    this.errorCount = 0;
+    this.runSilently = false;
+    this.allowUndefinedFunctions = false;
 
-  this.registerBuiltinSchema();
-}
+    // TODO: globals should be part of this.symbols.
+    this.globals = {
+      "root": ast.cast(ast.literal('root'), 'Snapshot'),
+    };
 
-util.methods(Generator, {
-  generateRules: function() {
+    this.registerBuiltinSchema();
+  }
+
+  // Return Firebase compatible Rules JSON for a the given symbols definitions.
+  generateRules(): Validator {
     this.errorCount = 0;
     var paths = this.symbols.paths;
     var schema = this.symbols.schema;
@@ -142,26 +169,26 @@ util.methods(Generator, {
     return {
       rules: this.rules
     };
-  },
+  }
 
-  validateMethods: function(m, methods, allowed) {
+  validateMethods(m: string, methods: { [name: string]: ast.Method }, allowed: string[]) {
     for (var method in methods) {
       if (!util.arrayIncludes(allowed, method)) {
         this.log.warn(m + util.quoteString(method) +
                       " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
       }
     }
-  },
+  }
 
-  validateType: function(type) {
+  validateType(type: ast.ExpType | ast.ExpUnionType) {
     ast.getTypeNames(type).forEach(function(typeName) {
       if (!(typeName in this.symbols.schema)) {
         this.fatal(errors.noSuchType + util.quoteString(typeName));
       }
     }.bind(this));
-  },
+  }
 
-  registerBuiltinSchema: function() {
+  registerBuiltinSchema() {
     var self = this;
     var thisVar = ast.variable('this');
 
@@ -212,26 +239,25 @@ util.methods(Generator, {
 
     this.symbols.registerFunction('@RegExp', ['s'],
                                   ast.builtin(this.makeRegExp.bind(this)));
-  },
+  }
 
   // Ensure we have a definition for a validator for the given schema.
-  ensureValidator: function(schemaName) {
+  ensureValidator(schemaName: string): Validator {
     // TODO: Guard against recursion
     if (!this.validators[schemaName]) {
       this.validators[schemaName] = this.createValidator(schemaName);
-      // console.log(schemaName + ": " + util.prettyJSON(this.validators[schemaName]));
     }
     return this.validators[schemaName];
-  },
+  }
 
   // A validator is a structured object, where each leaf node
   // is:
   //     ".validate": [<expression>, ...]
   // All expressions will be ANDed together to form the file expresion.
   // Intermediate nodes can be "prop" or "$prop" values.
-  createValidator: function(schemaName) {
+  createValidator(schemaName: string): Validator {
     var schema = this.symbols.schema[schemaName];
-    var validator: any = {};
+    var validator: Validator = {};
 
     if (!schema) {
       throw new Error(errors.application + "Undefined schema: " + schemaName);
@@ -258,7 +284,7 @@ util.methods(Generator, {
       if (!util.arrayIncludes(propSchema, 'Null')) {
         requiredProperties.push(propName);
       }
-      extendValidator(validator[propName], this.unionValidators(propSchema));
+      extendValidator(<Validator> validator[propName], this.unionValidators(propSchema));
     }.bind(this));
 
     if (requiredProperties.length > 0) {
@@ -268,26 +294,26 @@ util.methods(Generator, {
     }
 
     if (hasProps) {
-      validator.$other = {};
-      extendValidator(validator.$other, {'.validate': ast.boolean(false)});
+      validator['$other'] = {};
+      extendValidator(<Validator> validator['$other'], <Validator> {'.validate': ast.boolean(false)});
     }
 
     if (schema.methods.validate) {
-      extendValidator(validator, {'.validate': [schema.methods.validate.body]});
+      extendValidator(validator, <Validator> {'.validate': [schema.methods.validate.body]});
     }
 
     return validator;
-  },
+  }
 
   // Update rules based on the given path expression.
-  updateRules: function(path) {
+  updateRules(path: ast.Path) {
     var i;
-    var location = util.ensureObjectPath(this.rules, path.parts);
+    var location = <Validator> util.ensureObjectPath(this.rules, path.parts);
     var exp;
 
     // Path validation function && Type Validation
-    if (path.methods.validate) {
-      extendValidator(location, {'.validate': [path.methods.validate.body]});
+    if (path.methods['validate']) {
+      extendValidator(location, {'.validate': [path.methods['validate'].body]});
     }
 
     ast.getTypeNames(path.isType).forEach(function(typeName) {
@@ -297,7 +323,7 @@ util.methods(Generator, {
     // Write .read and .write expressions
     ['read', 'write'].forEach(function(method) {
       if (path.methods[method]) {
-        var validator = {};
+        var validator = <Validator> {};
         // TODO: What if two paths overwrite the same location?
         validator['.' + method] = [path.methods[method].body];
         extendValidator(location, validator);
@@ -305,13 +331,13 @@ util.methods(Generator, {
     });
 
     // Write indices
-    if (path.methods.index) {
-      switch (path.methods.index.body.type) {
+    if (path.methods['index']) {
+      switch (path.methods['index'].body.type) {
       case 'String':
-        exp = ast.array([path.methods.index.body]);
+        exp = ast.array([path.methods['index'].body]);
         break;
       case 'Array':
-        exp = path.methods.index.body;
+        exp = path.methods['index'].body;
         break;
       default:
         this.fatal(errors.badIndex);
@@ -328,12 +354,12 @@ util.methods(Generator, {
       // TODO: Error check not over-writing index rules.
       location['.indexOn'] = indices;
     }
-  },
+  }
 
   // Return union validator (||) over each schema
-  unionValidators: function(schema) {
-    var union = {};
-    schema.forEach(function(typeName) {
+  unionValidators(schema: string[]): Validator {
+    var union = <Validator> {};
+    schema.forEach(function(typeName: string) {
       // First and the validator terms for a single type
       var singleType = extendValidator({}, this.ensureValidator(typeName));
       mapValidator(singleType, ast.andArray);
@@ -341,27 +367,27 @@ util.methods(Generator, {
     }.bind(this));
     mapValidator(union, ast.orArray);
     return union;
-  },
+  }
 
-  convertExpressions: function(validator, thisIs) {
+  convertExpressions(validator: Validator) {
     var methodThisIs = { '.validate': 'newData',
                          '.read': 'data',
                          '.write': 'newData' };
 
     mapValidator(validator, function(value, prop) {
       if (prop in methodThisIs) {
-        value = collapseHasChildren(value);
-        value = this.getExpressionText(ast.andArray(value), methodThisIs[prop]);
-        if (prop === '.validate' && value === 'true' ||
-            (prop === '.read' || prop === '.write') && value === 'false') {
-          value = undefined;
+        let result = this.getExpressionText(ast.andArray(collapseHasChildren(value)), methodThisIs[prop]);
+        if (prop === '.validate' && result === 'true' ||
+            (prop === '.read' || prop === '.write') && result === 'false') {
+          return undefined;
         }
+        return result;
       }
       return value;
     }.bind(this));
-  },
+  }
 
-  getExpressionText: function(exp, thisIs) {
+  getExpressionText(exp: ast.Exp, thisIs: string): string {
     if (!('type' in exp)) {
       throw new Error(errors.application + "Not an expression: " + util.prettyJSON(exp));
     }
@@ -380,25 +406,24 @@ util.methods(Generator, {
     exp = this.partialEval(exp);
 
     delete this.symbols.functions['@getThis'];
-    delete this.symbols.functions.prior;
+    delete this.symbols.functions['prior'];
 
     // Top level expressions should never be to a snapshot reference - should
     // always evaluate to a boolean.
     exp = ast.ensureBoolean(exp);
     return decodeExpression(exp);
-  },
+  }
 
   // Partial evaluation of expressions - copy of expression tree (immutable).
   //
-  // - Inline function calls.
-  // - Replace local and global variables.
+  // - Expand inline function calls.
+  // - Replace local and global variables with their values.
   // - Expand snapshot references using child('ref').
   // - Coerce snapshot references to values as needed.
-  partialEval: function(exp, params?, functionCalls?) {
-    var innerParams = {};
-    var args = [];
-    var i;
-
+  partialEval(exp: ast.Exp,
+              params?: { [name: string]: ast.Exp; },
+              functionCalls?: { [name: string]: boolean }
+             ): ast.Exp {
     if (!params) {
       params = {};
     }
@@ -406,38 +431,17 @@ util.methods(Generator, {
       functionCalls = {};
     }
     var self = this;
-    var isModified = false;
 
-    function subExpression(exp2) {
-      var subExp = self.partialEval(exp2, params, functionCalls);
-      if (subExp !== exp2) {
-        isModified = true;
-      }
-      return subExp;
+    function subExpression(exp2: ast.Exp): ast.Exp {
+      return self.partialEval(exp2, params, functionCalls);
     }
 
-    function valueExpression(exp2) {
-      if (exp2.valueType === 'Snapshot') {
-        isModified = true;
-      }
+    function valueExpression(exp2: ast.Exp): ast.Exp {
       return ast.ensureValue(exp2);
     }
 
-    function booleanExpression(exp2) {
-      if (exp2.valueType === 'Snapshot') {
-        isModified = true;
-      }
+    function booleanExpression(exp2: ast.Exp): ast.Exp {
       return ast.ensureBoolean(exp2);
-    }
-
-    // When we don't modify the returned expression, we return the original - otherwise
-    // we make a copy so that expressions can be consider immutable.
-    // TODO: Investigate code simplification if we always (deep) copy.
-    function replaceExp() {
-      if (isModified) {
-        exp = util.extend({}, exp);
-      }
-      return isModified;
     }
 
     function lookupVar(exp2) {
@@ -447,197 +451,186 @@ util.methods(Generator, {
 
     switch (exp.type) {
     case 'op':
+      let expOp = <ast.ExpOp> ast.copyExp(exp);
       // Ensure arguments are boolean (or values) where needed.
-      if (exp.op === 'value') {
-        args[0] = valueExpression(subExpression(exp.args[0]));
-      } else if (exp.op === '||' || exp.op === '&&' || exp.op === '!') {
-        for (i = 0; i < exp.args.length; i++) {
-          args[i] = booleanExpression(subExpression(exp.args[i]));
+      if (expOp.op === 'value') {
+        expOp.args[0] = valueExpression(subExpression(expOp.args[0]));
+      } else if (expOp.op === '||' || expOp.op === '&&' || expOp.op === '!') {
+        for (let i = 0; i < expOp.args.length; i++) {
+          expOp.args[i] = booleanExpression(subExpression(expOp.args[i]));
         }
-      } else if (exp.op === '?:') {
-        args[0] = booleanExpression(subExpression(exp.args[0]));
-        args[1] = subExpression(exp.args[1]);
-        args[2] = subExpression(exp.args[2]);
+      } else if (expOp.op === '?:') {
+        expOp.args[0] = booleanExpression(subExpression(expOp.args[0]));
+        expOp.args[1] = subExpression(expOp.args[1]);
+        expOp.args[2] = subExpression(expOp.args[2]);
       } else {
-        for (i = 0; i < exp.args.length; i++) {
-          args[i] = valueExpression(subExpression(exp.args[i]));
+        for (let i = 0; i < expOp.args.length; i++) {
+          expOp.args[i] = valueExpression(subExpression(expOp.args[i]));
         }
       }
-      if (replaceExp()) {
-        exp.args = args;
-      }
-      return exp;
+      return expOp;
 
     case 'var':
       return lookupVar(exp);
 
     case 'ref':
-      var base;
-      var accessor;
-      base = subExpression(exp.base);
-      if (typeof exp.accessor === 'string') {
-        accessor = exp.accessor;
-      } else {
-        accessor = valueExpression(subExpression(exp.accessor));
+      let expRef = <ast.ExpReference> ast.copyExp(exp);
+      expRef.base = subExpression(expRef.base);
+      if (typeof expRef.accessor !== 'string') {
+        expRef.accessor = valueExpression(subExpression(<ast.Exp> expRef.accessor));
       }
       // snapshot references use child() wrapper - EXCEPT for reserved methods
       // TODO: Only do this if we are dereferencing a function call OR if
       // there is no shadowed property in the object.
-      if (base.valueType === 'Snapshot') {
-        if (accessor === 'parent') {
-          return ast.snapshotParent(base);
-        } else if (!util.arrayIncludes(snapshotMethods, accessor)) {
-          return ast.snapshotChild(base, accessor);
+      if (expRef.base.valueType === 'Snapshot') {
+        if (expRef.accessor === 'parent') {
+          return ast.snapshotParent(expRef.base);
+        } else if (!util.arrayIncludes(snapshotMethods, expRef.accessor)) {
+          return ast.snapshotChild(expRef.base, expRef.accessor);
         }
       }
-      if (util.arrayIncludes(valueMethods, accessor)) {
-        base = valueExpression(base);
+      if (util.arrayIncludes(valueMethods, expRef.accessor)) {
+        expRef.base = valueExpression(expRef.base);
       }
-      if (replaceExp()) {
-        exp.base = base;
-        exp.accessor = accessor;
-      }
-      return exp;
+      return expRef;
 
     case 'call':
-      var ref = subExpression(exp.ref);
-      var callee = this.lookupFunction(ref);
+      let expCall = <ast.ExpCall> ast.copyExp(exp);
+      expCall.ref = <ast.ExpVariable | ast.ExpReference> subExpression(expCall.ref);
+      var callee = this.lookupFunction(expCall.ref);
+
+      // Expand the function call inline
       if (callee) {
         var fn = callee.fn;
 
-        var callArgs = exp.args;
         if (callee.self) {
-          callArgs = util.copyArray(callArgs);
-          callArgs.unshift(ast.ensureValue(callee.self));
+          expCall.args.unshift(ast.ensureValue(callee.self));
         }
 
-        if (fn.params.length !== callArgs.length) {
+        if (fn.params.length !== expCall.args.length) {
           this.fatal(errors.mismatchParams + " ( " +
-                     ref.name + " expects " + fn.params.length +
-                     " but actually passed " + callArgs.length + ")");
+                     callee.methodName + " expects " + fn.params.length +
+                     " but actually passed " + expCall.args.length + ")");
           return exp;
         }
 
         if (fn.body.type === 'builtin') {
-          return fn.body.fn(callArgs, params);
+          return (<ast.ExpBuiltin> fn.body).fn(expCall.args, params);
         }
 
-        for (i = 0; i < fn.params.length; i++) {
-          innerParams[fn.params[i]] = subExpression(callArgs[i]);
-        }
+        let innerParams: { [arg: string]: ast.Exp; } = {};
 
-        if (functionCalls[ref.name]) {
-          throw new Error(errors.recursive + " (" + ref.name + ")");
+        for (let i = 0; i < fn.params.length; i++) {
+          innerParams[fn.params[i]] = subExpression(expCall.args[i]);
         }
-        functionCalls[ref.name] = true;
-        exp = this.partialEval(fn.body, innerParams, functionCalls);
-        functionCalls[ref.name] = false;
-      } else {
-        // Not a global function - expand args.
-        if (!this.allowUndefinedFunctions) {
-          var funcName = ref.type === 'ref' ? ref.accessor : ref.name;
-          if (!(funcName in this.symbols.schema.String.methods ||
-                util.arrayIncludes(snapshotMethods, funcName))) {
-            this.fatal(errors.undefinedFunction + decodeExpression(ref));
-          }
+        if (functionCalls[callee.methodName]) {
+          throw new Error(errors.recursive + " (" + callee.methodName + ")");
         }
-        for (i = 0; i < exp.args.length; i++) {
-          args[i] = subExpression(exp.args[i]);
-        }
-        if (replaceExp()) {
-          exp.ref = ref;
-          exp.args = args;
-          // TODO: Get rid of this hack (for data.parent().val())
-          if (exp.ref.valueType === 'Snapshot') {
-            exp.valueType = 'Snapshot';
-          }
+        functionCalls[callee.methodName] = true;
+        let result = this.partialEval(fn.body, innerParams, functionCalls);
+        functionCalls[callee.methodName] = false;
+        return result;
+      }
+
+      // Can't expand function - but just expand the arguments.
+      if (!this.allowUndefinedFunctions) {
+        // TODO: Simplify type of accessor (not string | Exp).
+        var funcName = expCall.ref.type === 'ref'
+          ? <string> (<ast.ExpReference> expCall.ref).accessor
+          : (<ast.ExpVariable> expCall.ref).name;
+        if (!(funcName in this.symbols.schema['String'].methods ||
+              util.arrayIncludes(snapshotMethods, funcName))) {
+          this.fatal(errors.undefinedFunction + decodeExpression(expCall.ref));
         }
       }
 
-      return exp;
+      for (let i = 0; i < expCall.args.length; i++) {
+        expCall.args[i] = subExpression(expCall.args[i]);
+      }
+      // TODO: Get rid of this hack (for data.parent().val())
+      if (expCall.ref.valueType === 'Snapshot') {
+        expCall.valueType = 'Snapshot';
+      }
+
+      return expCall;
 
     // Expression types (like literals) than need no expansion.
     default:
       return exp;
     }
-  },
+  }
 
   // Builtin function - convert all 'this' to 'data' (from 'newData').
   // Args are function arguments, and params are the local (function) scope variables.
-  prior: function(args, params) {
+  prior(args: ast.Exp[], params: { [name: string]: ast.Exp; }): ast.Exp {
     var lastThisIs = this.thisIs;
     this.thisIs = 'data';
     var exp = this.partialEval(args[0], params);
     this.thisIs = lastThisIs;
     return exp;
-  },
+  }
 
   // Builtin function - current value of 'this'
-  getThis: function(args, params) {
+  getThis(args: ast.Exp[], params: { [name: string]: ast.Exp; }): ast.Exp {
     var result = ast.snapshotVariable(this.thisIs);
     return result;
-  },
+  }
 
   // Builtin function - convert string to RegExp
-  makeRegExp: function(args, params) {
+  makeRegExp(args: ast.Exp[], params: { [name: string]: ast.Exp; }) {
     if (args.length !== 1) {
       throw new Error(errors.application + "RegExp arguments.");
     }
-    var exp = this.partialEval(args[0], params);
+    var exp = <ast.ExpValue> this.partialEval(args[0], params);
     if (exp.type !== 'String' || !/\/.*\//.test(exp.value)) {
       throw new Error(errors.coercion + decodeExpression(exp) + " => RegExp");
     }
     return ast.regexp(exp.value);
-  },
+  }
 
   // Lookup globally defined function.
-  lookupFunction: function(ref) {
+  lookupFunction(ref: ast.ExpVariable | ast.ExpReference): {
+    self?: ast.Exp,
+    fn: ast.Method,
+    methodName: string
+  } {
     // Global function.
     if (ref.type === 'var') {
-      var fn = this.symbols.functions[ref.name];
+      let refVar = <ast.ExpVariable> ref;
+      var fn = this.symbols.functions[refVar.name];
       if (!fn) {
         return undefined;
       }
-      return { self: undefined, fn: fn};
+      return { self: undefined, fn: fn, methodName: refVar.name};
     }
 
     // Method call.
     if (ref.type === 'ref') {
+      let refRef = <ast.ExpReference> ref;
       // TODO: Require static type validation before calling String methods.
-      if (ref.base.op !== 'value' && ref.accessor in this.symbols.schema.String.methods) {
-        return { self: ref.base, fn: this.symbols.schema.String.methods[ref.accessor] };
+      if ((<ast.ExpOp> refRef.base).op !== 'value' && <string> refRef.accessor in this.symbols.schema['String'].methods) {
+        return { self: refRef.base,
+                 fn: this.symbols.schema['String'].methods[<string> refRef.accessor],
+                 methodName: 'String.' + <string> refRef.accessor
+               };
       }
     }
     return undefined;
-  },
+  }
 
-  pushGlobal: function(name, exp) {
-    if (!this.globalStacks[name]) {
-      this.globalStacks[name] = [];
-    }
-    var stack = this.globalStacks[name];
-    stack.push(this.globals[name]);
-    this.globals[name] = exp;
-  },
-
-  popGlobal: function(name) {
-    this.globals[name] = this.globalStacks[name].pop();
-  },
-
-  setLoggers: function(loggers) {
+  setLoggers(loggers: ast.Loggers) {
     this.symbols.setLoggers(loggers);
     this.log = this.symbols.log;
-  },
+  }
 
-  fatal: function(s) {
+  fatal(s: string) {
     this.log.error(s);
     this.errorCount += 1;
   }
-
-});
+};
 
 // From an AST, decode as an expression (string).
-export function decodeExpression(exp, outerPrecedence?) {
+export function decodeExpression(exp: ast.Exp, outerPrecedence?: number): string {
   if (outerPrecedence === undefined) {
     outerPrecedence = 0;
   }
@@ -646,16 +639,20 @@ export function decodeExpression(exp, outerPrecedence?) {
   switch (exp.type) {
   case 'Boolean':
   case 'Number':
-    result = JSON.stringify(exp.value);
+    result = JSON.stringify((<ast.ExpValue> exp).value);
     break;
 
   case 'String':
-    result = util.quoteString(exp.value);
+    result = util.quoteString((<ast.ExpValue> exp).value);
     break;
 
   // RegExp assumed to be in correct format.
   case 'RegExp':
-    result = exp.value;
+    result = (<ast.ExpValue> exp).value;
+    break;
+
+  case 'Array':
+    result = '[' + decodeArray((<ast.ExpValue> exp).value) + ']';
     break;
 
   case 'Null':
@@ -664,20 +661,22 @@ export function decodeExpression(exp, outerPrecedence?) {
 
   case 'var':
   case 'literal':
-    result = exp.name;
+    result = (<ast.ExpVariable> exp).name;
     break;
 
   case 'ref':
-    if (typeof exp.accessor === 'string') {
-      result = decodeExpression(exp.base) + '.' + exp.accessor;
+    let expRef = <ast.ExpReference> exp;
+    if (typeof expRef.accessor === 'string') {
+      result = decodeExpression(expRef.base) + '.' + expRef.accessor;
     } else {
-      result = decodeExpression(exp.base, innerPrecedence) +
-        '[' + decodeExpression(exp.accessor) + ']';
+      result = decodeExpression(expRef.base, innerPrecedence) +
+        '[' + decodeExpression(<ast.Exp> expRef.accessor) + ']';
     }
     break;
 
   case 'call':
-    result = decodeExpression(exp.ref) + '(' + decodeArray(exp.args) + ')';
+    let expCall = <ast.ExpCall> exp;
+    result = decodeExpression(expCall.ref) + '(' + decodeArray(expCall.args) + ')';
     break;
 
   case 'builtin':
@@ -685,27 +684,24 @@ export function decodeExpression(exp, outerPrecedence?) {
     break;
 
   case 'op':
-    var rep = JS_OPS[exp.op].rep === undefined ? exp.op : JS_OPS[exp.op].rep;
-    if (exp.args.length === 1) {
-      result = rep + decodeExpression(exp.args[0], innerPrecedence);
-    } else if (exp.args.length === 2) {
+    let expOp = <ast.ExpOp> exp;
+    var rep = JS_OPS[expOp.op].rep === undefined ? expOp.op : JS_OPS[expOp.op].rep;
+    if (expOp.args.length === 1) {
+      result = rep + decodeExpression(expOp.args[0], innerPrecedence);
+    } else if (expOp.args.length === 2) {
       result =
-        decodeExpression(exp.args[0], innerPrecedence) +
+        decodeExpression(expOp.args[0], innerPrecedence) +
         ' ' + rep + ' ' +
         // All ops are left associative - so nudge the innerPrecendence
         // down on the right hand side to force () for right-associating
         // operations.
-        decodeExpression(exp.args[1], innerPrecedence + 1);
-    } else if (exp.args.length === 3) {
+        decodeExpression(expOp.args[1], innerPrecedence + 1);
+    } else if (expOp.args.length === 3) {
       result =
-        decodeExpression(exp.args[0], innerPrecedence) + ' ? ' +
-        decodeExpression(exp.args[1], innerPrecedence) + ' : ' +
-        decodeExpression(exp.args[2], innerPrecedence);
+        decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
+        decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
+        decodeExpression(expOp.args[2], innerPrecedence);
     }
-    break;
-
-  case 'Array':
-    result = '[' + decodeArray(exp.value) + ']';
     break;
 
   default:
@@ -720,7 +716,7 @@ export function decodeExpression(exp, outerPrecedence?) {
   return result;
 }
 
-function decodeArray(args) {
+function decodeArray(args: ast.Exp[]): string {
   return args
     .map(function(x) {
       return decodeExpression(x);
@@ -728,10 +724,10 @@ function decodeArray(args) {
     .join(', ');
 }
 
-function precedenceOf(exp) {
+function precedenceOf(exp: ast.Exp): number {
   switch (exp.type) {
   case 'op':
-    return JS_OPS[exp.op].p;
+    return JS_OPS[(<ast.ExpOp> exp).op].p;
   case 'call':
     return 17;
   case 'ref':
@@ -742,7 +738,7 @@ function precedenceOf(exp) {
 }
 
 // Merge all .X terms into target.
-export function extendValidator(target, src) {
+export function extendValidator(target: Validator, src: Validator): Validator {
   if (src === undefined) {
     throw new Error(errors.application + "Illegal validation source.");
   }
@@ -757,13 +753,13 @@ export function extendValidator(target, src) {
       if (util.isType(src[prop], 'array')) {
         util.extendArray(target[prop], src[prop]);
       } else {
-        target[prop].push(src[prop]);
+        (<ast.Exp[]> target[prop]).push(<ast.Exp> src[prop]);
       }
     } else {
       if (!target[prop]) {
         target[prop] = {};
       }
-      extendValidator(target[prop], src[prop]);
+      extendValidator(<Validator> target[prop], <Validator> src[prop]);
     }
   }
 
@@ -772,7 +768,7 @@ export function extendValidator(target, src) {
 
 // Call fn(value, prop) on all '.props' and assiging the value back into the
 // validator.
-export function mapValidator(v, fn) {
+export function mapValidator(v: Validator, fn: (val: ValidatorValue, prop: string) => ValidatorValue) {
   for (var prop in v) {
     if (!v.hasOwnProperty(prop)) {
       continue;
@@ -783,41 +779,52 @@ export function mapValidator(v, fn) {
         delete v[prop];
       }
     } else {
-      mapValidator(v[prop], fn);
+      mapValidator(<Validator> v[prop], fn);
     }
   }
 }
 
 // Collapse all hasChildren calls into one (combining their arguments).
-// E.g. newData.hasChildren() && newData.hasChildren(['x']) && newData.hasChildren(['y']) =>
+// E.g. [newData.hasChildren(), newData.hasChildren(['x']), newData.hasChildren(['y'])] =>
 //      newData.hasChildren(['x', 'y'])
-function collapseHasChildren(exps) {
-  var hasHasChildren = false;
-  var combined = [];
-  var result = [];
+function collapseHasChildren(exps: ast.Exp[]): ast.Exp[] {
+  var hasHasChildren: boolean = false;
+  var combined = <string[]> [];
+  var result = <ast.Exp[]> [];
   exps.forEach(function(exp) {
-    if (exp.type === 'call' && exp.ref.type === 'ref' && exp.ref.accessor === 'hasChildren') {
-      if (exp.args.length === 0) {
-        hasHasChildren = true;
-        return;
-      }
-      // Expect one argument of Array type.
-      if (exp.args.length !== 1 || exp.args[0].type !== 'Array') {
-        throw new Error(errors.application + "Invalid argument to hasChildren(): " +
-                        exp.args[0].type);
-      }
-      exp.args[0].value.forEach(function(arg) {
-        hasHasChildren = true;
-        if (arg.type !== 'String') {
-          throw new Error(errors.application + "Expect string argument to hasChildren(), not: " +
-                          arg.type);
-        }
-        combined.push(arg.value);
-      });
-    } else {
+    if (exp.type !== 'call') {
       result.push(exp);
+      return;
     }
+
+    let expCall = <ast.ExpCall> exp;
+    if (expCall.ref.type !== 'ref' || (<ast.ExpReference> expCall.ref).accessor !== 'hasChildren') {
+      result.push(exp);
+      return;
+    }
+
+    if (expCall.args.length === 0) {
+      hasHasChildren = true;
+      return;
+    }
+
+    // Expect one argument of Array type.
+    if (expCall.args.length !== 1 || expCall.args[0].type !== 'Array') {
+      throw new Error(errors.application + "Invalid argument to hasChildren(): " +
+                      expCall.args[0].type);
+    }
+    let args = (<ast.ExpValue> expCall.args[0]).value;
+
+    args.forEach(function(arg) {
+      hasHasChildren = true;
+      if (arg.type !== 'String') {
+        throw new Error(errors.application + "Expect string argument to hasChildren(), not: " +
+                        arg.type);
+      }
+      combined.push(arg.value);
+    });
   });
+
   if (hasHasChildren) {
     result.unshift(hasChildrenExp(combined));
   }
@@ -825,7 +832,7 @@ function collapseHasChildren(exps) {
 }
 
 // Generate this.hasChildren([props, ...])
-function hasChildrenExp(props) {
+function hasChildrenExp(props: string[]): ast.Exp {
   var args = props.length === 0 ? [] : [ast.array(props.map(ast.string))];
   return ast.call(ast.reference(ast.cast(ast.variable('this'), 'Any'), 'hasChildren'), args);
 }
