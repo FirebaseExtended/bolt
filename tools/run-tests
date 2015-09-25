@@ -4,5 +4,5 @@
 set -e
 
 cd $PROJ_DIR
-gulp lint
+gulp lint build
 mocha lib/test --ui tdd "$@"

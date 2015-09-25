@@ -140,6 +140,16 @@ export function reference(base: Exp, prop: string | Exp): ExpReference {
   };
 }
 
+// Shallow copy of an expression (so it can be modified and preserve
+// immutability of the original expression).
+export function copyExp(exp: Exp): Exp {
+  exp = <Exp> util.extend({}, exp);
+  if (exp.type === 'op' || exp.type === 'call') {
+    (<ExpOp> exp).args = util.copyArray((<ExpOp> exp).args);
+  }
+  return exp;
+}
+
 // Make a (shallow) copy of the base expression, setting (or removing) it's
 // valueType.
 //
@@ -147,7 +157,7 @@ export function reference(base: Exp, prop: string | Exp): ExpReference {
 // 'Snapshot') - used to know when type coercion is needed in the context
 // of parent expressions.
 export function cast(base: Exp, valueType: string): Exp {
-  var result = util.extend({}, base);
+  var result = copyExp(base);
   result.valueType = valueType;
   return result;
 }

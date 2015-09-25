@@ -362,16 +362,16 @@ suite("Rules Generator Tests", function() {
 
   suite("mapValidator", function() {
     var tests = [
-      { data: {'.x': 1}, expect: {'.x': 2} },
-      { data: {'.x': 2}, expect: {} },
+      { data: {'.x': 'a'}, expect: {'.x': 'a+'} },
+      { data: {'.x': 'b'}, expect: {} },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
       generator.mapValidator(data, function(value, prop) {
-        if (value === 2) {
+        if (value === 'b') {
           return undefined;
         }
-        return value + 1;
+        return value + '+';
       });
       assert.deepEqual(data, expect);
     });
