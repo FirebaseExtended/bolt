@@ -1,20 +1,11 @@
-# Firebase Security and Modeling Language
+# Firebase Bold Security and Modeling Language
 
-This experimental Security and Rules language is meant to be used a
-convenient front-end to the existing Firebase JSON-based rules language.
-
-It has similarities to the [Blaze Compiler](https://github.com/firebase/blaze_compiler)
-but diverges in some respects:
-
-  - This compiler uses a syntax much more like JavaScript rather than relying on YAML
-    as the primary structuring mechanism for statements.
-  - Schema definitions are similar to [TypeScript syntax](http://www.typescriptlang.org/Handbook#classes).
-  - Schema are divorced from their storage path locations - you can specify, and name, any object
-    type, and then employ that definition in a path rule (called access rule in Blaze).
+This language is meant to be used as a convenient front-end to the existing
+Firebase JSON-based rules language.
 
 # File Structure
 
-A bolt file consists of a sequence of 3 types of statements:
+A bolt file consists of 3 types of statements:
 
   - Types: Definition of an object schema.
   - Paths: Definition of storage locations, and what type of accesses are allowed there.
@@ -30,72 +21,103 @@ A bolt file can also contain JavaScript-style comments:
        comment
     */
 
-# Paths
-
-A path statement provides access and validation rules for data stored at a given path.
-
-    [path] /path/to/data [is Type] {
-      read() {
-        return <true-iff-reading-this-location-is-allowed>;
-      }
-
-      write() {
-        return <true-iff-writing-this-location-is-allowed>;
-      }
-
-      validate() {
-        return <additional-validation-of-path-keys-here>
-      }
-    }
-
-If a Type is not given, `Any` is assumed.
-
-Path statements can also include wildcards parts whose values can then be used
-within an expression as a variable parameter.
-
-    path /top/$wildcard/$id is Type {
-      write() {
-        return $wildcard < "Z" && $id > 7;
-      }
-    }
-
-If a path has no body the following form can be used:
-
-    path /top/$wildcard/$id is Type;
-
-or
-
-    /top/$wildcard/$id is Type;
-
-In expressions, the value of `this` is either the current value to `read()` or the new value to `write()`.
-
 # Types
 
-    type TypeName [extends BaseType] {
-      property1: PropertyType,
-      property2: AnotherPropertyType,
+A (user-defined) type statement describes a value that can be stored in the Firebase database.
+
+    type MyType [extends BaseType] {
+      property1: Type,
+      property2: Type,
       ...
 
-      validate() {
-        return <validation expression>;
+      validate() = <validation expression>;
       }
     }
 
-The value of `this` is the object of type TypeName (so properties can be referenced
-in expressions as `this.property`).
+If the `validate` expression is `false`, then the value is deemed to be invalid and cannot
+be saved to the database (an error will be returned to the Firebase client).
 
-If a BaseType is not given, `Object` is assumed if the TypeName has child properties
-(`Any` if not).
+Within the `validate` expression, the special value `this` references the object
+of type, `MyType`. Properties of `MyType` can be referenced in expressions like
+`this.property1`.
 
-Built in base types are also similar to JavaScript types:
+Types can extend other types by using the `extends` clause. If not given,
+`Object` is assumed when `MyType` has child properties (or `Any` if it does not).  Types
+which extend an Object, can add additional properties to the Object, in addition to
+a `validate` expression.
+
+Built-in base types are also similar to JavaScript types:
 
     String  - Stings
     Number  - Integer or floating point
     Boolean - Values true or false
     Object  - A structured object containing named properties.
+    Any     - Every non-null value is of type Any.
     Null    - Value null (same as absence of a value, or deleted)
-    Any     - Matches any of the other types.
-    Array   - Sequence of values.
+
+You can _extend_ any of the built-in scalar types by adding a validation expression, e.g.:
+
+    type ShortString extends String {
+      validate() = this.length < 32;
+    }
+
+    type Percentage extends Number {
+      validate() = this >=0 && this <= 100;
+    }
+
+## Type Expressions
+
+Any place a Type can be used, it can be replaced with a Type expression.
+
+    Type1 | Type2    - Value can be either of two types.
+    Type | Null      - An optional `Type` value (value can be deleted or missing).
+
+# Paths
+
+A path statement provides access and validation rules for data stored at a given path.
+
+    [path] /path/to/data [is Type] {
+      read() = <true-iff-reading-this-path-is-allowed>;
+
+      write() = <true-iff-writing-this-path-is-allowed>;
+
+      validate() = <additional-validation-rules>;
+    }
+
+If a Type is not given, `Any` is assumed.
+
+In `read` expressions, the value of `this` is the value stored at the path of
+type, `Type`.  In `write` and `validate` expressions `this` is the value to be
+stored at the path (use the `prior(this)` function to reference the previously stored
+value of `this`).
+
+The `read` and `write` expressions are used to determine when users are allowed
+to read or modify the data at the given path.  These rules typically test the
+value of the global `auth` variable and possibly reference other locations of the
+database to determine these permissions.
+
+The `validate` expression can be used to check for additional constraints
+(beyond the Type `validate` rules) required to store a value at the given path,
+and especially perform constraints that are path-dependent.  Path
+statements can include wildcard parts whose values can then be used within
+an expression as a variable parameter:
+
+    path /users/$uid is User {
+      // Anyone can read a User's information.
+      read() = true;
+
+      // Only an authenticated user can write their information.
+      write() = auth != null && auth.uid == $uid;
+    }
+
+If a path needs no expressions, the following abbreviated form (without a body)
+can be used:
+
+    path /users/$uid is User;
+
+or
+
+    /users/$uid is User;
 
 ## String methods
 
@@ -106,7 +128,8 @@ in the database):
     s.includes(sub)     - Returns true iff sub is a substring of s.
     s.startsWith(sub)   - Returns true iff sub is a prefix of s.
     s.endsWith(sub)     - Returns true iff sub is a suffix of s.
-    s.replace(old, new) - Replaces all occurancs of ole ins s with new.
+    s.replace(old, new) - Returns a string where all occurances of string, `old`, are
+                          replaced by `new`.
     s.toLowerCase()     - Returns an all lower case version of s.
     s.toUpperCase()     - Returns an all upper case version of s.
     s.test(regexp)      - Returns true iff the string matches the regular expression.
@@ -115,21 +138,26 @@ in the database):
 
 [Regular Expression Syntax](https://www.firebase.com/docs/security/api/string/matches.html)
 
-## Location reference methods
+## Database references
 
-    `ref.parent()`        - Returns the database location of the parent of the given
-                            location (e.g., ref.prop.parent() is the same as ref).
+References to data locations (starting with `this` or `root`) can be further qualified
+using the `.` and `[]` operators (just as in JavaScript Object references).
 
-# Global variables
+    ref.child           - Returns the property `child` of the reference.
+    ref[s]              - Return property referenced by the string, variable, `s`.
+    ref.parent()        - Returns the parent of the given refererence
+                          (e.g., ref.prop.parent() is the same as ref).
 
-You can also use:
+To reference the previous value of a property (in a write() or validate() rule), use
+the `prior()` function:
 
-    root - The root of your Firebase database.
-    auth - The current auth state (if auth != null the user is authenticated and his
-           (opaque string) user-id is auth.uid).
-    now -  The (Unix) timestamp of the current time (a Number).
+    prior(this)         - Value of `this` before the write is completed.
+    prior(this.prop)    - Value of a property before the write is completed.
 
-# Functions
+You can also use `prior()` to wrap any expressions (including function calls) that
+use `this`.
+
+# Functions and Methods
 
 Functions must be simple return expressions with zero or more parameters.  All of the following
 examples are identical and can be used interchangably.
@@ -156,23 +184,16 @@ Rule expressions are a subset of JavaScript expressions, and include:
   - Unary operators: - (minus), ! (boolean negation)
   - Binary operators: +, -, *, /, %
 
-References to data locations (starting with `this` or `root`) can be further qualified
-using the . and [] operators (just as in JavaScript Object references).
+# Global variables
 
-    this.prop  - Refers to property of the current location named 'prop'.
-    this[prop] - Refers to a property of the current location named with the value of the
-                (string) variable, prop.
+These global variables are available in expressions:
 
-To reference the previous value of a property (in a write() or validate() rule), wrap
-the reference in a `prior()` function:
+    root - The root of your Firebase database.
+    auth - The current auth state (if auth != null the user is authenticated auth.uid
+           is their user identifier (a unique string value).
+    now -  The (Unix) timestamp of the current time (a Number).
 
-    prior(this) - Value of `this` before the write is completed.
-    prior(this.prop) - Value of a property before the write is completed.
-
-You can also use `prior()` to wrap any expressions (including function calls) that
-use `this`.
-
-# Apendix A. Firebase Expressions and their Bolt equivalents.
+# Appendix A. Firebase Expressions and their Bolt equivalents.
 
 The special [Security and Rules API](https://www.firebase.com/docs/security/api/) in Firebase is
 not identical in Bolt.  This section demonstrates how equivalent behavior is achieved in Bolt.
@@ -205,12 +226,12 @@ ref.child('prop') | ref.prop
 ref.child(exp) | ref[exp]
 ref.parent() | ref.parent()
 ref.hasChild(prop) | ref.prop != null
-ref.hasChildren | implicit using "path is Type"
-ref.exists | ref != null
-ref.getPriority | Not Supported
-ref.isNumber | prop: Number
-ref.isString | prop: String
-ref.isBoolean | prop: Boolean
+ref.hasChildren(props) | implicit using "path is Type"
+ref.exists() | ref != null
+ref.getPriority() | Not Supported
+ref.isNumber() | prop: Number
+ref.isString() | prop: String
+ref.isBoolean() | prop: Boolean
 
 ## String Methods
 
