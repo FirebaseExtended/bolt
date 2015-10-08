@@ -295,6 +295,7 @@ suite("Rules Generator Tests", function() {
         expect: {'.validate': "newData.hasChildren(['x'])",
                  x: {'.validate': "newData.isNumber() || newData.isString()"},
                  '$other': {'.validate': "false"}} },
+
       // We allow a Map to be empty (null)!
       { data: "type T {n: Number, x: Map<String, Number>}",
         expect: {'.validate': "newData.hasChildren(['n'])",
@@ -302,12 +303,15 @@ suite("Rules Generator Tests", function() {
                  x: {'$key1': {'.validate': "newData.isNumber()"}},
                  '$other': {'.validate': "false"}} },
       { data: "type T {x: Map<String, Number>}",
-        expect: {x: {'$key1': {'.validate': "newData.isNumber()"}},
+        expect: {'.validate': "newData.hasChildren()",
+                 x: {'$key1': {'.validate': "newData.isNumber()"}},
                  '$other': {'.validate': "false"}} },
       { data: "type SmallString extends String { validate() = this.length < 32; } " +
               "type T {x: Map<SmallString, Number>}",
-        expect: {x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"}},
+        expect: {'.validate': "newData.hasChildren()",
+                 x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"}},
                  '$other': {'.validate': "false"}} },
+
       { data: "type T {a: Number, b: String}",
         expect: {'.validate': "newData.hasChildren(['a', 'b'])",
                  a: {'.validate': "newData.isNumber()"},
@@ -401,7 +405,7 @@ suite("Rules Generator Tests", function() {
       { data: "path /x { write() { return undefinedFunc(); }}",
         expect: /undefined.*function/i },
       { data: "path /x is NoSuchType {}",
-        expect: /Undefined.*NoSuchType/ },
+        expect: /No type.*NoSuchType/ },
       { data: "path /x { unsupported() { return true; } }",
         w: /unsupported method/i },
       { data: "path /x { validate() { return this.test(123); } }",
