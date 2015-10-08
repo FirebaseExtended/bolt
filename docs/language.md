@@ -48,29 +48,91 @@ a `validate` expression.
 
 Built-in base types are also similar to JavaScript types:
 
-    String  - Stings
-    Number  - Integer or floating point
-    Boolean - Values true or false
-    Object  - A structured object containing named properties.
-    Any     - Every non-null value is of type Any.
-    Null    - Value null (same as absence of a value, or deleted)
+    String            - Stings
+    Number            - Integer or floating point
+    Boolean           - Values true or false
+    Object            - A structured object containing named properties.
+    Any               - Every non-null value is of type Any.
+    Null              - Value null (same as absence of a value, or deleted)
+    Map<Key, Value>   - A generic type - maps string valued keys to corresponding
+                        values (similar to an Object type).
+    Type[]            - An "array-like" type (actually same as Map<String, Type>
+                        where Type can be any other built-in or user-defined type.
 
-You can _extend_ any of the built-in scalar types by adding a validation expression, e.g.:
+Any of the built-in scalar types can be _extended_ by adding a validation expression, e.g.:
 
-    type ShortString extends String {
-      validate() = this.length < 32;
-    }
+```javascript
+type ShortString extends String {
+  validate() = this.length < 32;
+}
 
-    type Percentage extends Number {
-      validate() = this >=0 && this <= 100;
-    }
+type Percentage extends Number {
+  validate() = this >=0 && this <= 100;
+}
+```
+
+Notes:
+
+- Object types are required to have at least one property when present.
+- Map types can be empty collections (they need not contain any child keys).
 
 ## Type Expressions
 
-Any place a Type can be used, it can be replaced with a Type expression.
+Any place a Type can be used, it can be replaced with a Type expression.  We support
+three types of type expressions:
+
+### Union Types
 
     Type1 | Type2    - Value can be either of two types.
     Type | Null      - An optional `Type` value (value can be deleted or missing).
+
+
+### Map Types (Collections)
+
+A Map type is a built-in Generic Type (see below).  It is used to specify collections
+within a model:
+
+```javascript
+type Model {
+  users: Map<String, User>,
+  products: Map<ProductID, Product>
+}
+
+type ProductID extends String {
+  validate() = this.length <= 20;
+}
+
+As a shortcut for the common Map<String, Type>, "array-like" notation can be used:
+
+```javascript
+type Model {
+  users: User[],
+  products: Product[]
+}
+```
+
+### Generic Types
+
+A generic type is like a "type macro" - it is used to specify a type generically,
+but then make it specific to a particular use case:
+
+```javascript
+type Pair<X, Y> {
+  first: X,
+  second: Y
+}
+```
+
+Note that the types of the `first` and `second` properties uses the placeholder types,
+`X` and `Y`.  Using a generic type is much like a function call - except using `<...>` instead
+of `(...)`:
+
+```javascript
+type Model {
+  name: String,
+  prop: Pair<Number, String>;
+}
+```
 
 # Paths
 
@@ -154,7 +216,7 @@ the `prior()` function:
     prior(this)         - Value of `this` before the write is completed.
     prior(this.prop)    - Value of a property before the write is completed.
 
-You can also use `prior()` to wrap any expressions (including function calls) that
+`prior()` can be used to wrap any expressions (including function calls) that
 use `this`.
 
 # Functions and Methods
@@ -188,7 +250,7 @@ Rule expressions are a subset of JavaScript expressions, and include:
 
 These global variables are available in expressions:
 
-    root - The root of your Firebase database.
+    root - The root location of a Firebase database.
     auth - The current auth state (if auth != null the user is authenticated auth.uid
            is their user identifier (a unique string value).
     now -  The (Unix) timestamp of the current time (a Number).
