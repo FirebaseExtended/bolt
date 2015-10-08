@@ -41,6 +41,12 @@
   });
 
   function ensureLowerCase(s, m) {
+    if (s instanceof Array) {
+      s = s.map(function(id) {
+        return ensureLowerCase(id, m);
+      });
+      return s;
+    }
     var canonical = s[0].toLowerCase() + s.slice(1);
     if (s != canonical) {
       warn(m + " should begin with a lowercase letter: ('" + s + "' should be '" + canonical + "').");
@@ -49,6 +55,12 @@
   }
 
   function ensureUpperCase(s, m) {
+    if (s instanceof Array) {
+      s = s.map(function(id) {
+        return ensureUpperCase(id, m);
+      });
+      return s;
+    }
     var canonical = s[0].toUpperCase() + s.slice(1);
     if (s != canonical) {
       warn(m + " should begin with an uppercase letter: ('" + s + "' should be '" + canonical + "').");
@@ -70,20 +82,20 @@
   }
 }
 
-start = _ rules:Rules _ {
+start = _ Statements _ {
   if (errorCount != 0) {
     throw(new Error("Fatal errors: " + errorCount));
   }
   return symbols;
 }
 
-Rules = rules:(Rule _)*
+Statements = rules:(Statement _)*
 
-Rule = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
-     / p:Path { symbols.registerPath(p.parts, p.isType, p.methods); }
-     / s:Schema { symbols.registerSchema(s.name, s.derivedFrom, s.properties, s.methods); }
+Statement = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
+  / p:Path { symbols.registerPath(p.parts, p.isType, p.methods); }
+  / s:Schema { symbols.registerSchema(s.name, s.derivedFrom, s.properties, s.methods, s.params); }
 
-Function = ("function" __)? name:Identifier params:ParameterList _ body:FunctionBody {
+Function "function definition" = ("function" __)? name:Identifier params:ParameterList _ body:FunctionBody {
   return {
     name: ensureLowerCase(name, "Function names"),
     params: params,
@@ -91,7 +103,7 @@ Function = ("function" __)? name:Identifier params:ParameterList _ body:Function
   }
 }
 
-Path = ("path" __)? path:PathExpression isType:("is" __ id:SingleType _ { return id; })?
+Path "path statement" = ("path" __)? path:PathExpression isType:("is" __ id:TypeExpression _ { return id; })?
   methods:("{" _ methods:Methods "}" { return methods; }
            / ";" { return {}; } )? _ {
    var result = {
@@ -107,15 +119,20 @@ Path = ("path" __)? path:PathExpression isType:("is" __ id:SingleType _ { return
 PathExpression "path" =  parts:("/" part:Identifier { return part; })+ _ { return parts; }
   / "/" _ { return []; }
 
-Schema =
-  "type" __ type:Identifier ext:(__ "extends" __ type:SingleType  _ { return type; })?
+Schema "type statement" =
+  "type" __ type:Identifier
+  params:("<" list:IdentifierList ">" { return list; })?
+  ext:(__ "extends" __ type:TypeExpression  _ { return type; })?
   properties:(_ "{" _ properties:Properties? "}" { return properties; }
-              / _ ";" { return { properties: {}, methods: {} }; }) {
+              / _ ";" { return null; } ) {
     var result = {
       name: ensureUpperCase(type, "Type names"),
       methods: {},
       properties: {}
     };
+    if (params) {
+      result.params = params;
+    }
     if (properties) {
       result.methods = properties.methods;
       result.properties = properties.properties;
@@ -185,33 +202,29 @@ Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
 FunctionBody = "{" _ ("return" _)? exp:Expression _ ";"? _ "}" _ { return exp; }
   / "=" _ exp:Expression _ ";" _ { return exp; }
 
-ParameterList = "(" _ ")" _ {
+ParameterList = "(" list:IdentifierList ")" _ { return ensureLowerCase(list, "Function arguments"); }
+
+IdentifierList =  head:Identifier? tail:(_ "," _ id:Identifier { return id; })*  _ {
+  if (!head) {
     return [];
   }
-  / "(" _ head:Identifier tail:(_ "," _ Identifier)* _ ")" _ {
-    var result = [ensureLowerCase(head, "Function arguments")];
-    for (var i = 0; i < tail.length; i++) {
-      result.push(ensureLowerCase(tail[i][3], "Function arguments"));
-    }
-    return result;
+  tail.unshift(head);
+  return tail;
 }
 
 TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; } )* _ {
-  var result = [head];
   if (tail.length == 0) {
     return head;
   }
-  for (var i = 0; i < tail.length; i++) {
-    result.push(tail[i]);
-  }
-  return ast.unionType(result);
+  tail.unshift(head);
+  return ast.unionType(tail);
 }
 
 // Type, Type[], or Type<X, ... >
 // where Type[] === Map<String, Type>
 SingleType = type:Identifier opt:("\[\]" {return {isMap: true}; }
                                   / "<" _ types:TypeList ">" {return {types: types};})? _ {
-  type = ensureUpperCase(type);
+  type = ensureUpperCase(type, "Type names");
   if (!opt) {
     return ast.typeType(type);
   }
@@ -222,7 +235,7 @@ SingleType = type:Identifier opt:("\[\]" {return {isMap: true}; }
   return ast.genericType(type, opt.types);
 }
 
-TypeList = head:SingleType tail:(_ "," _ type:SingleType { return type; })* _ {
+TypeList = head:TypeExpression tail:(_ "," _ type:TypeExpression { return type; })* _ {
   var result = [head];
   util.extendArray(result, tail);
   return result;
@@ -281,12 +294,9 @@ Arguments = "(" _ args:ArgumentList? _ ")" {
   return args !== null ? args : [];
 }
 
-ArgumentList = head:Expression tail:(_ "," _ Expression)* {
-  var result = [head];
-  for (var i = 0; i < tail.length; i++) {
-    result.push(tail[i][3]);
-  }
-  return result;
+ArgumentList = head:Expression tail:(_ "," _ exp: Expression { return exp; })* {
+  tail.unshift(head);
+  return tail;
 }
 
 UnaryExpression

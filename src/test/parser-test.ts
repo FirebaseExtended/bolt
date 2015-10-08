@@ -227,10 +227,18 @@ suite("Rules Parser Tests", function() {
                   properties: {a: ast.unionType([ast.typeType('Number'),
                                                  ast.typeType('String')])},
                   methods: {} }},
-      { data: "type Foo { a: Map<String, String> }",
+      { data: "type Foo extends Number | String;",
+        expect: { derivedFrom: ast.unionType([ast.typeType('Number'), ast.typeType('String')]),
+                  properties: {},
+                  methods: {} }},
+      { data: "type Foo { a: Map<String, Number> }",
         expect: { derivedFrom: ast.typeType('Object'),
                   properties: {a: ast.genericType('Map', [ast.typeType('String'),
-                                                          ast.typeType('String')])},
+                                                          ast.typeType('Number')])},
+                  methods: {} }},
+      { data: "type Foo extends Map<String, Number>;",
+        expect: { derivedFrom: ast.genericType('Map', [ast.typeType('String'), ast.typeType('Number')]),
+                  properties: {},
                   methods: {} }},
       // Alias for Map<String, Other>
       { data: "type Foo { a: Other[] }",
@@ -238,7 +246,7 @@ suite("Rules Parser Tests", function() {
                   properties: {a: ast.genericType('Map', [ast.typeType('String'),
                                                           ast.typeType('Other')])},
                   methods: {} }},
-      // Only Map<X, Y> supported - but parser allows for any number of args.
+
       { data: "type Foo { a: Multi<String, Number, Boolean> }",
         expect: { derivedFrom: ast.typeType('Object'),
                   properties: {a: ast.genericType('Multi', [ast.typeType('String'),
@@ -249,6 +257,13 @@ suite("Rules Parser Tests", function() {
         expect: { derivedFrom: ast.typeType('Object'),
                   properties: {a: ast.genericType('Gen1', [ast.typeType('String')])},
                   methods: {} }},
+
+      { data: "type Foo<T> { a: T }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.typeType('T')},
+                  methods: {},
+                  params: ["T"],
+                }},
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

@@ -243,7 +243,7 @@ export class Generator {
     let keyType = <ast.ExpSimpleType> params['Key'];
     let valueType = <ast.ExpType> params['Value'];
     if (keyType.type !== 'type' || !this.symbols.isDerivedFrom(keyType, 'String')) {
-      throw new Error(errors.invalidMapKey + "(" + decodeExpression(keyType) + " does not)");
+      throw new Error(errors.invalidMapKey + "  (" + decodeExpression(keyType) + " does not)");
     }
     let validator = <Validator> {};
     let index = this.uniqueKey();
@@ -349,7 +349,6 @@ export class Generator {
 
     let methods = Object.keys(schema.methods);
     methods.forEach((methodName) => {
-      console.log("RGIS", methodName);
       expandedSchema.methods[methodName] = this.replaceGenericsInMethod(schema.methods[methodName],
                                                                        bindings);
     });
@@ -395,10 +394,8 @@ export class Generator {
       params: method.params,
       body: method.body
     };
-    console.log("RGIM", decodeExpression(method.body), bindings);
 
     expandedMethod.body = this.replaceGenericsInExp(method.body, bindings);
-    console.log("RGIM.2", decodeExpression(expandedMethod.body), bindings);
     return expandedMethod;
   }
 
@@ -407,6 +404,10 @@ export class Generator {
 
     if (!schema) {
       throw new Error(errors.noSuchType + schemaName);
+    }
+
+    if (schema.params) {
+      throw new Error(errors.noSuchType + schemaName + " used as non-generic type.");
     }
 
     return this.createValidatorFromSchema(schema);

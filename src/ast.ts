@@ -474,6 +474,9 @@ export class Symbols {
         return false;
       }
       let schema = this.schema[simpleType.name];
+      if (!schema) {
+        return false;
+      }
       return this.isDerivedFrom(schema.derivedFrom, ancestor);
 
     case 'union':

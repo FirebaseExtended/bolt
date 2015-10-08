@@ -90,6 +90,12 @@ gulp.task('ts-compile-test', ['ts-compile'], function() {
   return gulp.src('src/test/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsTestProject))
+    .on('error', function(error) {
+      // The compile task should be a hard failure and not continue dependent tasks.
+      if (!watching) {
+        process.exit(1);
+      }
+    })
     .pipe(sourcemaps.write())
     .pipe(gulp.dest('lib/test/'));
 });

@@ -296,26 +296,6 @@ suite("Rules Generator Tests", function() {
                  x: {'.validate': "newData.isNumber() || newData.isString()"},
                  '$other': {'.validate': "false"}} },
 
-      // We allow a Map to be empty (null)!
-      { data: "type T {n: Number, x: Map<String, Number>}",
-        expect: {'.validate': "newData.hasChildren(['n'])",
-                 n: {'.validate': "newData.isNumber()"},
-                 x: {'$key1': {'.validate': "newData.isNumber()"}},
-                 '$other': {'.validate': "false"}} },
-      { data: "type T {x: Map<String, Number>}",
-        expect: {'.validate': "newData.hasChildren()",
-                 x: {'$key1': {'.validate': "newData.isNumber()"}},
-                 '$other': {'.validate': "false"}} },
-      { data: "type SmallString extends String { validate() = this.length < 32; } " +
-              "type T {x: Map<SmallString, Number>}",
-        expect: {'.validate': "newData.hasChildren()",
-                 x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"}},
-                 '$other': {'.validate': "false"}} },
-      { data: "type M extends Map<String, Number>; type T { x: M }",
-        expect: {'.validate': "newData.hasChildren()",
-                 '$other': {'.validate': "false"},
-                 'x': {'$key1': {'.validate': "newData.isNumber()"}}} },
-
       { data: "type T { $key: Number }",
         expect: {'.validate': "newData.hasChildren()",
                  '$key': {'.validate': "newData.isNumber()"}} },
@@ -349,10 +329,34 @@ suite("Rules Generator Tests", function() {
                  foo: {'.validate': "newData.isNumber()"},
                  bar: {'.validate': "newData.isString()"},
                  '$other': {'.validate': "false"}} },
+
+      { data: "type T {n: Number, x: Map<String, Number>}",
+        expect: {'.validate': "newData.hasChildren(['n'])",
+                 n: {'.validate': "newData.isNumber()"},
+                 x: {'$key1': {'.validate': "newData.isNumber()"}},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {x: Map<String, Number>}",
+        expect: {'.validate': "newData.hasChildren()",
+                 x: {'$key1': {'.validate': "newData.isNumber()"}},
+                 '$other': {'.validate': "false"}} },
+      { data: "type SmallString extends String { validate() = this.length < 32; } " +
+              "type T {x: Map<SmallString, Number>}",
+        expect: {'.validate': "newData.hasChildren()",
+                 x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"}},
+                 '$other': {'.validate': "false"}} },
+      { data: "type M extends Map<String, Number>; type T { x: M }",
+        expect: {'.validate': "newData.hasChildren()",
+                 '$other': {'.validate': "false"},
+                 'x': {'$key1': {'.validate': "newData.isNumber()"}}} },
+      { data: "type Pair<X, Y> { first: X, second: Y } type T extends Pair<String, Number>;",
+        expect: {'.validate': "newData.hasChildren(['first', 'second'])",
+                 'first': {'.validate': "newData.isString()"},
+                 'second': {'.validate': "newData.isNumber()"},
+                 '$other': {'.validate': "false"}} },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var symbols = parse(data + " path /t is T {}");
+      var symbols = parse(data + " path /t is T;");
       var gen = new bolt.Generator(symbols);
       var rules = gen.generateRules();
       if (expect === undefined) {
@@ -415,7 +419,7 @@ suite("Rules Generator Tests", function() {
       { data: "path /x is NoSuchType {}",
         expect: /No type.*NoSuchType/ },
       { data: "path /x { unsupported() { return true; } }",
-        w: /unsupported method/i },
+        warn: /unsupported method/i },
       { data: "path /x { validate() { return this.test(123); } }",
         expect: /convert value/i },
       { data: "path /x { validate() { return this.test('a/'); } }",
@@ -424,6 +428,12 @@ suite("Rules Generator Tests", function() {
         expect: /recursive/i },
       { data: "type X { $n: Number, $s: String } path / is X",
         expect: /wild property/ },
+      { data: "path / is Map;",
+        expect: /No type.*non-generic/ },
+      { data: "type Pair<X, Y> {a: X, b: Y} path / is Pair;",
+        expect: /No type.*non-generic/ },
+      { data: "path / is String<Number>;",
+        expect: /No type.*generic/ },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect, t) {
@@ -452,8 +462,8 @@ suite("Rules Generator Tests", function() {
       if (expect) {
         assert.fail(undefined, undefined, "No exception thrown.");
       }
-      if (t.w) {
-        assert.match(lastError, t.w);
+      if (t.warn) {
+        assert.match(lastError, t.warn);
       }
     });
   });
