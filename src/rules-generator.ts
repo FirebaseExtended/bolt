@@ -226,8 +226,6 @@ export class Generator {
 
     this.symbols.registerFunction('@RegExp', ['s'],
                                   ast.builtin(this.makeRegExp.bind(this)));
-    this.symbols.registerFunction('@instanceof', ['value', 'Type'],
-                                  ast.builtin(this.isInstanceOf.bind(this)));
 
     let map = this.symbols.registerSchema('Map', ast.typeType('Any'), undefined, undefined,
                                           ['Key', 'Value']);
@@ -245,15 +243,21 @@ export class Generator {
     if (keyType.type !== 'type' || !this.symbols.isDerivedFrom(keyType, 'String')) {
       throw new Error(errors.invalidMapKey + "  (" + decodeExpression(keyType) + " does not)");
     }
+
     let validator = <Validator> {};
     let index = this.uniqueKey();
-    let validationExp: ast.Exp = ast.call(ast.variable('@instanceof'), [ast.variable('this'), valueType]);
-    // No need to validate simple String index/key.
+    validator[index] = <Validator> {};
+
+    // First validate the key (not needed if just String type).
     if (keyType.name !== 'String') {
-      validationExp = ast.and(ast.call(ast.variable('@instanceof'), [ast.literal(index), keyType]),
-                              validationExp);
+      let schema = this.symbols.schema[keyType.name];
+      if (schema.methods['validate']) {
+        let exp = this.partialEval(schema.methods['validate'].body, {'this': ast.literal(index)});
+        extendValidator(<Validator> validator[index], <Validator> {'.validate': [exp]});
+      }
     }
-    validator[index] = {'.validate': validationExp};
+
+    extendValidator(<Validator> validator[index], this.ensureValidator(valueType));
     return validator;
   }
 
@@ -754,22 +758,6 @@ export class Generator {
       throw new Error(errors.coercion + decodeExpression(exp) + " => RegExp");
     }
     return ast.regexp(exp.value);
-  }
-
-  // Builtin function - compute instanceof(value, Type)
-  // Assume Type is a simple type - call the registered validate
-  // function for the type with 'this' set to the value.
-  isInstanceOf(args: ast.Exp[], params: { [name: string]: ast.Exp }) {
-    if (args.length !== 2 || args[1].type !== 'type') {
-      throw new Error(errors.application + "isInstanceOf arguments.");
-    }
-    let value = this.partialEval(args[0], params);
-    let type = <ast.ExpSimpleType> args[1];
-    let schema = this.symbols.schema[type.name];
-    if (!schema || !schema.methods['validate']) {
-      throw new Error(errors.noSuchType + type.name + " (instanceof)");
-    }
-    return this.partialEval(schema.methods['validate'].body, {'this': value});
   }
 
   // Lookup globally defined function.

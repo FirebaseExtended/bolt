@@ -1,0 +1,37 @@
+{
+  "rules": {
+    ".validate": "newData.hasChildren()",
+    "users": {
+      "$key1": {
+        ".validate": "newData.hasChildren(['name', 'age']) && $key1.length == 20",
+        "name": {
+          ".validate": "newData.isString()"
+        },
+        "age": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": "false"
+        }
+      }
+    },
+    "products": {
+      "$key2": {
+        ".validate": "newData.hasChildren(['id', 'cost']) && $key2.length <= 20",
+        "id": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "cost": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": "false"
+        }
+      }
+    },
+    "$other": {
+      ".validate": "false"
+    },
+    ".read": "true"
+  }
+}
