@@ -249,7 +249,7 @@ suite("Rules Generator Tests", function() {
     helper.dataDrivenTest(tests, function(data, expect) {
       var symbols = parse("path / {}");
       var gen = new bolt.Generator(symbols);
-      gen.generateRules();
+      gen.ensureValidator(ast.typeType(data));
 
       var terms = gen.validators[data]['.validate'];
       var result = bolt.decodeExpression(ast.andArray(terms));
@@ -294,6 +294,19 @@ suite("Rules Generator Tests", function() {
       { data: "type T {x: Number|String}",
         expect: {'.validate': "newData.hasChildren(['x'])",
                  x: {'.validate': "newData.isNumber() || newData.isString()"},
+                 '$other': {'.validate': "false"}} },
+      // We allow a Map to be empty (null)!
+      { data: "type T {n: Number, x: Map<String, Number>}",
+        expect: {'.validate': "newData.hasChildren(['n'])",
+                 n: {'.validate': "newData.isNumber()"},
+                 x: {'$key1': {'.validate': "newData.isNumber()"}},
+                 '$other': {'.validate': "false"}} },
+      { data: "type T {x: Map<String, Number>}",
+        expect: {x: {'$key1': {'.validate': "newData.isNumber()"}},
+                 '$other': {'.validate': "false"}} },
+      { data: "type SmallString extends String { validate() = this.length < 32; } " +
+              "type T {x: Map<SmallString, Number>}",
+        expect: {x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"}},
                  '$other': {'.validate': "false"}} },
       { data: "type T {a: Number, b: String}",
         expect: {'.validate': "newData.hasChildren(['a', 'b'])",
@@ -381,14 +394,14 @@ suite("Rules Generator Tests", function() {
     var tests = [
       { data: "",
         expect: /at least one path/ },
-      { data: "type Simple extends String {a: String} path /x {} ",
+      { data: "type Simple extends String {a: String} path /x is Simple;",
         expect: /properties.*extend/ },
       { data: "path /y { index() { return 1; }}",
         expect: /index.*string/i },
       { data: "path /x { write() { return undefinedFunc(); }}",
         expect: /undefined.*function/i },
       { data: "path /x is NoSuchType {}",
-        expect: /type definition.*NoSuchType/ },
+        expect: /Undefined.*NoSuchType/ },
       { data: "path /x { unsupported() { return true; } }",
         w: /unsupported method/i },
       { data: "path /x { validate() { return this.test(123); } }",

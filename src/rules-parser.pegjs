@@ -17,7 +17,10 @@
  */
 
 {
+  "use strict";
+
   var ast = require('./ast');
+  var util = require('./util');
 
   var errorCount = 0;
 
@@ -205,9 +208,24 @@ TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; }
 }
 
 // Type, Type[], or Type<X, ... >
-// Type[] === Map<String, Type>
-SingleType = type:Identifier _ {
-  return ast.typeType(type);
+// where Type[] === Map<String, Type>
+SingleType = type:Identifier opt:("\[\]" {return {isMap: true}; }
+                                  / "<" _ types:TypeList ">" {return {types: types};})? _ {
+  type = ensureUpperCase(type);
+  if (!opt) {
+    return ast.typeType(type);
+  }
+  if (opt.isMap) {
+    return ast.genericType('Map', [ast.typeType('String'),
+                                   ast.typeType(type)]);
+  }
+  return ast.genericType(type, opt.types);
+}
+
+TypeList = head:SingleType tail:(_ "," _ type:SingleType { return type; })* _ {
+  var result = [head];
+  util.extendArray(result, tail);
+  return result;
 }
 
 // ======================================

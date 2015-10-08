@@ -31,6 +31,8 @@ var errors = {
   coercion: "Cannot convert value: ",
   undefinedFunction: "Undefined function: ",
   application: "Bolt application error: ",
+  invalidGeneric: "Invalid generic schema usage: ",
+  invalidMapKey: "Map<Key, T> - Key must derive from String type.",
 };
 
 /* TS does not allow for special properties to have distinct
@@ -95,8 +97,9 @@ export class Generator {
   errorCount: number;
   runSilently: boolean;
   allowUndefinedFunctions: boolean;
-  globals: { [name: string]: ast.Exp; };
+  globals: { [name: string]: ast.Exp };
   thisIs: string;
+  keyIndex: number;
 
   constructor(symbols: ast.Symbols) {
     this.symbols = symbols;
@@ -106,8 +109,9 @@ export class Generator {
     this.errorCount = 0;
     this.runSilently = false;
     this.allowUndefinedFunctions = false;
+    this.keyIndex = 0;
 
-    // TODO: globals should be part of this.symbols.
+    // TODO: globals should be part of this.symbols (nested scopes)
     this.globals = {
       "root": ast.cast(ast.literal('root'), 'Snapshot'),
     };
@@ -129,7 +133,6 @@ export class Generator {
 
       this.validateMethods(errors.badPathMethod, paths[name].methods,
                            ['validate', 'read', 'write', 'index']);
-      this.validateType(paths[name].isType);
     }
 
     for (name in schema) {
@@ -137,15 +140,6 @@ export class Generator {
         this.validateMethods(errors.badSchemaMethod, schema[name].methods, ['validate']);
       }
     }
-
-    for (var schemaName in this.symbols.schema) {
-      if (!this.symbols.schema.hasOwnProperty(schemaName)) {
-        continue;
-      }
-
-      this.ensureValidator(schemaName);
-    }
-
 
     if (Object.keys(paths).length === 0) {
       this.fatal(errors.noPaths);
@@ -178,14 +172,6 @@ export class Generator {
                       " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
       }
     }
-  }
-
-  validateType(type: ast.ExpType | ast.ExpUnionType) {
-    ast.getTypeNames(type).forEach(function(typeName) {
-      if (!(typeName in this.symbols.schema)) {
-        this.fatal(errors.noSuchType + util.quoteString(typeName));
-      }
-    }.bind(this));
   }
 
   registerBuiltinSchema() {
@@ -239,15 +225,56 @@ export class Generator {
 
     this.symbols.registerFunction('@RegExp', ['s'],
                                   ast.builtin(this.makeRegExp.bind(this)));
+    this.symbols.registerFunction('@instanceof', ['value', 'Type'],
+                                  ast.builtin(this.isInstanceOf.bind(this)));
+
+    let map = this.symbols.registerSchema('Map', ast.typeType('Any'), undefined, undefined,
+                                          ['Key', 'Value']);
+    map.getValidator = this.getMapValidator.bind(this);
+  }
+
+  // type Map<Key, Value> => {
+  //   $key: {
+  //     '.validate': $key instanceof Key and this instanceof Value;
+  // }
+  // Key must derive from String
+  getMapValidator(params: ast.Exp[]): Validator {
+    let keyType = <ast.ExpSimpleType> params['Key'];
+    let valueType = <ast.ExpType> params['Value'];
+    if (keyType.type !== 'type' || !this.symbols.isDerivedFrom(keyType, 'String')) {
+      throw new Error(errors.invalidMapKey + "(" + decodeExpression(keyType) + " does not)");
+    }
+    let validator = <Validator> {};
+    let index = this.uniqueKey();
+    let validationExp: ast.Exp = ast.call(ast.variable('@instanceof'), [ast.variable('this'), valueType]);
+    // No need to validate simple String index/key.
+    if (keyType.name !== 'String') {
+      validationExp = ast.and(ast.call(ast.variable('@instanceof'), [ast.literal(index), keyType]),
+                              validationExp);
+    }
+    validator[index] = {'.validate': validationExp};
+    return validator;
+  }
+
+  uniqueKey(): string {
+    this.keyIndex += 1;
+    return '$key' + this.keyIndex;
+  }
+
+  // Collection schema has exactly one $wildchild property
+  isCollectionSchema(schema: ast.Schema): boolean {
+    var props = Object.keys(schema.properties);
+    return props.length === 1 && props[0][0] === '$';
   }
 
   // Ensure we have a definition for a validator for the given schema.
-  ensureValidator(schemaName: string): Validator {
-    // TODO: Guard against recursion
-    if (!this.validators[schemaName]) {
-      this.validators[schemaName] = this.createValidator(schemaName);
+  ensureValidator(type: ast.ExpType): Validator {
+    var key = ast.typeName(type);
+    if (!this.validators[key]) {
+      this.validators[key] = {'.validate': ast.literal('***TYPE RECURSION***') };
+      this.validators[key] = this.createValidator(type);
     }
-    return this.validators[schemaName];
+    return this.validators[key];
   }
 
   // A validator is a structured object, where each leaf node
@@ -255,54 +282,200 @@ export class Generator {
   //     ".validate": [<expression>, ...]
   // All expressions will be ANDed together to form the file expresion.
   // Intermediate nodes can be "prop" or "$prop" values.
-  createValidator(schemaName: string): Validator {
-    var schema = this.symbols.schema[schemaName];
-    var validator: Validator = {};
+  createValidator(type: ast.ExpType): Validator {
+    switch (type.type) {
+    case 'type':
+      return this.createValidatorFromSchemaName((<ast.ExpSimpleType> type).name);
 
-    if (!schema) {
-      throw new Error(errors.application + "Undefined schema: " + schemaName);
+    case 'union':
+      let union = <Validator> {};
+      (<ast.ExpUnionType> type).types.forEach((typePart: ast.ExpType) => {
+        // Make a copy
+        var singleType = extendValidator({}, this.ensureValidator(typePart));
+        mapValidator(singleType, ast.andArray);
+        extendValidator(union, singleType);
+      });
+      mapValidator(union, ast.orArray);
+      return union;
+
+    case 'generic':
+      let genericType = <ast.ExpGenericType> type;
+      return this.createValidatorFromGeneric(genericType.name, genericType.params);
+
+    default:
+      throw new Error(errors.application + "invalid internal type: " + type.type);
+    }
+  }
+
+  createValidatorFromGeneric(schemaName: string, params: ast.ExpType[]): Validator {
+    var schema = this.symbols.schema[schemaName];
+
+    if (!schema || !schema.params) {
+      throw new Error(errors.noSuchType + schemaName + " (generic)");
     }
 
-    var hasProps = Object.keys(schema.properties).length > 0;
+    if (params.length !== schema.params.length) {
+      throw new Error(errors.invalidGeneric + " expected <" + schema.params.join(', ') + ">");
+    }
 
-    if (hasProps && !this.symbols.isDerivedFrom(schemaName, 'Object')) {
-      this.fatal(errors.nonObject + " (" + schemaName + " is " + schema.derivedFrom.name + ")");
+    let bindings = <{[name: string]: ast.ExpType}> {};
+    for (let i = 0; i < params.length; i++) {
+      bindings[schema.params[i]] = params[i];
+    }
+
+    // Call custom validator, if given.
+    if (schema.getValidator) {
+      return schema.getValidator(bindings);
+    }
+
+    // Expand generics and generate validator from schema.
+    schema = this.replaceGenericsInSchema(schema, bindings);
+    return this.createValidatorFromSchema(schema);
+  }
+
+  replaceGenericsInSchema(schema: ast.Schema, bindings: {[name: string]: ast.ExpType}): ast.Schema {
+    var expandedSchema = <ast.Schema> {
+      derivedFrom: <ast.ExpType> this.replaceGenericsInExp(schema.derivedFrom, bindings),
+      properties: { },
+      methods: {},
+    };
+    let props = Object.keys(schema.properties);
+    props.forEach((prop) => {
+      expandedSchema.properties[prop] =
+        <ast.ExpType> this.replaceGenericsInExp(schema.properties[prop], bindings);
+    });
+
+    let methods = Object.keys(schema.methods);
+    methods.forEach((methodName) => {
+      console.log("RGIS", methodName);
+      expandedSchema.methods[methodName] = this.replaceGenericsInMethod(schema.methods[methodName],
+                                                                       bindings);
+    });
+    return expandedSchema;
+  }
+
+  replaceGenericsInExp(exp: ast.Exp, bindings: {[name: string]: ast.ExpType}): ast.Exp {
+    var self = this;
+
+    function replaceGenericsInArray(exps: ast.Exp[]): ast.Exp[] {
+      return exps.map(function(expPart) {
+        return self.replaceGenericsInExp(expPart, bindings);
+      });
+    }
+
+    switch (exp.type) {
+    case 'op':
+    case 'call':
+      let opType = <ast.ExpOp> ast.copyExp(exp);
+      opType.args = replaceGenericsInArray(opType.args);
+      return opType;
+
+    case 'type':
+      let simpleType = <ast.ExpSimpleType> exp;
+      return bindings[simpleType.name] || simpleType;
+
+    case 'union':
+      let unionType = <ast.ExpUnionType> exp;
+      return ast.unionType(<ast.ExpType[]> replaceGenericsInArray(unionType.types));
+
+    case 'generic':
+      let genericType = <ast.ExpGenericType> exp;
+      return ast.genericType(genericType.name,
+                             <ast.ExpType[]> replaceGenericsInArray(genericType.params));
+
+    default:
+      return exp;
+    }
+  }
+
+  replaceGenericsInMethod(method: ast.Method, bindings: {[name: string]: ast.ExpType}): ast.Method {
+    var expandedMethod = <ast.Method> {
+      params: method.params,
+      body: method.body
+    };
+    console.log("RGIM", decodeExpression(method.body), bindings);
+
+    expandedMethod.body = this.replaceGenericsInExp(method.body, bindings);
+    console.log("RGIM.2", decodeExpression(expandedMethod.body), bindings);
+    return expandedMethod;
+  }
+
+  createValidatorFromSchemaName(schemaName: string): Validator {
+    var schema = this.symbols.schema[schemaName];
+
+    if (!schema) {
+      throw new Error(errors.noSuchType + schemaName);
+    }
+
+    return this.createValidatorFromSchema(schema);
+  }
+
+  createValidatorFromSchema(schema: ast.Schema): Validator {
+    var hasProps = Object.keys(schema.properties).length > 0 &&
+      !this.isCollectionSchema(schema);
+
+    if (hasProps && !this.symbols.isDerivedFrom(schema.derivedFrom, 'Object')) {
+      this.fatal(errors.nonObject + " (is " + ast.typeName(schema.derivedFrom) + ")");
       return {};
     }
 
-    if (schema.derivedFrom.name !== 'Any') {
-      extendValidator(validator, this.ensureValidator(schema.derivedFrom.name));
+    let validator = <Validator> {};
+
+    if (!(schema.derivedFrom.type === 'type' &&
+          (<ast.ExpSimpleType> schema.derivedFrom).name === 'Any')) {
+      extendValidator(validator, this.ensureValidator(schema.derivedFrom));
     }
 
     var requiredProperties = [];
-    Object.keys(schema.properties).forEach(function(propName) {
+    Object.keys(schema.properties).forEach((propName) => {
       if (!validator[propName]) {
         validator[propName] = {};
       }
       var propType = schema.properties[propName];
-      var propSchema = ast.getTypeNames(propType);
-      if (!util.arrayIncludes(propSchema, 'Null')) {
+      if (!this.isNullableType(propType)) {
         requiredProperties.push(propName);
       }
-      extendValidator(<Validator> validator[propName], this.unionValidators(propSchema));
-    }.bind(this));
+      extendValidator(<Validator> validator[propName], this.ensureValidator(propType));
+    });
 
-    if (requiredProperties.length > 0) {
+    // List all required children properties (those not Null or Map).
+    if (hasProps && requiredProperties.length > 0) {
       // this.hasChildren(requiredProperties)
       extendValidator(validator,
                       {'.validate': [hasChildrenExp(requiredProperties)]});
     }
 
+    // Disallow $other properties by default
     if (hasProps) {
       validator['$other'] = {};
       extendValidator(<Validator> validator['$other'], <Validator> {'.validate': ast.boolean(false)});
     }
 
-    if (schema.methods.validate) {
-      extendValidator(validator, <Validator> {'.validate': [schema.methods.validate.body]});
+    // User-defined validate() method
+    if (schema.methods['validate']) {
+      extendValidator(validator, <Validator> {'.validate': [schema.methods['validate'].body]});
     }
 
     return validator;
+  }
+
+  isNullableType(type: ast.ExpType): boolean {
+    switch (type.type) {
+    case 'type':
+      return (<ast.ExpSimpleType> type).name === 'Null';
+    case 'union':
+      let isNullable = false;
+      (<ast.ExpUnionType> type).types.forEach((typePart: ast.ExpType) => {
+        if (this.isNullableType(typePart)) {
+          isNullable = true;
+        }
+      });
+      return isNullable;
+    case 'generic':
+      return (<ast.ExpGenericType> type).name === 'Map';
+    default:
+      throw new Error(errors.application + "invalid internal type: " + type.type);
+    }
   }
 
   // Update rules based on the given path expression.
@@ -316,9 +489,7 @@ export class Generator {
       extendValidator(location, {'.validate': [path.methods['validate'].body]});
     }
 
-    ast.getTypeNames(path.isType).forEach(function(typeName) {
-      extendValidator(location, this.validators[typeName]);
-    }.bind(this));
+    extendValidator(location, this.ensureValidator(path.isType));
 
     // Write .read and .write expressions
     ['read', 'write'].forEach(function(method) {
@@ -361,6 +532,7 @@ export class Generator {
     var union = <Validator> {};
     schema.forEach(function(typeName: string) {
       // First and the validator terms for a single type
+      // Todo extend to unions and generics
       var singleType = extendValidator({}, this.ensureValidator(typeName));
       mapValidator(singleType, ast.andArray);
       extendValidator(union, singleType);
@@ -421,7 +593,7 @@ export class Generator {
   // - Expand snapshot references using child('ref').
   // - Coerce snapshot references to values as needed.
   partialEval(exp: ast.Exp,
-              params?: { [name: string]: ast.Exp; },
+              params?: { [name: string]: ast.Exp },
               functionCalls?: { [name: string]: boolean }
              ): ast.Exp {
     if (!params) {
@@ -518,7 +690,7 @@ export class Generator {
           return (<ast.ExpBuiltin> fn.body).fn(expCall.args, params);
         }
 
-        let innerParams: { [arg: string]: ast.Exp; } = {};
+        let innerParams: { [arg: string]: ast.Exp } = {};
 
         for (let i = 0; i < fn.params.length; i++) {
           innerParams[fn.params[i]] = subExpression(expCall.args[i]);
@@ -562,7 +734,7 @@ export class Generator {
 
   // Builtin function - convert all 'this' to 'data' (from 'newData').
   // Args are function arguments, and params are the local (function) scope variables.
-  prior(args: ast.Exp[], params: { [name: string]: ast.Exp; }): ast.Exp {
+  prior(args: ast.Exp[], params: { [name: string]: ast.Exp }): ast.Exp {
     var lastThisIs = this.thisIs;
     this.thisIs = 'data';
     var exp = this.partialEval(args[0], params);
@@ -571,13 +743,13 @@ export class Generator {
   }
 
   // Builtin function - current value of 'this'
-  getThis(args: ast.Exp[], params: { [name: string]: ast.Exp; }): ast.Exp {
+  getThis(args: ast.Exp[], params: { [name: string]: ast.Exp }): ast.Exp {
     var result = ast.snapshotVariable(this.thisIs);
     return result;
   }
 
   // Builtin function - convert string to RegExp
-  makeRegExp(args: ast.Exp[], params: { [name: string]: ast.Exp; }) {
+  makeRegExp(args: ast.Exp[], params: { [name: string]: ast.Exp }) {
     if (args.length !== 1) {
       throw new Error(errors.application + "RegExp arguments.");
     }
@@ -586,6 +758,22 @@ export class Generator {
       throw new Error(errors.coercion + decodeExpression(exp) + " => RegExp");
     }
     return ast.regexp(exp.value);
+  }
+
+  // Builtin function - compute instanceof(value, Type)
+  // Assume Type is a simple type - call the registered validate
+  // function for the type with 'this' set to the value.
+  isInstanceOf(args: ast.Exp[], params: { [name: string]: ast.Exp }) {
+    if (args.length !== 2 || args[1].type !== 'type') {
+      throw new Error(errors.application + "isInstanceOf arguments.");
+    }
+    let value = this.partialEval(args[0], params);
+    let type = <ast.ExpSimpleType> args[1];
+    let schema = this.symbols.schema[type.name];
+    if (!schema || !schema.methods['validate']) {
+      throw new Error(errors.noSuchType + type.name + " (instanceof)");
+    }
+    return this.partialEval(schema.methods['validate'].body, {'this': value});
   }
 
   // Lookup globally defined function.
@@ -704,6 +892,18 @@ export function decodeExpression(exp: ast.Exp, outerPrecedence?: number): string
     }
     break;
 
+  case 'type':
+    result = (<ast.ExpSimpleType> exp).name;
+    break;
+
+  case 'union':
+    result = (<ast.ExpUnionType> exp).types.map(decodeExpression).join(' | ');
+    break;
+
+  case 'generic':
+    let genericType = <ast.ExpGenericType> exp;
+    return genericType.name + '<' + decodeArray(genericType.params) + '>';
+
   default:
     result = "***UNKNOWN TYPE*** (" + exp.type + ")";
     break;
@@ -717,11 +917,7 @@ export function decodeExpression(exp: ast.Exp, outerPrecedence?: number): string
 }
 
 function decodeArray(args: ast.Exp[]): string {
-  return args
-    .map(function(x) {
-      return decodeExpression(x);
-    })
-    .join(', ');
+  return args.map(decodeExpression).join(', ');
 }
 
 function precedenceOf(exp: ast.Exp): number {

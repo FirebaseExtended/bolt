@@ -227,6 +227,28 @@ suite("Rules Parser Tests", function() {
                   properties: {a: ast.unionType([ast.typeType('Number'),
                                                  ast.typeType('String')])},
                   methods: {} }},
+      { data: "type Foo { a: Map<String, String> }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.genericType('Map', [ast.typeType('String'),
+                                                          ast.typeType('String')])},
+                  methods: {} }},
+      // Alias for Map<String, Other>
+      { data: "type Foo { a: Other[] }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.genericType('Map', [ast.typeType('String'),
+                                                          ast.typeType('Other')])},
+                  methods: {} }},
+      // Only Map<X, Y> supported - but parser allows for any number of args.
+      { data: "type Foo { a: Multi<String, Number, Boolean> }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.genericType('Multi', [ast.typeType('String'),
+                                                            ast.typeType('Number'),
+                                                            ast.typeType('Boolean')])},
+                  methods: {} }},
+      { data: "type Foo { a: Gen1<String> }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {a: ast.genericType('Gen1', [ast.typeType('String')])},
+                  methods: {} }},
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

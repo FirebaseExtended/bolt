@@ -19,6 +19,8 @@
 
 import util = require('./util');
 
+export type Object = { [prop: string]: any };
+
 export interface Exp {
   type: string;
   valueType: string;
@@ -61,12 +63,22 @@ export interface ExpBuiltin extends Exp {
   fn: BuiltinFunction;
 }
 
-export interface ExpType extends Exp {
+export type ExpType = ExpSimpleType | ExpUnionType | ExpGenericType;
+
+// Simple Type (reference)
+export interface ExpSimpleType extends Exp {
   name: string;
 }
 
+// Union Type: Type1 | Type2 | ...
 export interface ExpUnionType extends Exp {
   types: ExpType[];
+}
+
+// Generic Type (reference): Type<Type1, Type2, ...>
+export interface ExpGenericType extends Exp {
+  name: string;
+  params: ExpType[];
 }
 
 export interface Method {
@@ -81,9 +93,13 @@ export interface Path {
 };
 
 export interface Schema {
-  derivedFrom: ExpType | ExpUnionType;
-  properties: { [prop: string]: ExpType | ExpUnionType };
+  derivedFrom: ExpType;
+  properties: { [prop: string]: ExpType };
   methods: { [name: string]: Method };
+
+  // Generic parameters - if a Generic schema
+  params?: string[];
+  getValidator?: (params: Exp[]) => Object;
 };
 
 export interface Loggers {
@@ -144,10 +160,26 @@ export function reference(base: Exp, prop: string | Exp): ExpReference {
 // immutability of the original expression).
 export function copyExp(exp: Exp): Exp {
   exp = <Exp> util.extend({}, exp);
-  if (exp.type === 'op' || exp.type === 'call') {
-    (<ExpOp> exp).args = util.copyArray((<ExpOp> exp).args);
+  switch (exp.type) {
+  case 'op':
+  case 'call':
+    let opExp = <ExpOp> exp;
+    opExp.args = util.copyArray(opExp.args);
+    return opExp;
+
+  case 'union':
+    let unionExp = <ExpUnionType> exp;
+    unionExp.types = util.copyArray(unionExp.types);
+    return unionExp;
+
+  case 'generic':
+    let genericExp = <ExpGenericType> exp;
+    genericExp.params = util.copyArray(genericExp.params);
+    return genericExp;
+
+  default:
+     return exp;
   }
-  return exp;
 }
 
 // Make a (shallow) copy of the base expression, setting (or removing) it's
@@ -339,7 +371,7 @@ export function method(params: string[], body: Exp): Method {
   };
 }
 
-export function typeType(typeName: string): ExpType {
+export function typeType(typeName: string): ExpSimpleType {
   return { type: "type", valueType: "type", name: typeName };
 }
 
@@ -347,14 +379,21 @@ export function unionType(types: ExpType[]): ExpUnionType {
   return { type: "union", valueType: "type", types: types };
 }
 
-export function getTypeNames(type: ExpType | ExpUnionType): string[] {
+export function genericType(typeName: string, params: ExpType[]): ExpGenericType {
+  return { type: "generic", valueType: "type", name: typeName, params: params };
+}
+
+// TODO: Replace with decodeExpression - migrate from rules-generator to ast.
+export function typeName(type: ExpType): string {
   switch (type.type) {
   case 'type':
-    return [(<ExpType> type).name];
+    return (<ExpSimpleType> type).name;
   case 'union':
-    return (<ExpUnionType> type).types.map(getTypeNames).reduce(util.extendArray);
+    return (<ExpUnionType> type).types.map(typeName).join(' | ');
+  case 'generic':
+    return (<ExpGenericType> type).name + '<' + (<ExpGenericType> type).params.map(typeName).join(', ') + '>';
   default:
-    throw new Error("Unknown type: " + type.type);
+    throw new Error("Invalid type: " + type.type);
   }
 }
 
@@ -381,16 +420,17 @@ export class Symbols {
 
     if (this[type][name]) {
       this.log.error("Duplicated " + type + " definition: " + name + ".");
-      return;
+    } else {
+      this[type][name] = object;
     }
-    this[type][name] = object;
+    return this[type][name];
   }
 
-  registerFunction(name: string, params: string[], body: Exp) {
-    this.register('functions', name, method(params, body));
+  registerFunction(name: string, params: string[], body: Exp): Method {
+    return <Method> this.register('functions', name, method(params, body));
   }
 
-  registerPath(parts: string[], isType: ExpType | void, methods: { [name: string]: Method; }) {
+  registerPath(parts: string[], isType: ExpType | void, methods: { [name: string]: Method; }): Path {
     methods = methods || {};
 
     isType = isType || typeType('Any');
@@ -399,40 +439,57 @@ export class Symbols {
       isType: <ExpType> isType,
       methods: methods
     };
-    this.register('paths', '/' + parts.join('/'), p);
+    return <Path> this.register('paths', '/' + parts.join('/'), p);
   }
 
-  registerSchema(name: string, derivedFrom: ExpType | ExpUnionType | void, properties, methods) {
-    methods = methods || {};
+  registerSchema(name: string,
+                 derivedFrom?: ExpType,
+                 properties?: { [prop: string]: ExpType },
+                 methods?: { [name: string]: Method },
+                 params?: string[]): Schema {
     properties = properties || {};
-
+    methods = methods || {};
     derivedFrom = derivedFrom || typeType(Object.keys(properties).length > 0 ? 'Object' : 'Any');
+
     var s: Schema = {
-      derivedFrom: <ExpType | ExpUnionType> derivedFrom,
+      derivedFrom: <ExpType> derivedFrom,
       properties: properties,
-      methods: methods
+      methods: methods,
     };
-    this.register('schema', name, s);
+    // Only add params if this is a Generic schema.
+    if (params) {
+      s.params = params;
+    }
+    return <Schema> this.register('schema', name, s);
   }
 
-  isDerivedFrom(descendant: string, ancestor: string, visited?: { [name: string]: boolean}) {
-    if (!visited) {
-      visited = {};
-    }
-    if (visited[descendant]) {
-      return false;
-    }
-    visited[descendant] = true;
-
-    if (descendant === ancestor) {
+  isDerivedFrom(type: ExpType, ancestor: string): boolean {
+    if (ancestor === 'Any') {
       return true;
     }
 
-    var schema = this.schema[descendant];
-    if (!schema) {
-      return false;
+    if (typeName(type) === ancestor) {
+      return true;
     }
-    return this.isDerivedFrom(schema.derivedFrom.name, ancestor, visited);
+
+    switch (type.type) {
+    case 'type':
+    case 'generic':
+      let simpleType = <ExpSimpleType> type;
+      if (simpleType.name === 'Any') {
+        return false;
+      }
+      let schema = this.schema[simpleType.name];
+      return this.isDerivedFrom(schema.derivedFrom, ancestor);
+
+    case 'union':
+      return (<ExpUnionType> type).types
+        .map((subType) => this.isDerivedFrom(subType, ancestor))
+        .reduce(util.or);
+
+    default:
+      throw new Error("Unknown type: " + type.type);
+      }
   }
 
   setLoggers(loggers: Loggers) {
