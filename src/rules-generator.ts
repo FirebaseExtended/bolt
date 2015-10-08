@@ -33,6 +33,7 @@ var errors = {
   application: "Bolt application error: ",
   invalidGeneric: "Invalid generic schema usage: ",
   invalidMapKey: "Map<Key, T> - Key must derive from String type.",
+  invalidWildChildren: "Types can have at most one $wild property and cannot mix with other properties.",
 };
 
 /* TS does not allow for special properties to have distinct
@@ -263,13 +264,14 @@ export class Generator {
 
   // Collection schema has exactly one $wildchild property
   isCollectionSchema(schema: ast.Schema): boolean {
-    var props = Object.keys(schema.properties);
-    return props.length === 1 && props[0][0] === '$';
+    let props = Object.keys(schema.properties);
+    let result = props.length === 1 && props[0][0] === '$';
+    return result;
   }
 
   // Ensure we have a definition for a validator for the given schema.
   ensureValidator(type: ast.ExpType): Validator {
-    var key = ast.typeName(type);
+    var key = decodeExpression(type);
     if (!this.validators[key]) {
       this.validators[key] = {'.validate': ast.literal('***TYPE RECURSION***') };
       this.validators[key] = this.createValidator(type);
@@ -415,7 +417,7 @@ export class Generator {
       !this.isCollectionSchema(schema);
 
     if (hasProps && !this.symbols.isDerivedFrom(schema.derivedFrom, 'Object')) {
-      this.fatal(errors.nonObject + " (is " + ast.typeName(schema.derivedFrom) + ")");
+      this.fatal(errors.nonObject + " (is " + decodeExpression(schema.derivedFrom) + ")");
       return {};
     }
 
@@ -426,20 +428,27 @@ export class Generator {
       extendValidator(validator, this.ensureValidator(schema.derivedFrom));
     }
 
-    var requiredProperties = [];
+    let requiredProperties = [];
+    let wildProperties = 0;
     Object.keys(schema.properties).forEach((propName) => {
+      if (propName[0] === '$') {
+        wildProperties += 1;
+      }
       if (!validator[propName]) {
         validator[propName] = {};
       }
       var propType = schema.properties[propName];
-      if (!this.isNullableType(propType)) {
+      if (propName[0] !== '$' && !this.isNullableType(propType)) {
         requiredProperties.push(propName);
       }
       extendValidator(<Validator> validator[propName], this.ensureValidator(propType));
     });
 
-    // List all required children properties (those not Null or Map).
-    if (hasProps && requiredProperties.length > 0) {
+    if (wildProperties > 1 || wildProperties === 1 && requiredProperties.length > 0) {
+      this.fatal(errors.invalidWildChildren);
+    }
+
+    if (requiredProperties.length > 0) {
       // this.hasChildren(requiredProperties)
       extendValidator(validator,
                       {'.validate': [hasChildrenExp(requiredProperties)]});
@@ -460,22 +469,8 @@ export class Generator {
   }
 
   isNullableType(type: ast.ExpType): boolean {
-    switch (type.type) {
-    case 'type':
-      return (<ast.ExpSimpleType> type).name === 'Null';
-    case 'union':
-      let isNullable = false;
-      (<ast.ExpUnionType> type).types.forEach((typePart: ast.ExpType) => {
-        if (this.isNullableType(typePart)) {
-          isNullable = true;
-        }
-      });
-      return isNullable;
-    case 'generic':
-      return (<ast.ExpGenericType> type).name === 'Map';
-    default:
-      throw new Error(errors.application + "invalid internal type: " + type.type);
-    }
+    let result = this.symbols.isDerivedFrom(type, 'Null') || this.symbols.isDerivedFrom(type, 'Map');
+    return result;
   }
 
   // Update rules based on the given path expression.

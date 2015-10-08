@@ -383,20 +383,6 @@ export function genericType(typeName: string, params: ExpType[]): ExpGenericType
   return { type: "generic", valueType: "type", name: typeName, params: params };
 }
 
-// TODO: Replace with decodeExpression - migrate from rules-generator to ast.
-export function typeName(type: ExpType): string {
-  switch (type.type) {
-  case 'type':
-    return (<ExpSimpleType> type).name;
-  case 'union':
-    return (<ExpUnionType> type).types.map(typeName).join(' | ');
-  case 'generic':
-    return (<ExpGenericType> type).name + '<' + (<ExpGenericType> type).params.map(typeName).join(', ') + '>';
-  default:
-    throw new Error("Invalid type: " + type.type);
-  }
-}
-
 export class Symbols {
   functions: { [name: string]: Method };
   paths: { [name: string]: any };
@@ -468,8 +454,16 @@ export class Symbols {
       return true;
     }
 
-    if (typeName(type) === ancestor) {
-      return true;
+    switch (type.type) {
+    case 'type':
+    case 'generic':
+      let simpleType = <ExpSimpleType> type;
+      if (simpleType.name === ancestor) {
+        return true;
+      }
+      break;
+    default:
+      break;
     }
 
     switch (type.type) {
