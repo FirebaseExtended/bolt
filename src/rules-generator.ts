@@ -546,9 +546,11 @@ export class Generator {
                          '.read': 'data',
                          '.write': 'newData' };
 
-    mapValidator(validator, function(value, prop) {
+    mapValidator(validator, function(value, prop, parentProp) {
       if (prop in methodThisIs) {
-        let result = this.getExpressionText(ast.andArray(collapseHasChildren(value)), methodThisIs[prop]);
+        let result = this.getExpressionText(ast.andArray(collapseHasChildren(value)),
+                                            methodThisIs[prop],
+                                            parentProp);
         if (prop === '.validate' && result === 'true' ||
             (prop === '.read' || prop === '.write') && result === 'false') {
           return undefined;
@@ -559,7 +561,7 @@ export class Generator {
     }.bind(this));
   }
 
-  getExpressionText(exp: ast.Exp, thisIs: string): string {
+  getExpressionText(exp: ast.Exp, thisIs: string, key: string): string {
     if (!('type' in exp)) {
       throw new Error(errors.application + "Not an expression: " + util.prettyJSON(exp));
     }
@@ -574,11 +576,14 @@ export class Generator {
                                   ast.builtin(this.getThis.bind(this)));
     this.symbols.registerFunction('prior', ['exp'],
                                   ast.builtin(this.prior.bind(this)));
+    this.symbols.registerFunction('key', [],
+                                  ast.builtin(this.getKey.bind(this, key)));
 
     exp = this.partialEval(exp);
 
     delete this.symbols.functions['@getThis'];
     delete this.symbols.functions['prior'];
+    delete this.symbols.functions['key'];
 
     // Top level expressions should never be to a snapshot reference - should
     // always evaluate to a boolean.
@@ -758,6 +763,15 @@ export class Generator {
       throw new Error(errors.coercion + decodeExpression(exp) + " => RegExp");
     }
     return ast.regexp(exp.value);
+  }
+
+  // Builtin function - return the parent key of 'this'.
+  getKey(key: string, args: ast.Exp[], params: { [name: string]: ast.Exp }) {
+    if (args.length !== 0) {
+      throw new Error(errors.mismatchParams + "(found " + args.length + " but expected 1)");
+    }
+
+    return key[0] === '$' ? ast.literal(key) : ast.string(key);
   }
 
   // Lookup globally defined function.
@@ -948,18 +962,25 @@ export function extendValidator(target: Validator, src: Validator): Validator {
 
 // Call fn(value, prop) on all '.props' and assiging the value back into the
 // validator.
-export function mapValidator(v: Validator, fn: (val: ValidatorValue, prop: string) => ValidatorValue) {
+export function mapValidator(v: Validator,
+                             fn: (val: ValidatorValue, prop: string, parentProp: string) => ValidatorValue,
+                             path?: string[]) {
+  if (!path) {
+    path = [''];
+  }
   for (var prop in v) {
     if (!v.hasOwnProperty(prop)) {
       continue;
     }
     if (prop[0] === '.') {
-      v[prop] = fn(v[prop], prop);
+      v[prop] = fn(v[prop], prop, path[path.length - 1]);
       if (v[prop] === undefined) {
         delete v[prop];
       }
     } else {
-      mapValidator(<Validator> v[prop], fn);
+      path.push(prop);
+      mapValidator(<Validator> v[prop], fn, path);
+      path.pop();
     }
   }
 }

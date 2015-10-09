@@ -354,6 +354,19 @@ suite("Rules Generator Tests", function() {
                  'first': {'.validate': "newData.isString()"},
                  'second': {'.validate': "newData.isNumber()"},
                  '$other': {'.validate': "false"}} },
+
+      { data: "type X { a: Number, validate() = this.a == key(); } type T extends X[];",
+        expect: {'$key1': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == $key1",
+                           'a': {'.validate': "newData.isNumber()"},
+                           '$other': {'.validate': "false"}}
+                } },
+      { data: "type X { a: Number, validate() = this.a == key(); } type T { x: X }",
+        expect: {'x': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == 'x'",
+                       'a': {'.validate': "newData.isNumber()"},
+                       '$other': {'.validate': "false"}},
+                 '$other': {'.validate': "false"},
+                 '.validate': "newData.hasChildren(['x'])"
+                } },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

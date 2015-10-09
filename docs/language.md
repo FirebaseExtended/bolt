@@ -14,25 +14,29 @@ A bolt file consists of 3 types of statements:
 
 A bolt file can also contain JavaScript-style comments:
 
-    // Single line comment
+```javascript
+// Single line comment
 
-    /* Multi
-       line
-       comment
-    */
+/* Multi
+   line
+   comment
+*/
+```
 
 # Types
 
 A (user-defined) type statement describes a value that can be stored in the Firebase database.
 
-    type MyType [extends BaseType] {
-      property1: Type,
-      property2: Type,
-      ...
+```javascript
+type MyType [extends BaseType] {
+  property1: Type,
+  property2: Type,
+  ...
 
-      validate() = <validation expression>;
-      }
-    }
+  validate() = <validation expression>;
+  }
+}
+```
 
 If the `validate` expression is `false`, then the value is deemed to be invalid and cannot
 be saved to the database (an error will be returned to the Firebase client).
@@ -138,13 +142,15 @@ type Model {
 
 A path statement provides access and validation rules for data stored at a given path.
 
-    [path] /path/to/data [is Type] {
-      read() = <true-iff-reading-this-path-is-allowed>;
+```javascript
+path /path/to/data [is Type] {
+  read() = <true-iff-reading-this-path-is-allowed>;
 
-      write() = <true-iff-writing-this-path-is-allowed>;
+  write() = <true-iff-writing-this-path-is-allowed>;
 
-      validate() = <additional-validation-rules>;
-    }
+  validate() = <additional-validation-rules>;
+}
+```
 
 If a Type is not given, `Any` is assumed.
 
@@ -164,20 +170,22 @@ and especially perform constraints that are path-dependent.  Path
 statements can include wildcard parts whose values can then be used within
 an expression as a variable parameter:
 
-    path /users/$uid is User {
-      // Anyone can read a User's information.
-      read() = true;
+```javascript
+path /users/$uid is User {
+  // Anyone can read a User's information.
+  read() = true;
 
-      // Only an authenticated user can write their information.
-      write() = auth != null && auth.uid == $uid;
-    }
+  // Only an authenticated user can write their information.
+  write() = auth != null && auth.uid == $uid;
+}
+```
 
 If a path needs no expressions, the following abbreviated form (without a body)
 can be used:
 
     path /users/$uid is User;
 
-or
+and the `path` keyword can also be omitted.
 
     /users/$uid is User;
 
@@ -219,25 +227,49 @@ the `prior()` function:
 `prior()` can be used to wrap any expressions (including function calls) that
 use `this`.
 
+The parent key of the current location can be read using the key() function.
+
+    key()               - The (text) value of the inner-most parent property of the current location.
+
+This can be used to create a validation expression that relates the key used to store a value
+and one of its properties:
+
+```javascript
+path /products is Product[];
+
+type Product {
+  validate() = this.id == key();
+
+  id: String,
+  name: String
+}
+
+```
+
+
 # Functions and Methods
 
 Functions must be simple return expressions with zero or more parameters.  All of the following
 examples are identical and can be used interchangably.
 
-    function myFunction(arg1, arg2) {
-      return arg1 == arg2.value;
-    }
+```javascript
+function myFunction(arg1, arg2) {
+  return arg1 == arg2.value;
+}
 
-    function myFunction(arg1, arg2) { arg1 == arg2.value }
+function myFunction(arg1, arg2) { arg1 == arg2.value }
 
-    myFunction(arg1, arg2) = arg1 == arg2.value;
+myFunction(arg1, arg2) = arg1 == arg2.value;
+```
 
 Similarly, methods in path and type statements can use the abbreviated functional form (all
 these are equivalent):
 
-    write() { return this.user == auth.uid; }
-    write() { this.user == auth.uid }
-    write() = this.user == auth.uid;
+```javascript
+write() { return this.user == auth.uid; }
+write() { this.user == auth.uid }
+write() = this.user == auth.uid;
+```
 
 # Expressions
 

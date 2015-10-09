@@ -13,7 +13,7 @@ type User {
 }
 
 type Product {
-  // validate() = key() == this.id;
+  validate() = key() == this.id;
 
   id: ProductID,
   cost: Number
