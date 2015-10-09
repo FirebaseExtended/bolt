@@ -1,4 +1,4 @@
-# Firebase Bold Security and Modeling Language
+# Firebase Bolt Security and Modeling Language
 
 This language is meant to be used as a convenient front-end to the existing
 Firebase JSON-based rules language.
