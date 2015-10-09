@@ -254,13 +254,13 @@ Functions must be simple return expressions with zero or more parameters.  All o
 examples are identical and can be used interchangably.
 
 ```javascript
-function myFunction(arg1, arg2) {
-  return arg1 == arg2.value;
+function isUser(uid) {
+  return auth != null && auth.uid == uid;
 }
 
-function myFunction(arg1, arg2) { arg1 == arg2.value }
+function myFunction(uid) { auth != null && auth.uid == uid }
 
-myFunction(arg1, arg2) = arg1 == arg2.value;
+myFunction(uid) = auth != null && auth.uid == uid;
 ```
 
 Similarly, methods in path and type statements can use the abbreviated functional form (all
