@@ -284,8 +284,8 @@ Rule expressions are a subset of JavaScript expressions, and include:
 These global variables are available in expressions:
 
     root - The root location of a Firebase database.
-    auth - The current auth state (if auth != null the user is authenticated auth.uid
-           is their user identifier (a unique string value).
+    auth - The current auth state (if auth != null the user is authenticated, and auth.uid
+           is their user identifier string).
     now -  The (Unix) timestamp of the current time (a Number).
 
 # Appendix A. Firebase Expressions and their Bolt equivalents.
