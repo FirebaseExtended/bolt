@@ -238,8 +238,8 @@ export class Generator {
   // }
   // Key must derive from String
   getMapValidator(params: ast.Exp[]): Validator {
-    let keyType = <ast.ExpSimpleType> params['Key'];
-    let valueType = <ast.ExpType> params['Value'];
+    let keyType = <ast.ExpSimpleType> params[0];
+    let valueType = <ast.ExpType> params[1];
     if (keyType.type !== 'type' || !this.symbols.isDerivedFrom(keyType, 'String')) {
       throw new Error(errors.invalidMapKey + "  (" + decodeExpression(keyType) + " does not)");
     }
@@ -324,14 +324,14 @@ export class Generator {
       throw new Error(errors.invalidGeneric + " expected <" + schema.params.join(', ') + ">");
     }
 
+    // Call custom validator, if given.
+    if (schema.getValidator) {
+      return schema.getValidator(params);
+    }
+
     let bindings = <{[name: string]: ast.ExpType}> {};
     for (let i = 0; i < params.length; i++) {
       bindings[schema.params[i]] = params[i];
-    }
-
-    // Call custom validator, if given.
-    if (schema.getValidator) {
-      return schema.getValidator(bindings);
     }
 
     // Expand generics and generate validator from schema.

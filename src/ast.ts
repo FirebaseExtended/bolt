@@ -385,8 +385,8 @@ export function genericType(typeName: string, params: ExpType[]): ExpGenericType
 
 export class Symbols {
   functions: { [name: string]: Method };
-  paths: { [name: string]: any };
-  schema: { [name: string]: any };
+  paths: { [name: string]: Path };
+  schema: { [name: string]: Schema };
   log: Loggers;
 
   constructor() {
@@ -461,15 +461,6 @@ export class Symbols {
       if (simpleType.name === ancestor) {
         return true;
       }
-      break;
-    default:
-      break;
-    }
-
-    switch (type.type) {
-    case 'type':
-    case 'generic':
-      let simpleType = <ExpSimpleType> type;
       if (simpleType.name === 'Any') {
         return false;
       }
