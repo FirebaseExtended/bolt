@@ -105,6 +105,7 @@ type Model {
 type ProductID extends String {
   validate() = this.length <= 20;
 }
+```
 
 As a shortcut for the common Map<String, Type>, "array-like" notation can be used:
 
