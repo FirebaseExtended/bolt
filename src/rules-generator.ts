@@ -324,7 +324,7 @@ export class Generator {
   createValidatorFromGeneric(schemaName: string, params: ast.ExpType[]): Validator {
     var schema = this.symbols.schema[schemaName];
 
-    if (!schema || !schema.params) {
+    if (!schema || !this.isGeneric(schema)) {
       throw new Error(errors.noSuchType + schemaName + " (generic)");
     }
 
@@ -418,11 +418,15 @@ export class Generator {
       throw new Error(errors.noSuchType + schemaName);
     }
 
-    if (schema.params) {
+    if (this.isGeneric(schema)) {
       throw new Error(errors.noSuchType + schemaName + " used as non-generic type.");
     }
 
     return this.createValidatorFromSchema(schema);
+  }
+
+  isGeneric(schema) {
+    return schema.params.length > 0;
   }
 
   createValidatorFromSchema(schema: ast.Schema): Validator {

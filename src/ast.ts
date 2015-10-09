@@ -416,9 +416,7 @@ export class Symbols {
     return <Method> this.register('functions', name, method(params, body));
   }
 
-  registerPath(parts: string[], isType: ExpType | void, methods: { [name: string]: Method; }): Path {
-    methods = methods || {};
-
+  registerPath(parts: string[], isType: ExpType | void, methods: { [name: string]: Method; } = {}): Path {
     isType = isType || typeType('Any');
     var p: Path = {
       parts: parts,
@@ -430,22 +428,17 @@ export class Symbols {
 
   registerSchema(name: string,
                  derivedFrom?: ExpType,
-                 properties?: { [prop: string]: ExpType },
-                 methods?: { [name: string]: Method },
-                 params?: string[]): Schema {
-    properties = properties || {};
-    methods = methods || {};
+                 properties: { [prop: string]: ExpType } = {},
+                 methods: { [name: string]: Method } = {},
+                 params: string[] = []): Schema {
     derivedFrom = derivedFrom || typeType(Object.keys(properties).length > 0 ? 'Object' : 'Any');
 
     var s: Schema = {
       derivedFrom: <ExpType> derivedFrom,
       properties: properties,
       methods: methods,
+      params: params,
     };
-    // Only add params if this is a Generic schema.
-    if (params) {
-      s.params = params;
-    }
     return <Schema> this.register('schema', name, s);
   }
 

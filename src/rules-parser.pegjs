@@ -108,7 +108,7 @@ Path "path statement" = ("path" __)? path:PathExpression isType:("is" __ id:Type
            / ";" { return {}; } )? _ {
    var result = {
      parts: path,
-     methods: methods
+     methods: methods || {}
    };
    if (isType) {
      result.isType = isType;
