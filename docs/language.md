@@ -258,9 +258,9 @@ function isUser(uid) {
   return auth != null && auth.uid == uid;
 }
 
-function myFunction(uid) { auth != null && auth.uid == uid }
+function isUser(uid) { auth != null && auth.uid == uid }
 
-myFunction(uid) = auth != null && auth.uid == uid;
+isUser(uid) = auth != null && auth.uid == uid;
 ```
 
 Similarly, methods in path and type statements can use the abbreviated functional form (all
