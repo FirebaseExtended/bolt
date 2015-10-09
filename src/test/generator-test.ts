@@ -70,7 +70,8 @@ suite("Rules Generator Tests", function() {
                  "children",
                  "functional",
                  "user-security",
-                 "generics"
+                 "generics",
+                 "groups",
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
