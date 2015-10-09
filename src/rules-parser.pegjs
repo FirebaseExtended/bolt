@@ -121,7 +121,7 @@ PathExpression "path" =  parts:("/" part:Identifier { return part; })+ _ { retur
 
 Schema "type statement" =
   "type" __ type:Identifier
-  params:("<" list:IdentifierList ">" { return list; })?
+  params:("<" list:IdentifierList ">" { return ensureUpperCase(list, "Type names"); })?
   ext:(__ "extends" __ type:TypeExpression  _ { return type; })?
   properties:(_ "{" _ properties:Properties? "}" { return properties; }
               / _ ";" { return null; } ) {
