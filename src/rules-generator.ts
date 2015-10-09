@@ -36,8 +36,21 @@ var errors = {
   invalidWildChildren: "Types can have at most one $wild property and cannot mix with other properties.",
 };
 
-/* TS does not allow for special properties to have distinct
-   types from the 'index' property given for the interface.  Boo.
+/*
+   A Validator is a JSON heriarchical structure. The "leaves" are "dot-properties"
+   (see below). The intermediate nodes in the tree are "prop" or "$prop"
+   properties.
+
+   A Validator is mutated to have different forms based on the the phase of
+   generation.
+
+   In the first phase, they are Exp[]. Later the Exp[] are ANDed together and
+   combined into expression text (and returned as the final JSON-rules that
+   Firebase uses.
+
+   Note: TS does not allow for special properties to have distinct
+   types from the 'index' property given for the interface.  :-(
+
    '.read': ast.Exp[] | string;
    '.write': ast.Exp[] | string;
    '.validate': ast.Exp[] | string;
@@ -283,11 +296,6 @@ export class Generator {
     return this.validators[key];
   }
 
-  // A validator is a structured object, where each leaf node
-  // is:
-  //     ".validate": [<expression>, ...]
-  // All expressions will be ANDed together to form the file expresion.
-  // Intermediate nodes can be "prop" or "$prop" values.
   createValidator(type: ast.ExpType): Validator {
     switch (type.type) {
     case 'type':
