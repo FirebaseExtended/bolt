@@ -72,6 +72,7 @@ suite("Rules Generator Tests", function() {
                  "user-security",
                  "generics",
                  "groups",
+                 "multi-update",
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
@@ -99,6 +100,7 @@ suite("Rules Generator Tests", function() {
       [ "true" ],
       [ "false" ],
       [ "1" ],
+      [ "(1)", '1' ],
       [ "1.1" ],
       [ "+3", "3"],
       [ "-3" ],
@@ -110,25 +112,45 @@ suite("Rules Generator Tests", function() {
       [ "'\\u000d'", "'\\r'" ],
       [ "a" ],
       [ "a.b" ],
-      [ "a['b']" ],
+      [ "a.b.c" ],
+
+      [ "a['b']", 'a.b' ],
       [ "a[b]" ],
+      [ "a[b][c]" ],
       [ "a.b[c]" ],
+      [ "a[b].c" ],
       [ "(a.b)[c]", "a.b[c]" ],
+      [ "(a(b))[c]", "a(b)[c]" ],
+
       [ "a()" ],
-      [ "a.b()" ],
       [ "a()()" ],
+      [ "a.b()" ],
       [ "a().b" ],
+      [ "a[0]()" ],
+      [ "a()[0]" ],
+
       [ "-a" ],
       [ "--a" ],
       [ "+a", "a"],
+      [ "+a +b", "a + b" ],
+      [ "-a -b", "-a - b" ],
+      [ "-a --b", "-a - -b" ],
+      [ "-a ---b", "-a - --b" ],
       [ "!a" ],
+      [ "!!a" ],
+      [ "!+a", '!a' ],
+      [ "!-a" ],
+      [ "-!a" ],
       [ "2 * a" ],
+      [ "(2 * a)", '2 * a' ],
       [ "2 / a" ],
       [ "a % 2" ],
       [ "1 + 1" ],
       [ "a - 1" ],
       [ "a - -b" ],
       [ "a + b + c" ],
+      [ "a + (b + c)" ],
+      [ "(a + b) + c", 'a + b + c' ],
       [ "a + b * c" ],
       [ "(a + b) * c" ],
       [ "a < 7" ],
@@ -367,6 +389,12 @@ suite("Rules Generator Tests", function() {
                        '$other': {'.validate': "false"}},
                  '$other': {'.validate': "false"},
                  '.validate': "newData.hasChildren(['x'])"
+                } },
+
+      { data: "type T extends String { validate() = root == 'new' && prior(root) == 'old';}" +
+              "path /t/x is Any { read() = root == 'old';}",
+        expect: {'.validate': "newData.isString() && newData.parent().val() == 'new' && root.val() == 'old'",
+                 'x': {'.read': "root.val() == 'old'"}
                 } },
     ];
 

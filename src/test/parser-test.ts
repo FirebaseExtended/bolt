@@ -82,12 +82,12 @@ suite("Rules Parser Tests", function() {
   suite("Expressions", function() {
     var tests = [
       [ "a", ast.variable('a') ],
-      [ "a.b", ast.reference(ast.variable('a'), 'b') ],
+      [ "a.b", ast.reference(ast.variable('a'), ast.string('b')) ],
       [ "a['b']", ast.reference(ast.variable('a'), ast.string('b')) ],
       [ "a[b]", ast.reference(ast.variable('a'), ast.variable('b')) ],
       [ "a()", ast.call(ast.variable('a'), []) ],
-      [ "a.b()", ast.call(ast.reference(ast.variable('a'), 'b'), []) ],
-      [ "a().b", ast.reference(ast.call(ast.variable('a'), []), 'b') ],
+      [ "a.b()", ast.call(ast.reference(ast.variable('a'), ast.string('b')), []) ],
+      [ "a().b", ast.reference(ast.call(ast.variable('a'), []), ast.string('b')) ],
       [ "-a", ast.neg(ast.variable('a')) ],
       // TODO: This should be an error - looks like pre-decrement
       [ "--a", ast.neg(ast.neg(ast.variable('a'))) ],
