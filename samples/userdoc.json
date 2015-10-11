@@ -7,7 +7,7 @@
         "$docid": {
           ".validate": "newData.hasChildren()",
           ".read": "root.child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('read').val() == true",
-          ".write": "root.child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('write').val() == true"
+          ".write": "newData.parent().parent().parent().child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('write').val() == true"
         }
       }
     },
@@ -30,7 +30,7 @@
             ".validate": "false"
           },
           ".read": "root.child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('read').val() == true",
-          ".write": "root.child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('write').val() == true"
+          ".write": "newData.parent().parent().parent().child('permissions').child(auth.uid + '|' + $ownerid + '|' + $docid).child('write').val() == true"
         }
       }
     },
@@ -55,7 +55,7 @@
         "$other": {
           ".validate": "false"
         },
-        ".write": "newData.val() == null && auth.uid == data.child('owner').val() || newData.val() != null && $key == newData.child('grantee').val() + '|' + newData.child('owner').val() + '|' + newData.child('docid').val() && auth.uid == newData.child('owner').val() && root.child('documents').child(auth.uid).child(newData.child('docid').val()).val() != null"
+        ".write": "newData.val() == null && auth.uid == data.child('owner').val() || newData.val() != null && $key == newData.child('grantee').val() + '|' + newData.child('owner').val() + '|' + newData.child('docid').val() && auth.uid == newData.child('owner').val() && newData.parent().parent().child('documents').child(auth.uid).child(newData.child('docid').val()).val() != null"
       }
     }
   }
