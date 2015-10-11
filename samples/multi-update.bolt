@@ -1,0 +1,22 @@
+// Firebase can update multiple paths with a single update.
+// When doing so - you can write a rule that ensures
+// that multiple paths are atomically updated.
+//
+// This example ensures that a user and his secret (string)
+// are only updated when the other one exists.
+
+path /secret/$uid is String {
+  read() = isUser($uid);
+  validate() = root.users[$uid] != null;
+}
+
+path /users/$uid is User {
+  read() = true;
+  validate() = root.secret[$uid] != null;
+}
+
+type User {
+  name: String
+}
+
+isUser(uid) = auth != null && auth.uid == uid;

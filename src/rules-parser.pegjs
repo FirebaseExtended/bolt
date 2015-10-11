@@ -260,7 +260,8 @@ MemberExpression
     )* {
       var result = base;
       for (var i = 0; i < accessors.length; i++) {
-        result = ast.reference(result, accessors[i]);
+        var exp = typeof accessors[i] == 'string' ? ast.string(accessors[i]) : accessors[i];
+        result = ast.reference(result, exp);
       }
       return result;
     }
@@ -281,9 +282,11 @@ CallExpression
       for (var i = 0; i < argumentsOrAccessors.length; i++) {
         var part = argumentsOrAccessors[i];
         if (typeof part == 'string') {
-          result = ast.reference(result, part);
-        } else {
+          result = ast.reference(result, ast.string(part));
+        } else if (util.isType(part, 'array')) {
           result = ast.call(result, part);
+        } else {
+          result = ast.reference(result, part);
         }
       }
       return result;

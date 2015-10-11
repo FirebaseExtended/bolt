@@ -46,10 +46,10 @@ export interface ExpLiteral extends Exp {
   name: string;
 }
 
+// base[accessor]
 export interface ExpReference extends Exp {
   base: Exp;
-  // TODO: Why not restrict to Exp - which can be ast.string();
-  accessor: string | Exp;
+  accessor: Exp;
 }
 
 export interface ExpCall extends Exp {
@@ -106,10 +106,9 @@ export interface Loggers {
   error: (message: string) => void;
   warn: (message: string) => void;
 };
-
-export var string = valueGen('String');
-export var boolean = valueGen('Boolean');
-export var number = valueGen('Number');
+export var string: (string) => ExpValue = valueGen('String');
+export var boolean: (boolean) => ExpValue = valueGen('Boolean');
+export var number: (number) => ExpValue  = valueGen('Number');
 export var array = valueGen('Array');
 export var regexp = valueGen('RegExp');
 
@@ -147,13 +146,19 @@ export function nullType(): ExpNull {
   return { type: 'Null', valueType: 'Null' };
 }
 
-export function reference(base: Exp, prop: string | Exp): ExpReference {
+export function reference(base: Exp, prop: Exp): ExpReference {
   return {
     type: 'ref',
     valueType: 'Any',
     base: base,
     accessor: prop
   };
+}
+
+let reIdentifier = /^[a-zA-Z_$][a-zA-Z0-9_]*$/;
+
+export function isIdentifierStringExp(exp: Exp) {
+  return exp.type === 'String' && reIdentifier.test((<ExpValue> exp).value);
 }
 
 // Shallow copy of an expression (so it can be modified and preserve
@@ -194,9 +199,34 @@ export function cast(base: Exp, valueType: string): Exp {
   return result;
 }
 
-export function call(ref: ExpReference | ExpVariable, args?: Exp[]): ExpCall {
-  args = args || [];
+export function call(ref: ExpReference | ExpVariable, args: Exp[]= []): ExpCall {
   return { type: 'call', valueType: 'Any', ref: ref, args: args };
+}
+
+// Return empty string if not a function.
+export function getFunctionName(exp: ExpCall): string {
+  if (exp.ref.type === 'ref') {
+    return '';
+  }
+  return (<ExpVariable> exp.ref).name;
+}
+
+// Return empty string if not a (simple) method call -- ref.fn()
+export function getMethodName(exp: ExpCall): string {
+  if (exp.ref.type === 'var') {
+    return (<ExpVariable> exp.ref).name;
+  }
+  if (exp.ref.type !== 'ref') {
+    return '';
+  }
+  return getPropName(<ExpReference> exp.ref);
+}
+
+export function getPropName(ref: ExpReference): string {
+  if (ref.accessor.type !== 'String') {
+    return '';
+  }
+  return (<ExpValue> ref.accessor).value;
 }
 
 // TODO: Type of function signature does not fail this declaration?
@@ -208,26 +238,12 @@ export function snapshotVariable(name: string): ExpVariable {
   return <ExpVariable> cast(variable(name), 'Snapshot');
 }
 
-export function snapshotChild(base: Exp, accessor: string | Exp): Exp {
-  if (typeof accessor === 'string') {
-    accessor = string(accessor);
-  }
-  if (base.valueType !== 'Snapshot') {
-    throw new Error(errors.typeMismatch + "expected Snapshot");
-  }
-  var result = cast(call(reference(base, 'child'), [<Exp> accessor]), 'Snapshot');
-  return result;
-}
-
 export function snapshotParent(base: Exp): Exp {
   if (base.valueType !== 'Snapshot') {
     throw new Error(errors.typeMismatch + "expected Snapshot");
   }
-  return cast(reference(cast(base, 'Any'), 'parent'), 'Snapshot');
-}
-
-export function snapshotValue(exp): ExpCall {
-  return call(reference(cast(exp, 'Any'), 'val'), []);
+  return cast(call(reference(cast(base, 'Any'), string('parent'))),
+              'Snapshot');
 }
 
 export function ensureValue(exp: Exp): Exp {
@@ -235,6 +251,11 @@ export function ensureValue(exp: Exp): Exp {
     return snapshotValue(exp);
   }
   return exp;
+}
+
+// ref.val()
+export function snapshotValue(exp): ExpCall {
+  return call(reference(cast(exp, 'Any'), string('val')));
 }
 
 // Ensure expression is a boolean (when used in a boolean context).
@@ -248,12 +269,13 @@ export function ensureBoolean(exp: Exp): Exp {
 
 export function isCall(exp: Exp, methodName: string): boolean {
   return exp.type === 'call' && (<ExpCall> exp).ref.type === 'ref' &&
-    (<ExpReference> (<ExpCall> exp).ref).accessor === methodName;
+    (<ExpReference> (<ExpCall> exp).ref).accessor.type === 'String' &&
+    (<ExpValue> (<ExpReference> (<ExpCall> exp).ref).accessor).value === methodName;
 }
 
 // Return value generating function for a given Type.
 function valueGen(typeName: string): ((val: any) => ExpValue) {
-  return function(val) {
+  return function(val): ExpValue {
     return {
       type: typeName,      // Exp type identifying a constant value of this Type.
       valueType: typeName, // The type of the result of evaluating this expression.
@@ -272,7 +294,7 @@ function isOp(opType: string, exp: Exp): boolean {
 
 // Return a generating function to make an operator exp node.
 function opGen(opType: string, arity: number = 2): ((...args: Exp[]) => ExpOp) {
-  return function(...args) {
+  return function(...args): ExpOp {
     if (args.length !== arity) {
       throw new Error("Operator has " + args.length +
                       " arguments (expecting " + arity + ").");

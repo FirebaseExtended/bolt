@@ -42,7 +42,7 @@ export function extend(dest, ...srcs) {
   return dest;
 }
 
-export function copyArray(arg) {
+export function copyArray(arg: any[]): any[] {
   return Array.prototype.slice.call(arg);
 }
 
@@ -142,7 +142,7 @@ var specialQuotes = {
   '\r': '\\r'
 };
 
-export function quoteString(s) {
+export function quoteString(s: string): string {
   s = s.replace(quotableCharacters, function(c) {
     if (specialQuotes[c]) {
       return specialQuotes[c];

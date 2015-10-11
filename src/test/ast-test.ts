@@ -106,4 +106,27 @@ suite("Abstract Syntax Tree (AST)", function() {
       assert.deepEqual(result, expect);
     }, helper.expFormat);
   });
+
+  suite("isIdentifierString", function() {
+    let tests = [
+      [ast.string('hi'), true],
+      [ast.string('Hi'), true],
+      [ast.string('a'), true],
+      [ast.string('A'), true],
+      [ast.string('hiThere'), true],
+      [ast.string('H123'), true],
+      [ast.string('$id'), true],
+      [ast.string('a$id'), false],
+      [ast.string('a b'), false],
+      [ast.string('0H123'), false],
+      [ast.boolean(true), false],
+      [ast.number(123), false],
+      ['hi', false],
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = ast.isIdentifierStringExp(data);
+      assert.equal(result, expect);
+    }, helper.expFormat);
+  });
 });
