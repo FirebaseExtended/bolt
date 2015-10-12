@@ -32,7 +32,7 @@
           "$other": {
             ".validate": "false"
           },
-          ".write": "root.child('members').child($room_id).child(auth.uid).val() != null"
+          ".write": "newData.parent().parent().parent().child('members').child($room_id).child(auth.uid).val() != null"
         }
       }
     }

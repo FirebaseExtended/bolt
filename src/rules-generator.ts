@@ -127,7 +127,7 @@ export class Generator {
 
     // TODO: globals should be part of this.symbols (nested scopes)
     this.globals = {
-      "root": ast.cast(ast.literal('root'), 'Snapshot'),
+      "root": ast.call(ast.variable('@root')),
     };
 
     this.registerBuiltinSchema();
@@ -195,7 +195,7 @@ export class Generator {
     function registerAsCall(name, methodName) {
       self.symbols.registerSchema(name, ast.typeType('Any'), undefined, {
         validate: ast.method(['this'], ast.call(ast.reference(ast.cast(thisVar, 'Any'),
-                                                              methodName)))
+                                                              ast.string(methodName))))
       });
     }
 
@@ -203,11 +203,6 @@ export class Generator {
       validate: ast.method(['this'], ast.boolean(true))
     });
 
-    /*
-    this.symbols.registerSchema('Object', ast.typeType('Any'), undefined, {
-      validate: ast.method(['this'], ast.boolean(true))
-    });
-    */
     registerAsCall('Object', 'hasChildren');
 
     this.symbols.registerSchema('Null', ast.typeType('Any'), undefined, {
@@ -216,21 +211,21 @@ export class Generator {
 
     self.symbols.registerSchema('String', ast.typeType('Any'), undefined, {
       validate: ast.method(['this'],
-                           ast.call(ast.reference(ast.cast(thisVar, 'Any'), 'isString'))),
+                           ast.call(ast.reference(ast.cast(thisVar, 'Any'), ast.string('isString')))),
       includes: ast.method(['this', 's'],
-                           ast.call(ast.reference(ast.value(thisVar), 'contains'),
+                           ast.call(ast.reference(ast.value(thisVar), ast.string('contains')),
                                     [ ast.value(ast.variable('s')) ])),
       startsWith: ast.method(['this', 's'],
-                             ast.call(ast.reference(ast.value(thisVar), 'beginsWith'),
+                             ast.call(ast.reference(ast.value(thisVar), ast.string('beginsWith')),
                                       [ ast.value(ast.variable('s')) ])),
       endsWith: ast.method(['this', 's'],
-                           ast.call(ast.reference(ast.value(thisVar), 'endsWith'),
+                           ast.call(ast.reference(ast.value(thisVar), ast.string('endsWith')),
                                     [ ast.value(ast.variable('s')) ])),
       replace: ast.method(['this', 's', 'r'],
-                          ast.call(ast.reference(ast.value(thisVar), 'replace'),
+                          ast.call(ast.reference(ast.value(thisVar), ast.string('replace')),
                                    [ ast.value(ast.variable('s')), ast.value(ast.variable('r')) ])),
       test: ast.method(['this', 's'],
-                       ast.call(ast.reference(ast.value(thisVar), 'matches'),
+                       ast.call(ast.reference(ast.value(thisVar), ast.string('matches')),
                                 [ ast.call(ast.variable('@RegExp'), [ast.variable('s')]) ])),
     });
 
@@ -474,7 +469,8 @@ export class Generator {
     // Disallow $other properties by default
     if (hasProps) {
       validator['$other'] = {};
-      extendValidator(<Validator> validator['$other'], <Validator> {'.validate': ast.boolean(false)});
+      extendValidator(<Validator> validator['$other'],
+                      <Validator> {'.validate': ast.boolean(false)});
     }
 
     // User-defined validate() method
@@ -558,11 +554,11 @@ export class Generator {
                          '.read': 'data',
                          '.write': 'newData' };
 
-    mapValidator(validator, function(value, prop, parentProp) {
+    mapValidator(validator, function(value: ast.Exp[], prop: string, path: string[]) {
       if (prop in methodThisIs) {
         let result = this.getExpressionText(ast.andArray(collapseHasChildren(value)),
                                             methodThisIs[prop],
-                                            parentProp);
+                                            path);
         if (prop === '.validate' && result === 'true' ||
             (prop === '.read' || prop === '.write') && result === 'false') {
           return undefined;
@@ -573,7 +569,7 @@ export class Generator {
     }.bind(this));
   }
 
-  getExpressionText(exp: ast.Exp, thisIs: string, key: string): string {
+  getExpressionText(exp: ast.Exp, thisIs: string, path: string[]): string {
     if (!('type' in exp)) {
       throw new Error(errors.application + "Not an expression: " + util.prettyJSON(exp));
     }
@@ -586,14 +582,17 @@ export class Generator {
     this.thisIs = thisIs || 'newData';
     this.symbols.registerFunction('@getThis', [],
                                   ast.builtin(this.getThis.bind(this)));
+    this.symbols.registerFunction('@root', [],
+                                  ast.builtin(this.getRootReference.bind(this, path)));
     this.symbols.registerFunction('prior', ['exp'],
                                   ast.builtin(this.prior.bind(this)));
     this.symbols.registerFunction('key', [],
-                                  ast.builtin(this.getKey.bind(this, key)));
+                                  ast.builtin(this.getKey.bind(this, path[path.length - 1])));
 
     exp = this.partialEval(exp);
 
     delete this.symbols.functions['@getThis'];
+    delete this.symbols.functions['@root'];
     delete this.symbols.functions['prior'];
     delete this.symbols.functions['key'];
 
@@ -603,22 +602,30 @@ export class Generator {
     return decodeExpression(exp);
   }
 
+  /*
+   *  Wrapper for partialEval debugging.
+   */
+
+  partialEval(exp: ast.Exp,
+              params: { [name: string]: ast.Exp } = {},
+              functionCalls: { [name: string]: boolean } = {})
+  : ast.Exp {
+    // Wrap real call for debugging.
+    let result = this.partialEvalReal(exp, params, functionCalls);
+    // console.log(decodeExpression(exp) + " => " + decodeExpression(result));
+    return result;
+  }
+
   // Partial evaluation of expressions - copy of expression tree (immutable).
   //
   // - Expand inline function calls.
   // - Replace local and global variables with their values.
   // - Expand snapshot references using child('ref').
   // - Coerce snapshot references to values as needed.
-  partialEval(exp: ast.Exp,
-              params?: { [name: string]: ast.Exp },
-              functionCalls?: { [name: string]: boolean }
-             ): ast.Exp {
-    if (!params) {
-      params = {};
-    }
-    if (!functionCalls) {
-      functionCalls = {};
-    }
+  partialEvalReal(exp: ast.Exp,
+              params: { [name: string]: ast.Exp } = {},
+              functionCalls: { [name: string]: boolean } = {})
+  : ast.Exp {
     var self = this;
 
     function subExpression(exp2: ast.Exp): ast.Exp {
@@ -626,11 +633,11 @@ export class Generator {
     }
 
     function valueExpression(exp2: ast.Exp): ast.Exp {
-      return ast.ensureValue(exp2);
+      return ast.ensureValue(subExpression(exp2));
     }
 
     function booleanExpression(exp2: ast.Exp): ast.Exp {
-      return ast.ensureBoolean(exp2);
+      return ast.ensureBoolean(subExpression(exp2));
     }
 
     function lookupVar(exp2) {
@@ -643,18 +650,18 @@ export class Generator {
       let expOp = <ast.ExpOp> ast.copyExp(exp);
       // Ensure arguments are boolean (or values) where needed.
       if (expOp.op === 'value') {
-        expOp.args[0] = valueExpression(subExpression(expOp.args[0]));
+        expOp.args[0] = valueExpression(expOp.args[0]);
       } else if (expOp.op === '||' || expOp.op === '&&' || expOp.op === '!') {
         for (let i = 0; i < expOp.args.length; i++) {
-          expOp.args[i] = booleanExpression(subExpression(expOp.args[i]));
+          expOp.args[i] = booleanExpression(expOp.args[i]);
         }
       } else if (expOp.op === '?:') {
-        expOp.args[0] = booleanExpression(subExpression(expOp.args[0]));
+        expOp.args[0] = booleanExpression(expOp.args[0]);
         expOp.args[1] = subExpression(expOp.args[1]);
         expOp.args[2] = subExpression(expOp.args[2]);
       } else {
         for (let i = 0; i < expOp.args.length; i++) {
-          expOp.args[i] = valueExpression(subExpression(expOp.args[i]));
+          expOp.args[i] = valueExpression(expOp.args[i]);
         }
       }
       return expOp;
@@ -663,25 +670,42 @@ export class Generator {
       return lookupVar(exp);
 
     case 'ref':
+      // Convert ref[prop] => ref.child(prop)
+      function snapshotChild(ref: ast.ExpReference): ast.Exp {
+        return ast.cast(ast.call(ast.reference(ref.base, ast.string('child')),
+                                 [ref.accessor]),
+                        'Snapshot');
+      }
+
       let expRef = <ast.ExpReference> ast.copyExp(exp);
       expRef.base = subExpression(expRef.base);
-      if (typeof expRef.accessor !== 'string') {
-        expRef.accessor = valueExpression(subExpression(<ast.Exp> expRef.accessor));
+
+      // var[ref] => var[ref]
+      if (expRef.base.valueType !== 'Snapshot') {
+        expRef.accessor = subExpression(expRef.accessor);
+        return expRef;
       }
-      // snapshot references use child() wrapper - EXCEPT for reserved methods
-      // TODO: Only do this if we are dereferencing a function call OR if
-      // there is no shadowed property in the object.
-      if (expRef.base.valueType === 'Snapshot') {
-        if (expRef.accessor === 'parent') {
-          return ast.snapshotParent(expRef.base);
-        } else if (!util.arrayIncludes(snapshotMethods, expRef.accessor)) {
-          return ast.snapshotChild(expRef.base, expRef.accessor);
+
+      let propName = ast.getPropName(expRef);
+
+      // snapshot.prop (static string property)
+      if (propName !== '') {
+        // snapshot.valueMethod => snapshot.val().valueMethod
+        if (util.arrayIncludes(valueMethods, propName)) {
+          expRef.base = valueExpression(expRef.base);
+          return expRef;
+        }
+
+        // snapshot.ssMethod => snapshot.ssMethod
+        if (util.arrayIncludes(snapshotMethods, propName)) {
+          return expRef;
         }
       }
-      if (util.arrayIncludes(valueMethods, expRef.accessor)) {
-        expRef.base = valueExpression(expRef.base);
-      }
-      return expRef;
+
+      // snapshot[exp] => snapshot.child(exp) or
+      // snapshot[ref] => snapshot.child(ref.val())
+      expRef.accessor = valueExpression(expRef.accessor);
+      return snapshotChild(expRef);
 
     case 'call':
       let expCall = <ast.ExpCall> ast.copyExp(exp);
@@ -723,11 +747,8 @@ export class Generator {
 
       // Can't expand function - but just expand the arguments.
       if (!this.allowUndefinedFunctions) {
-        // TODO: Simplify type of accessor (not string | Exp).
-        var funcName = expCall.ref.type === 'ref'
-          ? <string> (<ast.ExpReference> expCall.ref).accessor
-          : (<ast.ExpVariable> expCall.ref).name;
-        if (!(funcName in this.symbols.schema['String'].methods ||
+        var funcName = ast.getMethodName(expCall);
+        if (funcName !== '' && !(funcName in this.symbols.schema['String'].methods ||
               util.arrayIncludes(snapshotMethods, funcName))) {
           this.fatal(errors.undefinedFunction + decodeExpression(expCall.ref));
         }
@@ -736,9 +757,11 @@ export class Generator {
       for (let i = 0; i < expCall.args.length; i++) {
         expCall.args[i] = subExpression(expCall.args[i]);
       }
-      // TODO: Get rid of this hack (for data.parent().val())
-      if (expCall.ref.valueType === 'Snapshot') {
-        expCall.valueType = 'Snapshot';
+
+      // Hack for snapshot.parent().val()
+      // Todo - build table-based method signatures.
+      if (ast.getMethodName(expCall) === 'parent') {
+        expCall = <ast.ExpCall> ast.cast(expCall, 'Snapshot');
       }
 
       return expCall;
@@ -761,8 +784,7 @@ export class Generator {
 
   // Builtin function - current value of 'this'
   getThis(args: ast.Exp[], params: { [name: string]: ast.Exp }): ast.Exp {
-    var result = ast.snapshotVariable(this.thisIs);
-    return result;
+    return ast.snapshotVariable(this.thisIs);
   }
 
   // Builtin function - convert string to RegExp
@@ -786,13 +808,34 @@ export class Generator {
     return key[0] === '$' ? ast.literal(key) : ast.string(key);
   }
 
+  // Builtin function - return the reference to the root
+  // When in read mode - use 'root'
+  // When in write/validate - use path to root via newData.parent()...
+  getRootReference(path: string[], args: ast.Exp[], params: { [name: string]: ast.Exp }) {
+    if (args.length !== 0) {
+      throw new Error(errors.application + "@root arguments.");
+    }
+
+    // 'data' case
+    if (this.thisIs === 'data') {
+      return ast.snapshotVariable('root');
+    }
+
+    // 'newData' case - traverse to root via parent()'s.
+    let result: ast.Exp = ast.snapshotVariable('newData');
+    for (let i = 0; i < path.length; i++) {
+      result = ast.snapshotParent(result);
+    }
+    return result;
+  }
+
   // Lookup globally defined function.
   lookupFunction(ref: ast.ExpVariable | ast.ExpReference): {
     self?: ast.Exp,
     fn: ast.Method,
     methodName: string
   } {
-    // Global function.
+    // Function call.
     if (ref.type === 'var') {
       let refVar = <ast.ExpVariable> ref;
       var fn = this.symbols.functions[refVar.name];
@@ -806,10 +849,12 @@ export class Generator {
     if (ref.type === 'ref') {
       let refRef = <ast.ExpReference> ref;
       // TODO: Require static type validation before calling String methods.
-      if ((<ast.ExpOp> refRef.base).op !== 'value' && <string> refRef.accessor in this.symbols.schema['String'].methods) {
+      if ((<ast.ExpOp> refRef.base).op !== 'value' &&
+          <string> (<ast.ExpValue> refRef.accessor).value in this.symbols.schema['String'].methods) {
+        let methodName = <string> (<ast.ExpValue> refRef.accessor).value;
         return { self: refRef.base,
-                 fn: this.symbols.schema['String'].methods[<string> refRef.accessor],
-                 methodName: 'String.' + <string> refRef.accessor
+                 fn: this.symbols.schema['String'].methods[methodName],
+                 methodName: 'String.' + methodName
                };
       }
     }
@@ -864,11 +909,11 @@ export function decodeExpression(exp: ast.Exp, outerPrecedence?: number): string
 
   case 'ref':
     let expRef = <ast.ExpReference> exp;
-    if (typeof expRef.accessor === 'string') {
-      result = decodeExpression(expRef.base) + '.' + expRef.accessor;
+    if (ast.isIdentifierStringExp(expRef.accessor)) {
+      result = decodeExpression(expRef.base) + '.' + (<ast.ExpValue> expRef.accessor).value;
     } else {
       result = decodeExpression(expRef.base, innerPrecedence) +
-        '[' + decodeExpression(<ast.Exp> expRef.accessor) + ']';
+        '[' + decodeExpression(expRef.accessor) + ']';
     }
     break;
 
@@ -934,8 +979,12 @@ function precedenceOf(exp: ast.Exp): number {
   switch (exp.type) {
   case 'op':
     return JS_OPS[(<ast.ExpOp> exp).op].p;
+
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+  // lists call as 17 and ref as 18 - but how could they be anything other than left to right?
+  // http://www.scriptingmaster.com/javascript/operator-precedence.asp - agrees.
   case 'call':
-    return 17;
+    return 18;
   case 'ref':
     return 18;
   default:
@@ -975,17 +1024,17 @@ export function extendValidator(target: Validator, src: Validator): Validator {
 // Call fn(value, prop) on all '.props' and assiging the value back into the
 // validator.
 export function mapValidator(v: Validator,
-                             fn: (val: ValidatorValue, prop: string, parentProp: string) => ValidatorValue,
+                             fn: (val: ValidatorValue, prop: string, path: string[]) => ValidatorValue,
                              path?: string[]) {
   if (!path) {
-    path = [''];
+    path = [];
   }
   for (var prop in v) {
     if (!v.hasOwnProperty(prop)) {
       continue;
     }
     if (prop[0] === '.') {
-      v[prop] = fn(v[prop], prop, path[path.length - 1]);
+      v[prop] = fn(v[prop], prop, path);
       if (v[prop] === undefined) {
         delete v[prop];
       }
@@ -1011,7 +1060,7 @@ function collapseHasChildren(exps: ast.Exp[]): ast.Exp[] {
     }
 
     let expCall = <ast.ExpCall> exp;
-    if (expCall.ref.type !== 'ref' || (<ast.ExpReference> expCall.ref).accessor !== 'hasChildren') {
+    if (ast.getMethodName(expCall) !== 'hasChildren') {
       result.push(exp);
       return;
     }
@@ -1044,8 +1093,9 @@ function collapseHasChildren(exps: ast.Exp[]): ast.Exp[] {
   return result;
 }
 
-// Generate this.hasChildren([props, ...])
+// Generate this.hasChildren([props, ...]) or this.hasChildren()
 function hasChildrenExp(props: string[]): ast.Exp {
   var args = props.length === 0 ? [] : [ast.array(props.map(ast.string))];
-  return ast.call(ast.reference(ast.cast(ast.variable('this'), 'Any'), 'hasChildren'), args);
+  return ast.call(ast.reference(ast.cast(ast.variable('this'), 'Any'), ast.string('hasChildren')),
+                  args);
 }

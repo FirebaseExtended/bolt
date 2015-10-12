@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "secret": {
+      "$uid": {
+        ".validate": "newData.parent().parent().child('users').child($uid).val() != null && newData.isString()",
+        ".read": "auth != null && auth.uid == $uid"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".validate": "newData.hasChildren(['name']) && newData.parent().parent().child('secret').child($uid).val() != null",
+        "name": {
+          ".validate": "newData.isString()"
+        },
+        "$other": {
+          ".validate": "false"
+        },
+        ".read": "true"
+      }
+    }
+  }
+}
