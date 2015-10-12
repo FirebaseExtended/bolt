@@ -107,7 +107,7 @@ type ProductID extends String {
 }
 ```
 
-As a shortcut for the common Map<String, Type>, "array-like" notation can be used:
+As a shortcut for the common `Map<String, Type>`, "array-like" notation can be used:
 
 ```javascript
 type Model {
