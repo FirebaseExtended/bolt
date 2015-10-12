@@ -4,5 +4,6 @@
 set -e
 
 cd $PROJ_DIR
-gulp lint build
-mocha lib/test --ui tdd "$@"
+if gulp lint build; then
+    mocha lib/test --ui tdd "$@"
+fi

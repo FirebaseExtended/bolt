@@ -3,5 +3,5 @@
 
 set -e
 
-cd $PROJ_DIR/test/samples
+cd $PROJ_DIR/samples
 diff <(firebase-bolt < $1.bolt | flatten-json.py) <(flatten-json.py < $1.json)

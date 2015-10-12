@@ -1,0 +1,28 @@
+path / is App {
+  read() = true;
+}
+
+type App {
+  users: Map<PushID, User>,
+  products: Map<ProductID, Product>,
+}
+
+type User {
+  name: String,
+  age: Number
+}
+
+type Product {
+  validate() = key() == this.id;
+
+  id: ProductID,
+  cost: Number
+}
+
+type ProductID extends String {
+  validate() = this.length <= 20;
+}
+
+type PushID extends String {
+  validate() = this.length == 20;
+}

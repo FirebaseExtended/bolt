@@ -165,6 +165,13 @@ export function extendArray(target, src) {
   return target;
 }
 
+export function or(target, src) {
+  if (target === undefined) {
+    return false;
+  }
+  return target || src;
+}
+
 export function ensureObjectPath(obj, parts) {
   for (var i = 0; i < parts.length; i++) {
     var name = parts[i];

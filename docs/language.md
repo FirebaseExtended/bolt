@@ -1,4 +1,4 @@
-# Firebase Bold Security and Modeling Language
+# Firebase Bolt Security and Modeling Language
 
 This language is meant to be used as a convenient front-end to the existing
 Firebase JSON-based rules language.
@@ -14,25 +14,29 @@ A bolt file consists of 3 types of statements:
 
 A bolt file can also contain JavaScript-style comments:
 
-    // Single line comment
+```javascript
+// Single line comment
 
-    /* Multi
-       line
-       comment
-    */
+/* Multi
+   line
+   comment
+*/
+```
 
 # Types
 
 A (user-defined) type statement describes a value that can be stored in the Firebase database.
 
-    type MyType [extends BaseType] {
-      property1: Type,
-      property2: Type,
-      ...
+```javascript
+type MyType [extends BaseType] {
+  property1: Type,
+  property2: Type,
+  ...
 
-      validate() = <validation expression>;
-      }
-    }
+  validate() = <validation expression>;
+  }
+}
+```
 
 If the `validate` expression is `false`, then the value is deemed to be invalid and cannot
 be saved to the database (an error will be returned to the Firebase client).
@@ -48,41 +52,106 @@ a `validate` expression.
 
 Built-in base types are also similar to JavaScript types:
 
-    String  - Stings
-    Number  - Integer or floating point
-    Boolean - Values true or false
-    Object  - A structured object containing named properties.
-    Any     - Every non-null value is of type Any.
-    Null    - Value null (same as absence of a value, or deleted)
+    String            - Stings
+    Number            - Integer or floating point
+    Boolean           - Values true or false
+    Object            - A structured object containing named properties.
+    Any               - Every non-null value is of type Any.
+    Null              - Value null (same as absence of a value, or deleted)
+    Map<Key, Value>   - A generic type - maps string valued keys to corresponding
+                        values (similar to an Object type).
+    Type[]            - An "array-like" type (actually same as Map<String, Type>
+                        where Type can be any other built-in or user-defined type.
 
-You can _extend_ any of the built-in scalar types by adding a validation expression, e.g.:
+Any of the built-in scalar types can be _extended_ by adding a validation expression, e.g.:
 
-    type ShortString extends String {
-      validate() = this.length < 32;
-    }
+```javascript
+type ShortString extends String {
+  validate() = this.length < 32;
+}
 
-    type Percentage extends Number {
-      validate() = this >=0 && this <= 100;
-    }
+type Percentage extends Number {
+  validate() = this >=0 && this <= 100;
+}
+```
+
+Notes:
+
+- Object types are required to have at least one property when present.
+- Map types can be empty collections (they need not contain any child keys).
 
 ## Type Expressions
 
-Any place a Type can be used, it can be replaced with a Type expression.
+Any place a Type can be used, it can be replaced with a Type expression.  We support
+three types of type expressions:
+
+### Union Types
 
     Type1 | Type2    - Value can be either of two types.
     Type | Null      - An optional `Type` value (value can be deleted or missing).
+
+
+### Map Types (Collections)
+
+A Map type is a built-in Generic Type (see below).  It is used to specify collections
+within a model:
+
+```javascript
+type Model {
+  users: Map<String, User>,
+  products: Map<ProductID, Product>
+}
+
+type ProductID extends String {
+  validate() = this.length <= 20;
+}
+```
+
+As a shortcut for the common Map<String, Type>, "array-like" notation can be used:
+
+```javascript
+type Model {
+  users: User[],
+  products: Product[]
+}
+```
+
+### Generic Types
+
+A generic type is like a "type macro" - it is used to specify a type generically,
+but then make it specific to a particular use case:
+
+```javascript
+type Pair<X, Y> {
+  first: X,
+  second: Y
+}
+```
+
+Note that the types of the `first` and `second` properties uses the placeholder types,
+`X` and `Y`.  Using a generic type is much like a function call - except using `<...>` instead
+of `(...)`:
+
+```javascript
+type Model {
+  name: String,
+  prop: Pair<Number, String>;
+}
+```
 
 # Paths
 
 A path statement provides access and validation rules for data stored at a given path.
 
-    [path] /path/to/data [is Type] {
-      read() = <true-iff-reading-this-path-is-allowed>;
+```javascript
+path /path/to/data [is Type] {
+  read() = <true-iff-reading-this-path-is-allowed>;
 
-      write() = <true-iff-writing-this-path-is-allowed>;
+  write() = <true-iff-writing-this-path-is-allowed>;
 
-      validate() = <additional-validation-rules>;
-    }
+  validate() = <additional-validation-rules>;
+}
+```
 
 If a Type is not given, `Any` is assumed.
 
@@ -102,20 +171,22 @@ and especially perform constraints that are path-dependent.  Path
 statements can include wildcard parts whose values can then be used within
 an expression as a variable parameter:
 
-    path /users/$uid is User {
-      // Anyone can read a User's information.
-      read() = true;
+```javascript
+path /users/$uid is User {
+  // Anyone can read a User's information.
+  read() = true;
 
-      // Only an authenticated user can write their information.
-      write() = auth != null && auth.uid == $uid;
-    }
+  // Only an authenticated user can write their information.
+  write() = auth != null && auth.uid == $uid;
+}
+```
 
 If a path needs no expressions, the following abbreviated form (without a body)
 can be used:
 
     path /users/$uid is User;
 
-or
+and the `path` keyword can also be omitted.
 
     /users/$uid is User;
 
@@ -154,28 +225,52 @@ the `prior()` function:
     prior(this)         - Value of `this` before the write is completed.
     prior(this.prop)    - Value of a property before the write is completed.
 
-You can also use `prior()` to wrap any expressions (including function calls) that
+`prior()` can be used to wrap any expressions (including function calls) that
 use `this`.
+
+The parent key of the current location can be read using the key() function.
+
+    key()               - The (text) value of the inner-most parent property of the current location.
+
+This can be used to create a validation expression that relates the key used to store a value
+and one of its properties:
+
+```javascript
+path /products is Product[];
+
+type Product {
+  validate() = this.id == key();
+
+  id: String,
+  name: String
+}
+
+```
+
 
 # Functions and Methods
 
 Functions must be simple return expressions with zero or more parameters.  All of the following
 examples are identical and can be used interchangably.
 
-    function myFunction(arg1, arg2) {
-      return arg1 == arg2.value;
-    }
+```javascript
+function isUser(uid) {
+  return auth != null && auth.uid == uid;
+}
 
-    function myFunction(arg1, arg2) { arg1 == arg2.value }
+function isUser(uid) { auth != null && auth.uid == uid }
 
-    myFunction(arg1, arg2) = arg1 == arg2.value;
+isUser(uid) = auth != null && auth.uid == uid;
+```
 
 Similarly, methods in path and type statements can use the abbreviated functional form (all
 these are equivalent):
 
-    write() { return this.user == auth.uid; }
-    write() { this.user == auth.uid }
-    write() = this.user == auth.uid;
+```javascript
+write() { return this.user == auth.uid; }
+write() { this.user == auth.uid }
+write() = this.user == auth.uid;
+```
 
 # Expressions
 
@@ -188,9 +283,9 @@ Rule expressions are a subset of JavaScript expressions, and include:
 
 These global variables are available in expressions:
 
-    root - The root of your Firebase database.
-    auth - The current auth state (if auth != null the user is authenticated auth.uid
-           is their user identifier (a unique string value).
+    root - The root location of a Firebase database.
+    auth - The current auth state (if auth != null the user is authenticated, and auth.uid
+           is their user identifier string).
     now -  The (Unix) timestamp of the current time (a Number).
 
 # Appendix A. Firebase Expressions and their Bolt equivalents.
