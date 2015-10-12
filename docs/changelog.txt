@@ -1,0 +1,4 @@
+feature - Support for multi-location updates.  Bolt will now generate newData.parent()... relative references when using `root` in a write or validate rule.
+feature - Collections (Map and Type[]) and Generic Types now supported.
+feature - New key() global function returns the inner-most key (parent location name).
+changed - Better language documentation.
