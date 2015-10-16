@@ -24,22 +24,17 @@ import Promise = require('promise');
 import chai = require('chai');
 var assert = chai.assert;
 import rest = require('./firebase-rest');
+import util = require('./util');
+import fileIO = require('./file-io');
 
 // Browserify bug: https://github.com/substack/node-browserify/issues/1150
 interface Window { bolt: any; }
 declare var window: Window;
 var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
 
-var util = require('./util');
-var fileIO = require('./file-io');
-
 var MAX_TEST_MS = 30000;
 
-module.exports = {
-  rulesSuite: rulesSuite
-};
-
-function rulesSuite(suiteName, fnSuite) {
+export function rulesSuite(suiteName, fnSuite) {
   new RulesSuite(suiteName, fnSuite).run();
 }
 

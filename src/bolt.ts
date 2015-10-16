@@ -16,29 +16,23 @@
 /// <reference path="typings/node.d.ts" />
 
 var parser = require('./rules-parser');
-var generator = require('./rules-generator');
-var simulator = require('./simulator');
-var ast = require('./ast');
-var util = require('./util');
+import generator = require('./rules-generator');
+import simulator = require('./simulator');
+import astReal = require('./ast');
+import util = require('./util');
 
-// WARNING: Be careful around circular dependencies (don't replace
-// module.exports - just extend it.
-util.extend(module.exports, {
-  parse: util.maybePromise(parser.parse),
-  generate: util.maybePromise(generate),
+export var FILE_EXTENSION = 'bolt';
+export var parse = util.maybePromise(parser.parse);
+export var generate = util.maybePromise(generateSync);
+export var Generator = generator.Generator;
+export var decodeExpression = generator.decodeExpression;
+export var ast = astReal;
+export var rulesSuite = simulator.rulesSuite;
 
-  Generator: generator.Generator,
-  decodeExpression: generator.decodeExpression,
-  ast: ast,
-
-  rulesSuite: simulator.rulesSuite,
-
-  FILE_EXTENSION: 'bolt'
-});
 
 // Usage:
 //   json = bolt.generate(bolt-text)
-function generate(symbols) {
+function generateSync(symbols) {
   if (typeof symbols === 'string') {
     symbols = parser.parse(symbols);
   }
