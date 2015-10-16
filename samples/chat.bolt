@@ -30,15 +30,23 @@ type Post {
   write() = createOnly(this) && isValidMember(this.parent().parent());
 
   from: UserID,
-  message: String,
+  message: MessageString,
+}
+
+type MessageString extends String {
+  validate() = this.length > 0 && this.length <= 140;
 }
 
 type Member {
   // Anyone can add themselves to a Room with their own nickname.
   write() = createOnly(this);
 
-  nickname: String,
+  nickname: NicknameString,
   isBanned: Boolean,
+}
+
+type NicknameString {
+  validate() = this.length > 0 && this.length <= 16;
 }
 
 type Timestamped<T> extends T {

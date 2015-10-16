@@ -14,7 +14,7 @@
           "$key2": {
             ".validate": "newData.hasChildren(['nickname', 'isBanned']) && auth != null && auth.uid == auth.uid",
             "nickname": {
-              ".validate": "newData.isString()"
+              ".validate": "newData.val().length > 0 && newData.val().length <= 16"
             },
             "isBanned": {
               ".validate": "newData.isBoolean()"
@@ -32,7 +32,7 @@
               ".validate": "newData.isString() && (auth != null && auth.uid == auth.uid)"
             },
             "message": {
-              ".validate": "newData.isString()"
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140"
             },
             "$other": {
               ".validate": "false"
