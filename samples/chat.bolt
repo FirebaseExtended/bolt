@@ -1,0 +1,63 @@
+/*
+ * Chat room application model.
+ */
+path / is App;
+
+type App {
+  rooms: Room[]
+}
+
+type Room {
+  // Only members can read the contents of a room.
+  read() = isValidMember(this);
+
+  // The creator of a room can delete (or create) any part of a room
+  // including members and posts.
+  write() = createOnly(this) || isUser(this.creator);
+
+  name: String,
+  creator: UserID,
+  members: Map<UserID, Member>,
+  // posts: Timestamped<Post>[],
+  posts: Map<PushID, Timestamped<Post>>,
+}
+
+isValidMember(room) = room.members[currentUser()] != null &&
+  !room.members[currentUser()].isBanned;
+
+type Post {
+  // Anyone member of a room can create a post (but cannot delete it).
+  write() = createOnly(this) && isValidMember(this.parent().parent());
+
+  from: UserID,
+  message: String,
+}
+
+type Member {
+  // Anyone can add themselves to a Room with their own nickname.
+  write() = createOnly(this);
+
+  nickname: String,
+  isBanned: Boolean,
+}
+
+type Timestamped<T> extends T {
+  timestamp: Timestamp,
+}
+
+type Timestamp extends Number {
+  validate() = this == now;
+}
+
+type PushID extends String {
+  validate() = this.length == 20;
+}
+
+type UserID extends String {
+  // Only a user can create content with thier userid.
+  validate() = isUser(this);
+}
+
+isUser(uid) = auth != null && auth.uid == currentUser();
+currentUser() = auth.uid;
+createOnly(location) = prior(location) == null;

@@ -2,7 +2,7 @@
   "rules": {
     "secret": {
       "$uid": {
-        ".validate": "newData.parent().parent().child('users').child($uid).val() != null && newData.isString()",
+        ".validate": "newData.isString() && newData.parent().parent().child('users').child($uid).val() != null",
         ".read": "auth != null && auth.uid == $uid"
       }
     },

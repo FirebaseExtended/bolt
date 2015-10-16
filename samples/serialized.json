@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "products": {
+      "$key1": {
+        ".validate": "newData.hasChildren(['name', 'cost', 'counter'])",
+        "name": {
+          ".validate": "newData.isString()"
+        },
+        "cost": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": "false"
+        },
+        "counter": {
+          ".validate": "newData.isNumber() && (data.val() == null && newData.val() == 1 || newData.val() == data.val() + 1)"
+        }
+      },
+      ".read": "true"
+    }
+  }
+}

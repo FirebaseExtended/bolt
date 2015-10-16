@@ -151,7 +151,8 @@ export class Generator {
 
     for (name in schema) {
       if (!util.arrayIncludes(builtinSchemaNames, name)) {
-        this.validateMethods(errors.badSchemaMethod, schema[name].methods, ['validate']);
+        this.validateMethods(errors.badSchemaMethod, schema[name].methods,
+                             ['validate', 'read', 'write', 'index']);
       }
     }
 
@@ -473,10 +474,13 @@ export class Generator {
                       <Validator> {'.validate': ast.boolean(false)});
     }
 
-    // User-defined validate() method
-    if (schema.methods['validate']) {
-      extendValidator(validator, <Validator> {'.validate': [schema.methods['validate'].body]});
-    }
+    ['validate', 'read', 'write'].forEach(function(method) {
+      if (schema.methods[method]) {
+        var methodValidator = <Validator> {};
+        methodValidator['.' + method] = [schema.methods[method].body];
+        extendValidator(validator, methodValidator);
+      }
+    });
 
     return validator;
   }
@@ -492,18 +496,11 @@ export class Generator {
     var location = <Validator> util.ensureObjectPath(this.rules, path.parts);
     var exp;
 
-    // Path validation function && Type Validation
-    if (path.methods['validate']) {
-      extendValidator(location, {'.validate': [path.methods['validate'].body]});
-    }
-
     extendValidator(location, this.ensureValidator(path.isType));
 
-    // Write .read and .write expressions
-    ['read', 'write'].forEach(function(method) {
+    ['validate', 'read', 'write'].forEach(function(method) {
       if (path.methods[method]) {
         var validator = <Validator> {};
-        // TODO: What if two paths overwrite the same location?
         validator['.' + method] = [path.methods[method].body];
         extendValidator(location, validator);
       }

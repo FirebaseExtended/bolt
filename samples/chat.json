@@ -1,0 +1,57 @@
+{
+  "rules": {
+    ".validate": "newData.hasChildren()",
+    "rooms": {
+      "$key1": {
+        ".validate": "newData.hasChildren(['name', 'creator'])",
+        "name": {
+          ".validate": "newData.isString()"
+        },
+        "creator": {
+          ".validate": "newData.isString() && (auth != null && auth.uid == auth.uid)"
+        },
+        "members": {
+          "$key2": {
+            ".validate": "newData.hasChildren(['nickname', 'isBanned']) && auth != null && auth.uid == auth.uid",
+            "nickname": {
+              ".validate": "newData.isString()"
+            },
+            "isBanned": {
+              ".validate": "newData.isBoolean()"
+            },
+            "$other": {
+              ".validate": "false"
+            },
+            ".write": "data.val() == null"
+          }
+        },
+        "posts": {
+          "$key3": {
+            ".validate": "newData.hasChildren(['from', 'message', 'timestamp']) && $key3.length == 20",
+            "from": {
+              ".validate": "newData.isString() && (auth != null && auth.uid == auth.uid)"
+            },
+            "message": {
+              ".validate": "newData.isString()"
+            },
+            "$other": {
+              ".validate": "false"
+            },
+            ".write": "data.val() == null && (newData.parent().parent().child('members').child(auth.uid).val() != null && !(newData.parent().parent().child('members').child(auth.uid).child('isBanned').val() == true))",
+            "timestamp": {
+              ".validate": "newData.isNumber() && newData.val() == now"
+            }
+          }
+        },
+        "$other": {
+          ".validate": "false"
+        },
+        ".read": "data.child('members').child(auth.uid).val() != null && !(data.child('members').child(auth.uid).child('isBanned').val() == true)",
+        ".write": "data.val() == null || auth != null && auth.uid == auth.uid"
+      }
+    },
+    "$other": {
+      ".validate": "false"
+    }
+  }
+}
