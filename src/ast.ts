@@ -499,3 +499,152 @@ export class Symbols {
     this.log = loggers;
   }
 }
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+interface OpPriority {
+  rep?: string;
+  p: number;
+}
+
+var JS_OPS: { [op: string]: OpPriority; } = {
+  'value': { rep: "", p: 16 },
+
+  'neg': { rep: "-", p: 15},
+  '!': { p: 15},
+  '*': { p: 14},
+  '/': { p: 14},
+  '%': { p: 14},
+  '+': { p: 13 },
+  '-': { p: 13 },
+  '<': { p: 11 },
+  '<=': { p: 11 },
+  '>': { p: 11 },
+  '>=': { p: 11 },
+  'in': { p: 11 },
+  '==': { p: 10 },
+  "!=": { p: 10 },
+  '&&': { p: 6 },
+  '||': { p: 5 },
+  '?:': { p: 4 },
+  ',': { p: 0},
+};
+
+// From an AST, decode as an expression (string).
+export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
+  if (outerPrecedence === undefined) {
+    outerPrecedence = 0;
+  }
+  var innerPrecedence = precedenceOf(exp);
+  var result;
+  switch (exp.type) {
+  case 'Boolean':
+  case 'Number':
+    result = JSON.stringify((<ExpValue> exp).value);
+    break;
+
+  case 'String':
+    result = util.quoteString((<ExpValue> exp).value);
+    break;
+
+  // RegExp assumed to be in correct format.
+  case 'RegExp':
+    result = (<ExpValue> exp).value;
+    break;
+
+  case 'Array':
+    result = '[' + decodeArray((<ExpValue> exp).value) + ']';
+    break;
+
+  case 'Null':
+    result = 'null';
+    break;
+
+  case 'var':
+  case 'literal':
+    result = (<ExpVariable> exp).name;
+    break;
+
+  case 'ref':
+    let expRef = <ExpReference> exp;
+    if (isIdentifierStringExp(expRef.accessor)) {
+      result = decodeExpression(expRef.base) + '.' + (<ExpValue> expRef.accessor).value;
+    } else {
+      result = decodeExpression(expRef.base, innerPrecedence) +
+        '[' + decodeExpression(expRef.accessor) + ']';
+    }
+    break;
+
+  case 'call':
+    let expCall = <ExpCall> exp;
+    result = decodeExpression(expCall.ref) + '(' + decodeArray(expCall.args) + ')';
+    break;
+
+  case 'builtin':
+    result = decodeExpression(exp);
+    break;
+
+  case 'op':
+    let expOp = <ExpOp> exp;
+    var rep = JS_OPS[expOp.op].rep === undefined ? expOp.op : JS_OPS[expOp.op].rep;
+    if (expOp.args.length === 1) {
+      result = rep + decodeExpression(expOp.args[0], innerPrecedence);
+    } else if (expOp.args.length === 2) {
+      result =
+        decodeExpression(expOp.args[0], innerPrecedence) +
+        ' ' + rep + ' ' +
+        // All ops are left associative - so nudge the innerPrecendence
+        // down on the right hand side to force () for right-associating
+        // operations.
+        decodeExpression(expOp.args[1], innerPrecedence + 1);
+    } else if (expOp.args.length === 3) {
+      result =
+        decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
+        decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
+        decodeExpression(expOp.args[2], innerPrecedence);
+    }
+    break;
+
+  case 'type':
+    result = (<ExpSimpleType> exp).name;
+    break;
+
+  case 'union':
+    result = (<ExpUnionType> exp).types.map(decodeExpression).join(' | ');
+    break;
+
+  case 'generic':
+    let genericType = <ExpGenericType> exp;
+    return genericType.name + '<' + decodeArray(genericType.params) + '>';
+
+  default:
+    result = "***UNKNOWN TYPE*** (" + exp.type + ")";
+    break;
+  }
+
+  if (innerPrecedence < outerPrecedence) {
+    result = '(' + result + ')';
+  }
+
+  return result;
+}
+
+function decodeArray(args: Exp[]): string {
+  return args.map(decodeExpression).join(', ');
+}
+
+function precedenceOf(exp: Exp): number {
+  switch (exp.type) {
+  case 'op':
+    return JS_OPS[(<ExpOp> exp).op].p;
+
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+  // lists call as 17 and ref as 18 - but how could they be anything other than left to right?
+  // http://www.scriptingmaster.com/javascript/operator-precedence.asp - agrees.
+  case 'call':
+    return 18;
+  case 'ref':
+    return 18;
+  default:
+    return 19;
+  }
+}

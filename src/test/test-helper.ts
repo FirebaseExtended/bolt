@@ -16,7 +16,7 @@
 /// <reference path="../typings/node.d.ts" />
 
 import util = require('../util');
-import gen = require('../rules-generator');
+import ast = require('../ast');
 
 /*
  * Run data drive test with tests is one of these formats:
@@ -81,7 +81,7 @@ export function expFormat(x) {
   }
   if (util.isType(x, 'object')) {
     if ('type' in x) {
-      return gen.decodeExpression(x);
+      return ast.decodeExpression(x);
     }
     var result = '{';
     var sep = '';
