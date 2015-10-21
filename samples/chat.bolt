@@ -50,10 +50,15 @@ type NicknameString {
 }
 
 type Timestamped<T> extends T {
-  timestamp: Timestamp,
+  created: Created,
+  modified: Modified,
 }
 
-type Timestamp extends Number {
+type Created extends Number {
+  validate() = this == (prior(this) == null ? now : prior(this));
+}
+
+type Modified extends Number {
   validate() = this == now;
 }
 

@@ -27,7 +27,7 @@
         },
         "posts": {
           "$key3": {
-            ".validate": "newData.hasChildren(['from', 'message', 'timestamp']) && $key3.length == 20",
+            ".validate": "newData.hasChildren(['from', 'message', 'created', 'modified']) && $key3.length == 20",
             "from": {
               ".validate": "newData.isString() && (auth != null && auth.uid == auth.uid)"
             },
@@ -38,7 +38,10 @@
               ".validate": "false"
             },
             ".write": "data.val() == null && (newData.parent().parent().child('members').child(auth.uid).val() != null && !(newData.parent().parent().child('members').child(auth.uid).child('isBanned').val() == true))",
-            "timestamp": {
+            "created": {
+              ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data)"
+            },
+            "modified": {
               ".validate": "newData.isNumber() && newData.val() == now"
             }
           }
