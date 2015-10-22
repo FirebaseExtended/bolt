@@ -8,11 +8,11 @@
           ".validate": "newData.isString()"
         },
         "creator": {
-          ".validate": "newData.isString() && (auth != null && auth.uid == auth.uid)"
+          ".validate": "newData.isString() && (auth != null && newData.val() == auth.uid)"
         },
         "members": {
           "$key2": {
-            ".validate": "newData.hasChildren(['nickname', 'isBanned']) && auth != null && auth.uid == auth.uid",
+            ".validate": "newData.hasChildren(['nickname', 'isBanned']) && auth != null && $key2 == auth.uid",
             "nickname": {
               ".validate": "newData.val().length > 0 && newData.val().length <= 16"
             },
@@ -29,7 +29,7 @@
           "$key3": {
             ".validate": "newData.hasChildren(['from', 'message', 'created', 'modified']) && $key3.length == 20",
             "from": {
-              ".validate": "newData.isString() && (auth != null && auth.uid == auth.uid)"
+              ".validate": "newData.isString() && (auth != null && newData.val() == auth.uid)"
             },
             "message": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140"
@@ -50,7 +50,7 @@
           ".validate": "false"
         },
         ".read": "data.child('members').child(auth.uid).val() != null && !(data.child('members').child(auth.uid).child('isBanned').val() == true)",
-        ".write": "data.val() == null || auth != null && auth.uid == auth.uid"
+        ".write": "data.val() == null || auth != null && newData.child('creator').val() == auth.uid"
       }
     },
     "$other": {

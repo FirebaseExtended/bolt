@@ -71,7 +71,7 @@ type UserID extends String {
   validate() = isUser(this);
 }
 
-isUser(uid) = auth != null && auth.uid == currentUser();
+isUser(uid) = auth != null && uid == currentUser();
 currentUser() = auth.uid;
 
 initial(value, init) = value == (isInitial(value) ? init : prior(value));
