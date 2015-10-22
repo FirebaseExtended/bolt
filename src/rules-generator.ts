@@ -654,8 +654,8 @@ export class Generator {
         }
       } else if (expOp.op === '?:') {
         expOp.args[0] = booleanExpression(expOp.args[0]);
-        expOp.args[1] = subExpression(expOp.args[1]);
-        expOp.args[2] = subExpression(expOp.args[2]);
+        expOp.args[1] = valueExpression(expOp.args[1]);
+        expOp.args[2] = valueExpression(expOp.args[2]);
       } else {
         for (let i = 0; i < expOp.args.length; i++) {
           expOp.args[i] = valueExpression(expOp.args[i]);

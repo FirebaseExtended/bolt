@@ -39,7 +39,7 @@
             },
             ".write": "data.val() == null && (newData.parent().parent().child('members').child(auth.uid).val() != null && !(newData.parent().parent().child('members').child(auth.uid).child('isBanned').val() == true))",
             "created": {
-              ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data)"
+              ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data.val())"
             },
             "modified": {
               ".validate": "newData.isNumber() && newData.val() == now"
