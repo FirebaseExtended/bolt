@@ -13,7 +13,7 @@ type Room {
 
   // The creator of a room can delete (or create) any part of a room
   // including members and posts.
-  write() = createOnly(this) || isUser(this.creator);
+  write() = isInitial(this) || isUser(this.creator);
 
   name: String,
   creator: UserID,
@@ -27,7 +27,7 @@ isValidMember(room) = room.members[currentUser()] != null &&
 
 type Post {
   // Anyone member of a room can create a post (but cannot delete it).
-  write() = createOnly(this) && isValidMember(this.parent().parent());
+  write() = isInitial(this) && isValidMember(this.parent().parent());
 
   from: UserID,
   message: MessageString,
@@ -39,7 +39,7 @@ type MessageString extends String {
 
 type Member {
   // Anyone can add themselves to a Room with their own nickname.
-  write() = createOnly(this);
+  write() = isInitial(this);
 
   nickname: NicknameString,
   isBanned: Boolean,
@@ -55,7 +55,7 @@ type Timestamped<T> extends T {
 }
 
 type Created extends Number {
-  validate() = this == (prior(this) == null ? now : prior(this));
+  validate() = initial(this, now);
 }
 
 type Modified extends Number {
@@ -73,4 +73,6 @@ type UserID extends String {
 
 isUser(uid) = auth != null && auth.uid == currentUser();
 currentUser() = auth.uid;
-createOnly(location) = prior(location) == null;
+
+initial(value, init) = value == (isInitial(value) ? init : prior(value));
+isInitial(value) = prior(value) == null;
