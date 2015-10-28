@@ -5,11 +5,13 @@
 [![NPM Downloads](http://img.shields.io/npm/dm/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 
 Bolt is an experimental security and rules compiler for Firebase.  It is currently
-in early alpha.  There are known bugs and incomplete features in the current
-implementation, so PLEASE DO NOT USE IN PRODUCTION applications.
+in beta.  The language definition is converging, yet not yet finalized.  We welcome
+experimentation, but ask that you hand-verify the resulting JSON output before
+using with production applications.
 
 Otherwise, we'd love to have feedback from early adopters.  You can email questions
-to firebase-talk@googlegroups.com using "Bolt" in the subject line.
+to firebase-talk@googlegroups.com using "Bolt" in the subject line, or post bugs
+on our [Issue Tracker](https://github.com/firebase/bolt/issues).
 
 # Language Definition
 
