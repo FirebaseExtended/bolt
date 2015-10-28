@@ -458,15 +458,20 @@ isInitial(value) = prior(value) == null;
 ## Anonymous Chat Example
 
 A complete chat example, without user authorization, written in Bolt (compare to [JSON
-Anonymous Chat Example](https://www.firebase.com/docs/security/guide/securing-data.html)).
+Anonymous Chat
+Example](https://www.firebase.com/docs/security/guide/securing-data.html#section-advanced-example)).
 
 ```javascript
 path /rooms_names is String[] {
   read() = true;
 }
 
-path /messages/$room_id is Message[] {
+path /messages/$room_id {
   read() = true;
+}
+
+path /messages/$room_id/$message_id is Message {
+  write() = prior(this) == null && this != null;
   validate() = prior(root.room_names[$room_id]) != null;
 }
 
@@ -500,9 +505,9 @@ type Modified extends Number {
     },
     "messages": {
       "$room_id": {
-        ".validate": "root.child('room_names').child($room_id).val() != null",
-        "$key2": {
-          ".validate": "newData.hasChildren(['name', 'message', 'timestamp'])",
+        ".read": "true",
+        "$message_id": {
+          ".validate": "newData.hasChildren(['name', 'message', 'timestamp']) && root.child('room_names').child($room_id).val() != null",
           "name": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 20 && !newData.val().contains('admin')"
           },
@@ -514,9 +519,9 @@ type Modified extends Number {
           },
           "$other": {
             ".validate": "false"
-          }
-        },
-        ".read": "true"
+          },
+          ".write": "data.val() == null && newData.val() != null"
+        }
       }
     }
   }
