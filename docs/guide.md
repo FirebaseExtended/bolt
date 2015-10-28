@@ -568,17 +568,8 @@ createOnly(value) = prior(value) == null && value != null;
 }
 ```
 
-## Controlling Access to Users' Own Data
+## Future Topics (TBD)
 
-_TBD_
-
-## Controlling Creation, Modification, and Deletion.
-
-Often, you want to allow users to create data, but not modify later.  Or to allow data
-to be created and deleted, but not modified.
-
-_TBD_
-
-## Don't Overwrite Data w/o Reading it First
-
-_TBD_
+- Controlling Access to Users' Own Data
+- Controlling Creation, Modification, and Deletion.
+- Don't Overwrite Data w/o Reading it First
