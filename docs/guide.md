@@ -455,24 +455,44 @@ isInitial(value) = prior(value) == null;
 }
 ```
 
-## Anonymous Chat Example
+## Authenticated Chat Example
 
-A complete chat example, without user authorization, written in Bolt (compare to [JSON
-Anonymous Chat
-Example](https://www.firebase.com/docs/security/guide/securing-data.html#section-advanced-example)).
+Compare to [JSON Authenticated Chat
+Rules](https://www.firebase.com/docs/security/guide/user-security.html#section-revisiting-advanced-example).
 
 ```javascript
+//
+// Room Names
+//
 path /rooms_names is String[] {
-  read() = true;
+  read() = isSignedIn();
 }
 
+getRoomName(id) = prior(root.room_names[id]);
+
+//
+// Room Members
+//
+path /members/$room_id {
+  read() = isRoomMember($room_id);
+}
+
+path /members/$room_id/$user_id is NameString {
+  write() = isUser($user_id);
+}
+
+isRoomMember(room_id) = isSignedIn() && prior(root.members[room_id][auth.uid]) != null;
+
+//
+// Messages
+//
 path /messages/$room_id {
-  read() = true;
+  read() = isRoomMember($room_id);
+  validate() = getRoomName($room_id) != null;
 }
 
 path /messages/$room_id/$message_id is Message {
-  write() = prior(this) == null && this != null;
-  validate() = prior(root.room_names[$room_id]) != null;
+  write() = createOnly(this) && isRoomMember($room_id);
 }
 
 type Message {
@@ -481,17 +501,27 @@ type Message {
   timestamp: Modified,
 }
 
-type NameString extends String {
-  validate() = this.length > 0 && this.length < 20 && !this.includes('admin');
-}
-
 type MessageString extends String {
   validate() = this.length > 0 && this.length < 50;
 }
 
+//
+// Helper Types
+//
 type Modified extends Number {
   validate() = this == now;
 }
+
+type NameString {
+  validate() = this.length > 0 && this.length < 20;
+}
+
+//
+// Helper Functions
+//
+isUser(uid) = isSignedIn() && auth.uid == uid;
+isSignedIn() = auth != null;
+createOnly(value) = prior(value) == null && value != null;
 ```
 
 ```JSON
@@ -501,15 +531,25 @@ type Modified extends Number {
       "$key1": {
         ".validate": "newData.isString()"
       },
-      ".read": "true"
+      ".read": "auth != null"
+    },
+    "members": {
+      "$room_id": {
+        ".read": "auth != null && root.child('members').child($room_id).child(auth.uid).val() != null",
+        "$user_id": {
+          ".validate": "newData.val().length > 0 && newData.val().length < 20",
+          ".write": "auth != null && auth.uid == $user_id"
+        }
+      }
     },
     "messages": {
       "$room_id": {
-        ".read": "true",
+        ".validate": "root.child('room_names').child($room_id).val() != null",
+        ".read": "auth != null && root.child('members').child($room_id).child(auth.uid).val() != null",
         "$message_id": {
-          ".validate": "newData.hasChildren(['name', 'message', 'timestamp']) && root.child('room_names').child($room_id).val() != null",
+          ".validate": "newData.hasChildren(['name', 'message', 'timestamp'])",
           "name": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 20 && !newData.val().contains('admin')"
+            ".validate": "newData.val().length > 0 && newData.val().length < 20"
           },
           "message": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 50"
@@ -520,7 +560,7 @@ type Modified extends Number {
           "$other": {
             ".validate": "false"
           },
-          ".write": "data.val() == null && newData.val() != null"
+          ".write": "data.val() == null && newData.val() != null && (auth != null && root.child('members').child($room_id).child(auth.uid).val() != null)"
         }
       }
     }
