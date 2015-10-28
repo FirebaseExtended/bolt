@@ -396,7 +396,7 @@ Note the special function `prior(ref)` - returns the previous value stored at a 
 
 ## Timestamped Generic (parameterized) Types
 
-Bolt allows types to be paramaterized - much like Java Generic types are defined.  An alternate way
+Bolt allows types to be parameterized - much like Java Generic types are defined.  An alternate way
 to define the Timestamp example above is:
 
 ```javascript
@@ -455,7 +455,75 @@ isInitial(value) = prior(value) == null;
 }
 ```
 
-## Controlling Access to User'S Own Data
+## Anonymous Chat Example
+
+A complete chat example, without user authorization, written in Bolt (compare to [JSON
+Anonymous Chat Example](https://www.firebase.com/docs/security/guide/securing-data.html)).
+
+```javascript
+path /rooms_names is String[] {
+  read() = true;
+}
+
+path /messages/$room_id is Message[] {
+  read() = true;
+  validate() = prior(root.room_names[$room_id]) != null;
+}
+
+type Message {
+  name: NameString,
+  message: MessageString,
+  timestamp: Modified,
+}
+
+type NameString extends String {
+  validate() = this.length > 0 && this.length < 20 && !this.includes('admin');
+}
+
+type MessageString extends String {
+  validate() = this.length > 0 && this.length < 50;
+}
+
+type Modified extends Number {
+  validate() = this == now;
+}
+```
+
+```JSON
+{
+  "rules": {
+    "rooms_names": {
+      "$key1": {
+        ".validate": "newData.isString()"
+      },
+      ".read": "true"
+    },
+    "messages": {
+      "$room_id": {
+        ".validate": "root.child('room_names').child($room_id).val() != null",
+        "$key2": {
+          ".validate": "newData.hasChildren(['name', 'message', 'timestamp'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 20 && !newData.val().contains('admin')"
+          },
+          "message": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 50"
+          },
+          "timestamp": {
+            ".validate": "newData.isNumber() && newData.val() == now"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        },
+        ".read": "true"
+      }
+    }
+  }
+}
+```
+
+## Controlling Access to Users' Own Data
 
 _TBD_
 
