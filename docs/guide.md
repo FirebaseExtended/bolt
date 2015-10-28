@@ -365,6 +365,9 @@ initial(value, init) = value == (isInitial(value) ? init : prior(value));
 isInitial(value) = prior(value) == null;
 ```
 
+Note the special function `prior(ref)` - returns the previous value stored at a given database location
+(only to be used in validate() and write() rules).
+
 ```JSON
 {
   "rules": {
@@ -451,9 +454,6 @@ isInitial(value) = prior(value) == null;
   }
 }
 ```
-
-Note the special function `prior(ref)` - returns the previous value stored at a given database location
-(only to be used in validate() and write() rules).
 
 ## Controlling Access to User'S Own Data
 
