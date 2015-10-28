@@ -1,20 +1,19 @@
 {
   "rules": {
-    ".validate": "newData.hasChildren()",
     "rooms": {
       "$key1": {
-        ".validate": "newData.hasChildren(['name', 'creator'])",
+        ".validate": "newData.hasChildren(['name', 'creator']) && $key1.length >= 1 && $key1.length <= 32",
         "name": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.val().length > 0 && newData.val().length <= 32"
         },
         "creator": {
           ".validate": "newData.isString() && (auth != null && newData.val() == auth.uid)"
         },
         "members": {
           "$key2": {
-            ".validate": "newData.hasChildren(['nickname', 'isBanned']) && auth != null && $key2 == auth.uid",
+            ".validate": "newData.hasChildren(['nickname', 'isBanned'])",
             "nickname": {
-              ".validate": "newData.val().length > 0 && newData.val().length <= 16"
+              ".validate": "newData.val().length > 0 && newData.val().length <= 32"
             },
             "isBanned": {
               ".validate": "newData.isBoolean()"
@@ -22,39 +21,36 @@
             "$other": {
               ".validate": "false"
             },
-            ".write": "data.val() == null"
-          }
-        },
-        "posts": {
-          "$key3": {
-            ".validate": "newData.hasChildren(['from', 'message', 'created', 'modified']) && $key3.length == 20",
-            "from": {
-              ".validate": "newData.isString() && (auth != null && newData.val() == auth.uid)"
-            },
-            "message": {
-              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140"
-            },
-            "$other": {
-              ".validate": "false"
-            },
-            ".write": "data.val() == null && (newData.parent().parent().child('members').child(auth.uid).val() != null && !(newData.parent().parent().child('members').child(auth.uid).child('isBanned').val() == true))",
-            "created": {
-              ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data.val())"
-            },
-            "modified": {
-              ".validate": "newData.isNumber() && newData.val() == now"
-            }
+            ".write": "data.val() == null && (auth != null && $key2 == auth.uid)"
           }
         },
         "$other": {
           ".validate": "false"
         },
-        ".read": "data.child('members').child(auth.uid).val() != null && !(data.child('members').child(auth.uid).child('isBanned').val() == true)",
+        ".read": "data.child('members').child(auth.uid).val() != null && !(data.child('members').child(auth.uid).child('isBanned').val() == true) || auth != null && data.child('creator').val() == auth.uid",
         ".write": "data.val() == null || auth != null && newData.child('creator').val() == auth.uid"
       }
     },
-    "$other": {
-      ".validate": "false"
+    "posts": {
+      "$roomid": {
+        ".validate": "root.child('rooms').child($roomid).val() != null",
+        "$postid": {
+          ".validate": "newData.hasChildren(['from', 'message', 'created'])",
+          "from": {
+            ".validate": "newData.isString() && (auth != null && newData.val() == auth.uid)"
+          },
+          "message": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140"
+          },
+          "$other": {
+            ".validate": "false"
+          },
+          ".write": "data.val() == null && (root.child('rooms').child($roomid).child('members').child(auth.uid).val() != null && !(root.child('rooms').child($roomid).child('members').child(auth.uid).child('isBanned').val() == true))",
+          "created": {
+            ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data.val())"
+          }
+        }
+      }
     }
   }
 }

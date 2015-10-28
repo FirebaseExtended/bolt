@@ -1,33 +1,32 @@
 /*
  * Chat room application model.
  */
-path / is App;
-
-type App {
-  rooms: Room[]
+path /rooms is Map<RoomID, RoomInfo>;
+path /posts/$roomid {
+  validate() = getRoomInfo($roomid) != null;
 }
 
-type Room {
-  // Only members can read the contents of a room.
-  read() = isValidMember(this);
+path /posts/$roomid/$postid is Timestamped<Post> {
+  write() = isMember(getRoomInfo($roomid));
+}
 
-  // The creator of a room can delete (or create) any part of a room
-  // including members and posts.
+type RoomInfo {
+  read() = isMember(this) || isUser(this.creator);
   write() = isInitial(this) || isUser(this.creator);
 
-  name: String,
+  name: NameString,
   creator: UserID,
-  members: Map<UserID, Member>,
-  // posts: Timestamped<Post>[],
-  posts: Map<PushID, Timestamped<Post>>,
+  members: Member[],
 }
 
-isValidMember(room) = room.members[currentUser()] != null &&
-  !room.members[currentUser()].isBanned;
+getRoomInfo(id) = prior(root).rooms[id];
+
+isMember(roomInfo) = roomInfo.members[currentUser()] != null &&
+  !roomInfo.members[currentUser()].isBanned;
 
 type Post {
-  // Anyone member of a room can create a post (but cannot delete it).
-  write() = isInitial(this) && isValidMember(this.parent().parent());
+  // Allow create (but not modify/delete).
+  write() = isInitial(this);
 
   from: UserID,
   message: MessageString,
@@ -39,19 +38,19 @@ type MessageString extends String {
 
 type Member {
   // Anyone can add themselves to a Room with their own nickname.
-  write() = isInitial(this);
+  write() = isInitial(this) && isUser(key());
 
-  nickname: NicknameString,
+  nickname: NameString,
   isBanned: Boolean,
 }
 
-type NicknameString {
-  validate() = this.length > 0 && this.length <= 16;
+type NameString {
+  validate() = this.length > 0 && this.length <= 32;
 }
 
 type Timestamped<T> extends T {
   created: Created,
-  modified: Modified,
+  // modified: Modified,
 }
 
 type Created extends Number {
@@ -64,6 +63,10 @@ type Modified extends Number {
 
 type PushID extends String {
   validate() = this.length == 20;
+}
+
+type RoomID extends String {
+  validate() = this.length >= 1 && this.length <= 32;
 }
 
 type UserID extends String {
