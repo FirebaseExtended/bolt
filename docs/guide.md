@@ -101,7 +101,7 @@ must have a unique ID key. Note that a path expression (after the `path` keyword
 _wildcard_ component. This matches any string, and the value of the match is available to be
 used in expressions, if desired.
 
-For example, writing data at `/posts/123' will match the `path` statement when `$id` is equal
+For example, writing data at `/posts/123` will match the `path` statement when `$id` is equal
 to (the string) '123'.
 
 The Post type allows for exactly two string properties in each post (message and
