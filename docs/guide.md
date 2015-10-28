@@ -108,9 +108,9 @@ The Post type allows for exactly two string properties in each post (message and
 from). It also ensures that no message is longer than 140 characters.
 
 Bolt type statements can contain a `validate()` method (defined as `validate() = <expression>`,
-where the expression evaluates to a `true` value if the data is the type is valid (can be saved
-to the database). When the expression evaluates to `false`, the attempt to write the data will
-return an error to the Firebase client and the database will be unmodified.
+where the expression evaluates to `true` if the data is valid (can be saved to the
+database). When the expression evaluates to `false`, the attempt to write the data will return
+an error to the Firebase client and the database will be unmodified.
 
 To access properties of a type in an expression, use the `this` variable  (e.g. `this.message`).
 
@@ -250,7 +250,7 @@ This example compiles to:
 
 ## Functions
 
-Bolt also allows you to organize common expressions a top-level functions in a Bolt file.  Function
+Bolt also allows you to organize common expressions as top-level functions in a Bolt file.  Function
 definitions look just like _type_ and _path_ methods, except they can also accepts parameters.
 
 ```javascript
@@ -308,7 +308,7 @@ path /posts/$id is Post;
 
 type Post {
   // Make sure that the only value allowed to be written is now.
-  validate() = this.number == now;
+  validate() = this.modified == now;
 
   message: String,
   modified: Number
