@@ -22,7 +22,7 @@ You can use the Bolt compiler to compile the examples in this tutorial, and insp
 By default, Firebase has NO SECURITY - this makes it easy to test your code (but is unsafe for production apps
 since anyone can read and overwrite all your data).  In Bolt, the default permissions are written as:
 
-_all_access.bolt_
+[all_access.bolt](../samples/all_access.bolt)
 ```javascript
 path / {
   read() = true;
@@ -30,9 +30,9 @@ path / {
 }
 ```
 
-    $ firebase-bolt < all_access.bolt
+Use the Bolt compiler to convert this to Firebase JSON-formatting rules:
 
-will output:
+    $ firebase-bolt < all_access.bolt
 
 ```JSON
 {
