@@ -8,7 +8,7 @@ hand.
 The Bolt compiler helps developers express the schema and authorization rules
 for their database using a familiar JavaScript-like language. The complete
 [language reference](language.md) describes the syntax of the language. This
-tutorial introduces the concepts in features of Bolt to introduce developers to
+tutorial introduces the concepts and features of Bolt to introduce developers to
 the language.
 
 # Getting Started
@@ -105,6 +105,42 @@ each post (message and from).  It also ensure that no message be longer than 140
         },
         ".write": "true"
       }
+    }
+  }
+}
+```
+
+Bolt supports the built-in datatypes of `String`, `Number`, `Boolean`, `Object`, `Any`, and `Null` (`Null` is useful for specifying optional properties):
+
+```javascript
+path / is Sample;
+
+type Sample {
+  name: String,
+  age: Number,
+  isMember: Boolean,
+  attributes: Object | Null
+}
+```
+
+```JSON
+{
+  "rules": {
+    ".validate": "newData.hasChildren(['name', 'age', 'isMember'])",
+    "name": {
+      ".validate": "newData.isString()"
+    },
+    "age": {
+      ".validate": "newData.isNumber()"
+    },
+    "isMember": {
+      ".validate": "newData.isBoolean()"
+    },
+    "attributes": {
+      ".validate": "newData.hasChildren() || newData.val() == null"
+    },
+    "$other": {
+      ".validate": "false"
     }
   }
 }
