@@ -150,8 +150,8 @@ type Person {
   age: Number,
   isMember: Boolean,
 
-  // The | type-operator allows this type to be an Object or undefined (null in Firebase).
-  attributes: Object | Null
+  // Optional data (allows an Object or null/missing value).
+  extra: Object | Null
 }
 ```
 
@@ -170,7 +170,7 @@ type Person {
     "isMember": {
       ".validate": "newData.isBoolean()"
     },
-    "attributes": {
+    "extra": {
       ".validate": "newData.hasChildren() || newData.val() == null"
     },
     "$other": {
@@ -256,7 +256,7 @@ definitions look just like _type_ and _path_ methods, except they can also accep
 ```javascript
 path /users/$userid is User {
   read() = true;
-  write() = isUser($userid);
+  write() = isCurrentUser($userid);
 }
 
 type User {
@@ -264,9 +264,9 @@ type User {
   age: Number | Null
 }
 
-// Define isUser() function to test if the given user id
+// Define isCurrentUser() function to test if the given user id
 // matches the currently signed-in user.
-isUser(uid) = auth != null && auth.uid == uid;
+isCurrentUser(uid) = auth != null && auth.uid == uid;
 ```
 
 ```JSON
@@ -318,7 +318,7 @@ type Post {
 Each time the Post is written, modified must be set to the current time (using
 [ServerValue.TIMESTAMP](https://www.firebase.com/docs/web/api/servervalue/timestamp.html)).
 
-A handy way to express this is to use a user-defined type for the Modified timestamp:
+A handy way to express this is to use a user-defined type for the CurrentTimestamp:
 
 ```javascript
 path /posts/$id is Post {
@@ -328,16 +328,16 @@ path /posts/$id is Post {
 
 type Post {
   message: String,
-  modified: Modified
+  modified: CurrentTimestamp
 }
 
-type Modified extends Number {
+type CurrentTimestamp extends Number {
   validate() = this == now;
 }
 ```
 
-Similarly, if you want to have a Created property, it should match the current time
-when first written, and then never changed thereafter:
+Similarly, if you want to have a `created` property, it should match the current time
+when first written, and never change thereafter:
 
 ```javascript
 path /posts/$id is Post {
@@ -347,22 +347,21 @@ path /posts/$id is Post {
 
 type Post {
   message: String,
-  modified: Modified,
-  created: Created
+  modified: CurrentTimestamp,
+  created: InitialTimestamp
 }
 
-type Modified extends Number {
+type CurrentTimestamp extends Number {
   validate() = this == now;
 }
 
-type Created extends Number {
+type InitialTimestamp extends Number {
   validate() = initial(this, now);
 }
 
-// Returns true if the value is intialized to init, or retains it's prior
+// Returns true if the value is intialized to init, or if it retains it's prior
 // value, otherwise.
-initial(value, init) = value == (isInitial(value) ? init : prior(value));
-isInitial(value) = prior(value) == null;
+initial(value, init) = value == (prior(value) == null ? init : prior(value));
 ```
 
 Note the special function `prior(ref)` - returns the previous value stored at a given database location
@@ -411,22 +410,21 @@ type Post {
 }
 
 type Timestamped<T> extends T {
-  modified: Modified,
-  created: Created
+  modified: CurrentTimestamp,
+  created: InitialTimestamp
 }
 
-type Modified extends Number {
+type CurrentTimestamp extends Number {
   validate() = this == now;
 }
 
-type Created extends Number {
+type InitialTimestamp extends Number {
   validate() = initial(this, now);
 }
 
 // Returns true if the value is intialized to init, or retains it's prior
 // value, otherwise.
-initial(value, init) = value == (isInitial(value) ? init : prior(value));
-isInitial(value) = prior(value) == null;
+initial(value, init) = value == (prior(value) == null ? init : prior(value));
 ```
 
 ```JSON
@@ -478,7 +476,7 @@ path /members/$room_id {
 }
 
 path /members/$room_id/$user_id is NameString {
-  write() = isUser($user_id);
+  write() = isCurrentUser($user_id);
 }
 
 isRoomMember(room_id) = isSignedIn() && prior(root.members[room_id][auth.uid]) != null;
@@ -498,7 +496,7 @@ path /messages/$room_id/$message_id is Message {
 type Message {
   name: NameString,
   message: MessageString,
-  timestamp: Modified,
+  timestamp: CurrentTimestamp,
 }
 
 type MessageString extends String {
@@ -508,7 +506,7 @@ type MessageString extends String {
 //
 // Helper Types
 //
-type Modified extends Number {
+type CurrentTimestamp extends Number {
   validate() = this == now;
 }
 
@@ -519,7 +517,7 @@ type NameString {
 //
 // Helper Functions
 //
-isUser(uid) = isSignedIn() && auth.uid == uid;
+isCurrentUser(uid) = isSignedIn() && auth.uid == uid;
 isSignedIn() = auth != null;
 createOnly(value) = prior(value) == null && value != null;
 ```
