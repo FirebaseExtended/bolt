@@ -21,9 +21,9 @@ JSON.
 
 ## Default Firebase Permissions
 
-By default, Firebase has a permissive security model - this makes it easy to test your code
-(but is unsafe for production apps since anyone can read and overwrite all your data). In Bolt,
-these default permissions can be written as:
+By default, Firebase has a permissive security model; everyone can read and write all data.
+This makes it easy to test your code, but is unsafe for production apps since anyone can read
+and overwrite all your data. In Bolt, these default permissions can be written as:
 
 [all_access.bolt](../samples/all_access.bolt)
 ```javascript
@@ -33,10 +33,9 @@ path / {
 }
 ```
 
-This _path_ statement, defines read and write permissions to every part of your database
-(all paths beneath the root (`/`) of the database).  The `read` and `write` methods are defined
-using the syntax `read() = <expression>;`.  When the expression evaluates to `true`, reading
-(or writing) is allow at the given path location (and all children of that path).
+The `read() = true` and `write() = true` methods allow everyone to read and write this location
+(and all children under this location). You can also use more complex expressions instead of
+`true`.  When the expression evaluates to `true` the read or write operation is allowed.
 
 Use the Bolt compiler to convert this to Firebase JSON-formatted rules:
 
@@ -53,7 +52,7 @@ Use the Bolt compiler to convert this to Firebase JSON-formatted rules:
 
 ## How to Use Bolt in Your Application
 
-Bolt is (not yet) integrated into the online [Firebase Security and Rules
+Bolt is not (yet) integrated into the online [Firebase Security and Rules
 Dashboard](https://www.firebase.com/account/). There are two ways to use Bolt to define rules
 for your application:
 
@@ -62,8 +61,8 @@ for your application:
 2. Use the [Firebase Command Line](https://www.firebase.com/docs/hosting/command-line-tool.html)
    tool.  If you have _firebase-bolt_ installed on your computer, you can set the `rules` property
    in your [firebase.json](https://www.firebase.com/docs/hosting/guide/full-config.html) file
-   to the name of your Bolt file.  When you use the `deploy` command, the command line will
-   read and compile your Bolt file and upload the compiled JSON to your application Rules.
+   to the name of your Bolt file.  When you issue the `firebase deploy` command, it will
+   read and compile your Bolf file and upload the compiled JSON to your Firebase application.
 
 ## Data Validation
 
@@ -72,9 +71,9 @@ type or structure of data can be written anywhere in the database. By specifying
 schema, you can catch coding errors early, and prevent malicious programs from writing data
 that you don't expect.
 
-Lets say your application wants to allow users to write messages to your database. Each message
-can be up to 140 characters and must by _signed_ by the user. In Bolt, you can express this
-using a `type` statement:
+Lets say your chat application wants to allow users to write messages to your database. Each
+message can be up to 140 characters and must indicate who sent the message. In Bolt, you can
+express this using a `type` statement:
 
 _posts.bolt_
 ```javascript
@@ -96,13 +95,13 @@ type Post {
 }
 ```
 
-This database allows for a collection of `Posts` to be stored at the `/posts` path. Each one
+This database allows for a collection of _Posts_ to be stored at the `/posts` path. Each one
 must have a unique ID key. Note that a path expression (after the `path` keyword) can contain a
 _wildcard_ component. This matches any string, and the value of the match is available to be
 used in expressions, if desired.
 
-For example, writing data at `/posts/123` will match the `path` statement when `$id` is equal
-to (the string) '123'.
+For example, writing data at `/posts/123` will match the `path /posts/$id` statement with `$id`
+being equal to (the string) '123'.
 
 The Post type allows for exactly two string properties in each post (message and
 from). It also ensures that no message is longer than 140 characters.
@@ -142,11 +141,11 @@ To access properties of a type in an expression, use the `this` variable  (e.g. 
 Bolt supports the built-in datatypes of `String`, `Number`, `Boolean`, `Object`, `Any`, and
 `Null` (`Null` is useful for specifying optional properties):
 
-_sample.bolt_
+_person.bolt_
 ```javascript
-path / is Sample;
+path / is Person;
 
-type Sample {
+type Person {
   name: String,
   age: Number,
   isMember: Boolean,
@@ -156,7 +155,7 @@ type Sample {
 }
 ```
 
-    $ firebase-bolt < sample.bolt
+    $ firebase-bolt < person.bolt
 
 ```JSON
 {
@@ -208,8 +207,9 @@ type NameString extends String {
 ```
 
 _NameString_ can be used anywhere the String type can be used - but it adds the additional
-validation constraint that it be non-empty and not too long.  Note that the `this` keyword
-refers to the value of the string in this case.
+validation constraint that it be non-empty and not too long.
+
+_Note that the `this` keyword refers to the value of the string in this case._
 
 This example compiles to:
 
@@ -251,7 +251,7 @@ This example compiles to:
 ## Functions
 
 Bolt also allows you to organize common expressions as top-level functions in a Bolt file.  Function
-definitions look just like _type_ and _path_ methods, except they can also accepts parameters.
+definitions look just like _type_ and _path_ methods, except they can also accept parameters.
 
 ```javascript
 path /users/$userid is User {
