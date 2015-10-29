@@ -5,14 +5,17 @@
 [![NPM Downloads](http://img.shields.io/npm/dm/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 
 Bolt is an experimental security and rules compiler for Firebase.  It is currently
-in early alpha.  There are known bugs and incomplete features in the current
-implementation, so PLEASE DO NOT USE IN PRODUCTION applications.
+in beta.  The language definition is converging, yet not yet finalized.  We welcome
+experimentation, but ask that you hand-verify the resulting JSON output before
+using with production applications.
 
 Otherwise, we'd love to have feedback from early adopters.  You can email questions
-to firebase-talk@googlegroups.com using "Bolt" in the subject line.
+to firebase-talk@googlegroups.com using "Bolt" in the subject line, or post bugs
+on our [Issue Tracker](https://github.com/firebase/bolt/issues).
 
 # Language Definition
 
+  - [Guide to Using Firebase Bolt](docs/guide.md) - Introduction to using Bolt.
   - [Firebase Security and Modeling Language](docs/language.md) - Language documentation and syntax.
 
 # Using the Bolt Compiler
@@ -21,17 +24,17 @@ You can easily install the bolt compiler using [npm](https://docs.npmjs.com/cli/
 
     $ npm install --global firebase-bolt
 
-Execute the Bolt compiler from the command line (it reads a Bolt file from standard input and write a JSON
+Execute the Bolt compiler from the command line (it reads a Bolt file from standard input and writes a JSON
 rules file to standard output):
 
     $ firebase-bolt < rules.bolt > rules.json
 
-You can then upload the resulting firebase.json file via the
+You can then upload the resulting rules.json file via the
 [firebase command line](https://www.firebase.com/docs/hosting/command-line-tool.html):
 
     $ firebase deploy
 
-_The firebase command line tool version 2 will also compile your bolt file directly if you have firebase-bolt
+_The firebase command line tool version 2 will also compile your Bolt file directly if you have firebase-bolt
 installed and you use the .bolt file extension in the rules property of your firebase.json
 configuration file._
 
@@ -39,7 +42,7 @@ configuration file._
 
 You should have node.js and npm installed to use this repository.
 
-Setup command line environment and lint, build, test.
+Setup command line environment and build and test.
 
     $ source tools/use
     $ configure-project
