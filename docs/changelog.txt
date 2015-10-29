@@ -1,0 +1,3 @@
+important - Guide to using the Bolt Compiler.
+changed - Experiment to allow read() and write() expressions in type statements.
+fixed - Ternary operator now forces result to be a value (not a reference).
