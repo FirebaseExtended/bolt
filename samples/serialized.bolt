@@ -1,0 +1,23 @@
+/*
+ * Demonstrate using a generic serialized update type.
+ * Updates can only be made if the counter property
+ * is created with value 1, and each update must
+ * increment the value by 1 (conflicting, non-serialized updates
+ * will fail).
+ */
+path /products is Map<String, Serialized<Product>> {
+  read() = true;
+}
+
+type Product {
+  name: String,
+  cost: Number,
+}
+
+type Serialized<T> extends T {
+  counter: Counter,
+}
+
+type Counter extends Number {
+  validate() = (prior(this) == null && this == 1) || this == prior(this) + 1;
+}

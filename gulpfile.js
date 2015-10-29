@@ -125,6 +125,10 @@ gulp.task('browserify-mail-test', function() {
   return browserifyToDist('lib/test/mail-test', { exclude: 'bolt' });
 });
 
+gulp.task('browserify-chat-test', function() {
+  return browserifyToDist('lib/test/chat-test', { exclude: 'bolt' });
+});
+
 gulp.task('browserify-ast-test', function() {
   return browserifyToDist('lib/test/ast-test.js', { exclude: 'bolt' });
 });
@@ -137,6 +141,7 @@ gulp.task('browserify', ['browserify-bolt',
                          'browserify-parser-test',
                          'browserify-generator-test',
                          'browserify-mail-test',
+                         'browserify-chat-test',
                          'browserify-util-test',
                          'browserify-ast-test',
                         ]);

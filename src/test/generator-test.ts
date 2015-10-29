@@ -73,6 +73,8 @@ suite("Rules Generator Tests", function() {
                  "generics",
                  "groups",
                  "multi-update",
+                 "chat",
+                 "serialized",
                 ];
 
     helper.dataDrivenTest(files, function(filename) {

@@ -102,11 +102,13 @@ util.methods(RulesSuite, {
   //   test.database(appName, appSecret)
   //   test.uid(username)
   //   test(testName, testFunction)
+  //   test.TIMESTAMP
   getInterface: function() {
     var test = this.test.bind(this);
     test.rules = this.rules.bind(this);
     test.database = this.database.bind(this);
     test.uid = this.uid.bind(this);
+    test.TIMESTAMP = rest.TIMESTAMP;
     return test;
   },
 
@@ -181,6 +183,7 @@ function RulesTest(testName, suite, fnTest) {
   this.suite = suite;
   this.fnTest = fnTest;
   this.status = undefined;
+  this.lastError = undefined;
   this.steps = [];
   this.failed = false;
 
@@ -205,13 +208,13 @@ util.methods(RulesTest, {
     this.debug(false);
 
     return this.executeQueue()
-      .then(function() {
+      .then(() => {
         this.log("Finished");
-      }.bind(this))
-      .catch(function(error) {
+      })
+      .catch((error) => {
         this.log("Failed: " + error);
         throw error;
-      }.bind(this));
+      });
   },
 
   // Queue a function to be called in sequence after previous step
@@ -249,70 +252,91 @@ util.methods(RulesTest, {
 
   debug: function(debug) {
     this.suite.setDebug(debug);
-    this.queue('debug', arguments, function() {
+    this.queue('debug', arguments, () => {
       this.suite.setDebug(debug);
-    }.bind(this));
+    });
     return this;
   },
 
   as: function(username) {
     var client = this.suite.ensureUser(username);
-    this.queue('as', arguments, function() {
+    this.queue('as', arguments, () => {
       this.client = client;
-    }.bind(this));
+    });
     return this;
   },
 
   at: function(opPath) {
-    this.queue('at', arguments, function() {
+    this.queue('at', arguments, () => {
       this.path = opPath;
-    }.bind(this));
+    });
     return this;
   },
 
   write: function(obj) {
-    this.queue('write', arguments, function() {
+    this.queue('write', arguments, () => {
       return this.client.put(this.path, obj)
-        .then(function() {
+        .then(() => {
           this.status = true;
-        }.bind(this))
-        .catch(function(error) {
+        })
+        .catch((error) => {
           this.status = false;
-        }.bind(this));
-    }.bind(this));
+          this.lastError = error;
+        });
+    });
+    return this;
+  },
+
+  push: function(obj) {
+    this.queue('write', arguments, () => {
+      let path = this.path;
+      if (path.slice(-1)[0] !== '/') {
+        path += '/';
+      }
+      path += rest.generatePushID();
+      return this.client.put(path, obj)
+        .then(() => {
+          this.status = true;
+        })
+        .catch((error) => {
+          this.status = false;
+          this.lastError = error;
+        });
+    });
     return this;
   },
 
   read: function() {
-    this.queue('read', arguments, function() {
+    this.queue('read', arguments, () => {
       return this.client.get(this.path)
-        .then(function() {
+        .then(() => {
           this.status = true;
-        }.bind(this))
-        .catch(function(error) {
+        })
+        .catch((error) => {
           this.status = false;
-        }.bind(this));
-    }.bind(this));
+          this.lastError = error;
+        });
+    });
     return this;
   },
 
   succeeds: function(message) {
-    this.queue('succeeds', arguments, function() {
+    this.queue('succeeds', arguments, () => {
       assert(this.status === true,
-             this.messageFormat(message + " (should have succeed)"));
+             this.messageFormat(message + " (should have succeed)\n" + this.lastError));
       this.good(message);
       this.status = undefined;
-    }.bind(this));
+    });
     return this;
   },
 
   fails: function(message) {
-    this.queue('fails', arguments, function() {
+    this.queue('fails', arguments, () => {
       assert(this.status === false,
              this.messageFormat(message + " (should have failed)"));
       this.good(message);
       this.status = undefined;
-    }.bind(this));
+    });
     return this;
   },
 

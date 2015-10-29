@@ -19,6 +19,8 @@
 import Promise = require('promise');
 import rest = require('../firebase-rest');
 var secrets = require('../../auth-secrets');
+import chai = require('chai');
+var assert = chai.assert;
 
 var TEST_LOCATION = '/rest-test';
 
@@ -66,5 +68,12 @@ suite("Firebase REST Tests", function() {
       .catch(function(error) {
         return true;
       });
+  });
+
+  test("PushID", function() {
+    let id1 = rest.generatePushID();
+    let id2 = rest.generatePushID();
+    assert.equal(id1.length, 20);
+    assert.notEqual(id1, id2);
   });
 });
