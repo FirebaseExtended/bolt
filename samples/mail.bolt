@@ -13,16 +13,6 @@
 // Functionally similar rules to the corresponding rules defined in the Blaze Compiler:
 // https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
 
-type Message {
-  from: String,
-  to: String,
-  message: String,
-
-  validate() {
-    return isNew(this) && isCurrentUser(this.from);
-  }
-}
-
 // Inbox
 path /users/$userid/inbox/$msg is Message {
   read() = isCurrentUser($userid);
@@ -34,6 +24,16 @@ path /users/$userid/outbox/$msg is Message {
   read() = isCurrentUser($userid);
   write() = isCurrentUser($userid);
 }
+
+type Message {
+  validate() = isNew(this) && isCurrentUser(this.from);
+
+  from: UserID,
+  to: UserID,
+  message: String,
+}
+
+type UserID extends String;
 
 isNew(ref) = prior(ref) == null;
 
