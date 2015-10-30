@@ -308,7 +308,7 @@ API | Bolt Equivalent
 ----| ---------------
 auth | auth
 $location | $location (in path statement)
-now | NYI
+now | now
 data | prior(this)
 newData | this (in validate() and write() rules)
 
