@@ -152,7 +152,7 @@ export class Generator {
     for (name in schema) {
       if (!util.arrayIncludes(builtinSchemaNames, name)) {
         this.validateMethods(errors.badSchemaMethod, schema[name].methods,
-                             ['validate', 'read', 'write', 'index']);
+                             ['validate', 'read', 'write']);
       }
     }
 
