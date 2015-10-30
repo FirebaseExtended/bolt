@@ -143,7 +143,7 @@ Schema "type statement" =
     return result;
 }
 
-Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { return part; })* _ ","? _ {
+Properties = head:PropertyDefinition tail:(_ PropSep part:PropertyDefinition { return part; })* _ PropSep {
   var result = {
      properties: {},
      methods: {}
@@ -170,6 +170,8 @@ Properties = head:PropertyDefinition tail:(_ ","? _ part:PropertyDefinition { re
   }
   return result;
 }
+
+PropSep = ("," / ";")? _
 
 PropertyDefinition = name:Identifier _ ":" _ type:TypeExpression {
       return {

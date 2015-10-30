@@ -288,6 +288,20 @@ suite("Rules Parser Tests", function() {
                   methods: {},
                   params: ["T"],
                 }},
+      { data: "type Foo { name: String, age: Number }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {name: ast.typeType('String'),
+                               age: ast.typeType('Number')},
+                  methods: {},
+                  params: [],
+                }},
+      { data: "type Foo { name: String; age: Number; }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {name: ast.typeType('String'),
+                               age: ast.typeType('Number')},
+                  methods: {},
+                  params: [],
+                }},
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
