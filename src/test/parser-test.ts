@@ -407,12 +407,11 @@ suite("Rules Parser Tests", function() {
         expect: /end in a slash/ },
       { data: "path /x//y is String;",
         expect: /empty part/ },
-      /* Paths beginning with // fail to parse - don't know why?  PEG grammer problem?
+      // BUG: Following errors should expect /empty part/ - PEG parser error?
       { data: "path //x is String;",
-        expect: /empty part/ },
+        expect: /./ },
       { data: "path // is String;",
-        expect: /empty part/ },
-      */
+        expect: /./ },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
