@@ -189,7 +189,11 @@ suite("Rules Parser Tests", function() {
       { data: "path /p/$q { write() { return true;  }}",
         expect: {"/p/$q": { isType: ast.typeType('Any'),
                             parts: ['p', '$q'],
-                            methods: {write: {params: [], body: ast.boolean(true)}}}} }
+                            methods: {write: {params: [], body: ast.boolean(true)}}}} },
+      { data: "path /x/y { read() = true; }",
+        expect: {"/x/y": { isType: ast.typeType('Any'),
+                           parts: ['x', 'y'],
+                           methods: {read: {params: [], body: ast.boolean(true)}}}} },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -351,7 +355,6 @@ suite("Rules Parser Tests", function() {
       "path /p/c is String;",
       "/p/c is String {}",
       "/p/c is String;",
-      "/p/c is String",
       "/p/c { validate() { return true; } }",
       "/p/c { validate() { return true } }",
       "/p/c { validate() { true } }",
@@ -395,6 +398,31 @@ suite("Rules Parser Tests", function() {
           assert.ok(result, response.url);
           return true;
         });
+    });
+  });
+
+  suite("Parser Errors", function() {
+    var tests = [
+      { data: "path /x/y/ is String;",
+        expect: /end in a slash/ },
+      { data: "path /x//y is String;",
+        expect: /empty part/ },
+      /* Paths beginning with // fail to parse - don't know why?  PEG grammer problem?
+      { data: "path //x is String;",
+        expect: /empty part/ },
+      { data: "path // is String;",
+        expect: /empty part/ },
+      */
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      try {
+        parse(data);
+      } catch (e) {
+        assert.match(e.message, expect);
+        return;
+      }
+      assert.fail(undefined, undefined, "No exception thrown.");
     });
   });
 });

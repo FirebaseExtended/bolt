@@ -1,0 +1,3 @@
+fixed - Fix issue #66 - path parsing with trailing slash.
+fixed - Index should not be supported in type statements.
+changed - Allow ; separator for type properties - to match TypeScript interface syntax.
