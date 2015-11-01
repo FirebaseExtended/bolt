@@ -18,11 +18,11 @@
 
 import Promise = require('promise');
 
-export function methods(ctor, obj) {
+export function methods(ctor, obj: Object) {
   extend(ctor.prototype, obj);
 }
 
-export function extend(dest, ...srcs) {
+export function extend(dest: Object, ...srcs: Object[]): Object {
   var i;
   var source;
   var prop;
@@ -49,16 +49,16 @@ export function copyArray(arg: any[]): any[] {
 var baseTypes = ['number', 'string', 'boolean', 'array', 'function', 'date',
                  'regexp', 'arguments', 'undefined', 'null'];
 
-function internalType(value) {
+function internalType(value): string {
   return Object.prototype.toString.call(value).match(/\[object (.*)\]/)[1].toLowerCase();
 }
 
-export function isType(value, type) {
+export function isType(value, type: string): boolean {
   return typeOf(value) === type;
 }
 
 // Return one of the baseTypes as a string
-export function typeOf(value) {
+export function typeOf(value): string {
   if (value === undefined) {
     return 'undefined';
   }
@@ -72,7 +72,7 @@ export function typeOf(value) {
   return type;
 }
 
-export function isThenable(obj) {
+export function isThenable(obj): boolean {
   return typeOf(obj) === 'object' && 'then' in obj && typeof(obj.then) === 'function';
 }
 
@@ -83,7 +83,7 @@ export function isThenable(obj) {
 //
 // If none of the arguments are Thenables, then the wrapped
 // function returns a synchronous value (not wrapped in a Promise).
-export function maybePromise(fn) {
+export function maybePromise(fn: (...any) => any): (...any) => any {
   return function(...args) {
     var self = this;
     if (!args.some(isThenable)) {
@@ -97,19 +97,19 @@ export function maybePromise(fn) {
   };
 }
 
-export var getProp =  maybePromise(function(obj, prop) {
+export var getProp = maybePromise(function(obj, prop) {
   return obj[prop];
 });
 
-export function ensureExtension(fileName, extension) {
+export function ensureExtension(fileName: string, extension: string) {
   return fileName + '.' + extension;
 }
 
-export function prettyJSON(o) {
+export function prettyJSON(o: any): string {
   return JSON.stringify(o, null, 2);
 }
 
-function deepExtend(target, source) {
+function deepExtend(target: Object, source: Object): void {
   for (var prop in source) {
     if (!source.hasOwnProperty(prop)) {
       continue;
@@ -152,7 +152,7 @@ export function quoteString(s: string): string {
   return "'" + s + "'";
 }
 
-export function arrayIncludes(a, e) {
+export function arrayIncludes(a: any[], e): boolean {
   return a.indexOf(e) !== -1;
 }
 
@@ -172,7 +172,7 @@ export function or(target, src) {
   return target || src;
 }
 
-export function ensureObjectPath(obj, parts) {
+export function ensureObjectPath(obj: Object, parts: string[]): Object {
   for (var i = 0; i < parts.length; i++) {
     var name = parts[i];
     if (!(name in obj)) {
@@ -184,7 +184,7 @@ export function ensureObjectPath(obj, parts) {
 }
 
 // Remove all empty, '{}',  children - returns true iff obj is empty.
-export function pruneEmptyChildren(obj) {
+export function pruneEmptyChildren(obj: Object): boolean {
   if (obj.constructor !== Object) {
     return false;
   }

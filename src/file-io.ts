@@ -20,17 +20,18 @@ import Promise = require('promise');
 import fs = require('fs');
 import util = require('./util');
 
-export var readFile = util.maybePromise(readFileSync);
-export var readJSONFile = util.maybePromise(readJSONFileSync);
+export var readFile = <(string) => Promise<ReadFileResult>> util.maybePromise(readFileSync);
+export var readJSONFile = <(path: string, fnFallback? : () => Promise<ReadFileResult>) => Promise<ReadFileResult>>
+  util.maybePromise(readJSONFileSync);
 export var writeFile = util.maybePromise(writeFileSync);
 export var writeJSONFile = util.maybePromise(writeJSONFileSync);
 
-interface ReadFileResult {
+export interface ReadFileResult {
   content: string;
   url: string;
 }
 
-function readJSONFileSync(path, fnFallback) {
+function readJSONFileSync(path: string, fnFallback?: () => any) {
   return readFileSync(path)
     .then(function(response: ReadFileResult) {
       return JSON.parse(response.content);
@@ -55,7 +56,7 @@ function writeFileSync(path, data) {
   return request('PUT', path, data) || writeFS(path, data);
 }
 
-function request(method, url, data?) {
+function request(method: string, url: string, data?): Promise<ReadFileResult> {
   if (!global.XMLHttpRequest) {
     return undefined;
   }
@@ -85,7 +86,7 @@ function request(method, url, data?) {
   });
 }
 
-function readFS(path) {
+function readFS(path: string): Promise<ReadFileResult> {
   return new Promise(function(resolve, reject) {
     fs.readFile(path, {encoding: 'utf8'}, function(error, data) {
       if (error) {
@@ -97,7 +98,7 @@ function readFS(path) {
   });
 }
 
-function writeFS(path, data) {
+function writeFS(path, data): Promise<ReadFileResult> {
   return new Promise(function(resolve, reject) {
     fs.writeFile(path, data, {encoding: 'utf8'}, function(error) {
       if (error) {
