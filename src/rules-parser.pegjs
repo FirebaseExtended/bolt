@@ -68,9 +68,12 @@
     return s;
   }
 
+  var lastError = undefined;
+
   function error(s) {
     errorCount += 1;
-    console.error(errorString({line: line(), column: column()}, s));
+    lastError = errorString({line: line(), column: column()}, s);
+    console.error(lastError);
   }
 
   function warn(s) {
@@ -83,6 +86,9 @@
 }
 
 start = _ Statements _ {
+  if (errorCount === 1) {
+    throw(new Error(lastError));
+  }
   if (errorCount != 0) {
     throw(new Error("Fatal errors: " + errorCount));
   }
@@ -103,21 +109,36 @@ Function "function definition" = ("function" __)? name:Identifier params:Paramet
   }
 }
 
-Path "path statement" = ("path" __)? path:PathExpression isType:("is" __ id:TypeExpression _ { return id; })?
+Path "path statement" = ("path" __)? path:PathExpression isType:(__ "is" __ id:TypeExpression { return id; })? _
   methods:("{" _ methods:Methods "}" { return methods; }
-           / ";" { return {}; } )? _ {
-   var result = {
-     parts: path,
-     methods: methods || {}
-   };
-   if (isType) {
-     result.isType = isType;
-   }
-   return result;
- }
+           / ";" { return {}; } ) _ {
+  if (path.length === 1 && path[0] === null) {
+    path = [];
+  }
+  var hasError = false;
+  path = path.map(function(part) {
+    if (part === null) {
+      hasError = true;
+      return '';
+    }
+    return part;
+  });
+  if (hasError) {
+    error((path[path.length - 1] === '' ? "Paths may not end in a slash (/) character"
+           : "Paths may not contain an empty part") + ": /" + path.join('/'));
+  }
+  var result = {
+    parts: path,
+    methods: methods || {}
+  };
+  if (isType) {
+    result.isType = isType;
+  }
+  return result;
+}
 
-PathExpression "path" =  parts:("/" part:Identifier { return part; })+ _ { return parts; }
-  / "/" _ { return []; }
+// Allow trailing slash and empty parts for better error messages.
+PathExpression "path" =  parts:("/" part:Identifier? { return part; })+ { return parts; }
 
 Schema "type statement" =
   "type" __ type:Identifier

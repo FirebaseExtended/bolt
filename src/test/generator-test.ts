@@ -471,7 +471,7 @@ suite("Rules Generator Tests", function() {
         expect: /convert value/i },
       { data: "function f(a) { return f(a); } path / { validate() { return f(1); }}",
         expect: /recursive/i },
-      { data: "type X { $n: Number, $s: String } path / is X",
+      { data: "type X { $n: Number, $s: String } path / is X;",
         expect: /wild property/ },
       { data: "path / is Map;",
         expect: /No type.*non-generic/ },
