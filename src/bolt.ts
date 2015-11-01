@@ -25,10 +25,9 @@ export var FILE_EXTENSION = 'bolt';
 export var parse = util.maybePromise(parser.parse);
 export var generate = util.maybePromise(generateSync);
 export var Generator = generator.Generator;
-export var decodeExpression = generator.decodeExpression;
 export var ast = astReal;
+export var decodeExpression = ast.decodeExpression;
 export var rulesSuite = simulator.rulesSuite;
-
 
 // Usage:
 //   json = bolt.generate(bolt-text)

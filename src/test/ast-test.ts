@@ -18,6 +18,8 @@ var assert = chai.assert;
 import helper = require('./test-helper');
 
 import ast = require('../ast');
+var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
+var parse = bolt.parse;
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {
@@ -128,5 +130,91 @@ suite("Abstract Syntax Tree (AST)", function() {
       var result = ast.isIdentifierStringExp(data);
       assert.equal(result, expect);
     }, helper.expFormat);
+  });
+
+  suite("Expression decoding.", function() {
+    var tests = [
+      [ "true" ],
+      [ "false" ],
+      [ "1" ],
+      [ "(1)", '1' ],
+      [ "1.1" ],
+      [ "+3", "3"],
+      [ "-3" ],
+      [ "0x2", "2" ],
+      [ "\"string\"", "'string'" ],
+      [ "'string'" ],
+      [ "'st\\'ring'"],
+      [ "'st\\ring'" ],
+      [ "'\\u000d'", "'\\r'" ],
+      [ "a" ],
+      [ "a.b" ],
+      [ "a.b.c" ],
+
+      [ "a['b']", 'a.b' ],
+      [ "a[b]" ],
+      [ "a[b][c]" ],
+      [ "a.b[c]" ],
+      [ "a[b].c" ],
+      [ "(a.b)[c]", "a.b[c]" ],
+      [ "(a(b))[c]", "a(b)[c]" ],
+
+      [ "a()" ],
+      [ "a()()" ],
+      [ "a.b()" ],
+      [ "a().b" ],
+      [ "a[0]()" ],
+      [ "a()[0]" ],
+
+      [ "-a" ],
+      [ "--a" ],
+      [ "+a", "a"],
+      [ "+a +b", "a + b" ],
+      [ "-a -b", "-a - b" ],
+      [ "-a --b", "-a - -b" ],
+      [ "-a ---b", "-a - --b" ],
+      [ "!a" ],
+      [ "!!a" ],
+      [ "!+a", '!a' ],
+      [ "!-a" ],
+      [ "-!a" ],
+      [ "2 * a" ],
+      [ "(2 * a)", '2 * a' ],
+      [ "2 / a" ],
+      [ "a % 2" ],
+      [ "1 + 1" ],
+      [ "a - 1" ],
+      [ "a - -b" ],
+      [ "a + b + c" ],
+      [ "a + (b + c)" ],
+      [ "(a + b) + c", 'a + b + c' ],
+      [ "a + b * c" ],
+      [ "(a + b) * c" ],
+      [ "a < 7" ],
+      [ "a > 7" ],
+      [ "a <= 7" ],
+      [ "a >= 7" ],
+      [ "a == 3" ],
+      [ "a != 0" ],
+      [ "a === 3", "a == 3" ],
+      [ "a !== 0", "a != 0" ],
+      [ "3 * a == b" ],
+      [ "a == 1 && b <= 2" ],
+      [ "a == 1 || b <= 2" ],
+      [ "a && b && c" ],
+      [ "a || b || c" ],
+      [ "a && b || c && d" ],
+      [ "a ? b : c",  ],
+      [ "a || b ? c : d" ],
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      // Decode to self by default
+      expect = expect || data;
+      var result = parse('function f() {return ' + data + ';}');
+      var exp = result.functions.f.body;
+      var decode = bolt.decodeExpression(exp);
+      assert.equal(decode, expect);
+    });
   });
 });
