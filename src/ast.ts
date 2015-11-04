@@ -19,7 +19,7 @@
 
 import util = require('./util');
 
-export type Object = { [prop: string]: any };
+export type Map = { [prop: string]: any };
 
 export interface Exp {
   type: string;
@@ -53,6 +53,7 @@ export interface ExpReference extends Exp {
 }
 
 export interface ExpCall extends Exp {
+  // Object reference or global symbol
   ref: ExpReference | ExpVariable;
   args: Exp[];
 }
@@ -99,7 +100,7 @@ export interface Schema {
 
   // Generic parameters - if a Generic schema
   params?: string[];
-  getValidator?: (params: Exp[]) => Object;
+  getValidator?: (params: Exp[]) => Map;
 };
 
 export interface Loggers {
@@ -501,31 +502,32 @@ export class Symbols {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-interface OpPriority {
+export interface OpPriority {
   rep?: string;
+  fn?: (...any) => any;
   p: number;
 }
 
-var JS_OPS: { [op: string]: OpPriority; } = {
+export var JS_OPS: { [op: string]: OpPriority; } = {
   'value': { rep: "", p: 16 },
 
-  'neg': { rep: "-", p: 15},
-  '!': { p: 15},
-  '*': { p: 14},
-  '/': { p: 14},
-  '%': { p: 14},
-  '+': { p: 13 },
-  '-': { p: 13 },
-  '<': { p: 11 },
-  '<=': { p: 11 },
-  '>': { p: 11 },
-  '>=': { p: 11 },
-  'in': { p: 11 },
-  '==': { p: 10 },
-  "!=": { p: 10 },
-  '&&': { p: 6 },
-  '||': { p: 5 },
-  '?:': { p: 4 },
+  'neg': { rep: "-", p: 15, fn: function(val) { return -val; } },
+  '!': { p: 15,  fn: function(val) { return !val; } },
+  '*': { p: 14,  fn: function(a, b) { return a * b; } },
+  '/': { p: 14,  fn: function(a, b) { return a / b; } },
+  '%': { p: 14,  fn: function(a, b) { return a % b; } },
+  '+': { p: 13,  fn: function(a, b) { return a + b; } },
+  '-': { p: 13,  fn: function(a, b) { return a - b; } },
+  '<': { p: 11,  fn: function(a, b) { return a < b; } },
+  '<=': { p: 11, fn: function(a, b) { return a <= b; } },
+  '>': { p: 11,  fn: function(a, b) { return a > b; } },
+  '>=': { p: 11, fn: function(a, b) { return a >= b; } },
+  'in': { p: 11, fn: function(a, b) { return a in b; } },
+  '==': { p: 10, fn: function(a, b) { return a === b; } },
+  "!=": { p: 10, fn: function(a, b) { return a !== b; } },
+  '&&': { p: 6,  fn: function(a, b) { return a && b; } },
+  '||': { p: 5,  fn: function(a, b) { return a || b; } },
+  '?:': { p: 4,  fn: function(a, b, c) { return a ? b : c; } },
   ',': { p: 0},
 };
 

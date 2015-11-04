@@ -34,7 +34,7 @@ export function dataDrivenTest(tests, testIt, formatter?) {
   formatter = formatter || format;
 
   for (var i = 0; i < tests.length; i++) {
-    // Not Array or Object
+    // Scalar data - no "expect" part.
     if (typeof tests[i] !== 'object') {
       label = formatter(tests[i]);
       data = tests[i];
@@ -51,7 +51,7 @@ export function dataDrivenTest(tests, testIt, formatter?) {
         data = util.extend({}, data);
         delete data.expect;
       }
-      expect = tests[i].expect || tests[i][1];
+      expect = tests[i].expect !== undefined ? tests[i].expect : tests[i][1];
       label = tests[i].label;
       if (label === undefined) {
         if (expect !== undefined) {

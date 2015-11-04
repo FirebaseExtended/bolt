@@ -36,7 +36,8 @@ var TS_SOURCES = ['src/*.ts',
 
 // Subset of tests required for 'gulp test'.
 var TEST_FILES = ['lib/test/generator-test.js', 'lib/test/parser-test.js',
-                  'lib/test/ast-test.js', 'lib/test/util-test.js'];
+                  'lib/test/ast-test.js', 'lib/test/util-test.js',
+                  'lib/test/storage-simulator-test.js'];
 
 // Ignore ts-compile errors while watching (but not in normal builds).
 var watching = false;
@@ -137,6 +138,10 @@ gulp.task('browserify-util-test', function() {
   return browserifyToDist('lib/test/util-test.js', { exclude: 'bolt' });
 });
 
+gulp.task('browserify-storage-simulator--test', function() {
+  return browserifyToDist('lib/test/storage-simulator-test.js', { exclude: 'bolt' });
+});
+
 gulp.task('browserify', ['browserify-bolt',
                          'browserify-parser-test',
                          'browserify-generator-test',
@@ -144,6 +149,7 @@ gulp.task('browserify', ['browserify-bolt',
                          'browserify-chat-test',
                          'browserify-util-test',
                          'browserify-ast-test',
+                         'browserify-storage-simulator--test',
                         ]);
 
 // Runs the Mocha test suite
