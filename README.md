@@ -1,4 +1,4 @@
-# Bolt Compiler
+# ![Bolt Icon](docs/images/flash.png) Bolt Compiler
 
 [![Build Status](https://travis-ci.org/firebase/bolt.svg?branch=master)](https://travis-ci.org/firebase/bolt)
 [![NPM Version](https://badge.fury.io/js/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
