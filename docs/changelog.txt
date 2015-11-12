@@ -1,1 +1,2 @@
+fixed - Invoke validation function for all String ancestors types.
 feature - Handle command line arguments and help for firebase-bolt CLI.

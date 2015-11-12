@@ -1,0 +1,11 @@
+path / is Test;
+
+type Test {
+  s1: ShortString,
+  s2: AliasString,
+  m1: Map<ShortString, Number>,
+  m2: Map<AliasString, Number>
+}
+
+type AliasString extends ShortString;
+type ShortString extends String { validate() = this.length >= 0 && this.length <= 16; }

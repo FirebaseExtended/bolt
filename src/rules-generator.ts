@@ -228,13 +228,14 @@ export class Generator {
     let index = this.uniqueKey();
     validator[index] = <Validator> {};
 
-    // First validate the key (not needed if just String type).
-    if (keyType.name !== 'String') {
+    // First validate the key (omit terminal String type validation).
+    while (keyType.name !== 'String') {
       let schema = this.symbols.schema[keyType.name];
       if (schema.methods['validate']) {
         let exp = this.partialEval(schema.methods['validate'].body, {'this': ast.literal(index)});
         extendValidator(<Validator> validator[index], <Validator> {'.validate': [exp]});
       }
+      keyType = <ast.ExpSimpleType> schema.derivedFrom;
     }
 
     extendValidator(<Validator> validator[index], this.ensureValidator(valueType));
