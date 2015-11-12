@@ -70,14 +70,14 @@ function main() {
   var inFile = util.ensureExtension(args._[0], bolt.FILE_EXTENSION);
   var outFile;
   if (args.output) {
-    outFile = util.ensureExtension(args.output, '.json');
+    outFile = util.ensureExtension(args.output, 'json');
   } else {
-    outFile = util.replaceExtension(inFile, '.json');
+    outFile = util.replaceExtension(inFile, 'json');
   }
   log("Generating " + outFile + ".");
   if (inFile === outFile) {
     log("Cannot overwrite input file: " + inFile);
-    log("(Did you mean '" + util.replaceExtension(inFile, '.bolt') + "'?)");
+    log("(Did you mean '" + util.replaceExtension(inFile, 'bolt') + "'?)");
     process.exit(1);
   }
   fs.readFile(inFile, 'utf8', function(err, data) {

@@ -109,7 +109,7 @@ export function ensureExtension(fileName: string, extension: string): string {
 }
 
 export function replaceExtension(fileName: string, extension: string): string {
-  return fileName.replace(/\.[^\.]*$/, extension);
+  return fileName.replace(/\.[^\.]*$/, '.' + extension);
 }
 
 export function prettyJSON(o: any): string {
