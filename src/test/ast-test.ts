@@ -18,8 +18,8 @@ var assert = chai.assert;
 import helper = require('./test-helper');
 
 import ast = require('../ast');
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
-var parse = bolt.parse;
+let parser = require('../rules-parser');
+let parse = parser.parse;
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {
@@ -213,7 +213,7 @@ suite("Abstract Syntax Tree (AST)", function() {
       expect = expect || data;
       var result = parse('function f() {return ' + data + ';}');
       var exp = result.functions.f.body;
-      var decode = bolt.decodeExpression(exp);
+      var decode = ast.decodeExpression(exp);
       assert.equal(decode, expect);
     });
   });

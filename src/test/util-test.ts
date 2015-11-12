@@ -27,6 +27,8 @@ suite("Util", function() {
 
     var tests = [
       [ {}, {} ],
+      [ {a: undefined}, {} ],
+      [ {a: null}, {} ],
       [ {a: 1}, {a: 1} ],
       [ {a: {}}, {} ],
       [ {a: 1, b: {}}, {a: 1} ],

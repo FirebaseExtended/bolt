@@ -109,7 +109,7 @@ export function prettyJSON(o: any): string {
   return JSON.stringify(o, null, 2);
 }
 
-function deepExtend(target: Object, source: Object): void {
+export function deepExtend(target: Object, source: Object): Object {
   for (var prop in source) {
     if (!source.hasOwnProperty(prop)) {
       continue;
@@ -126,6 +126,7 @@ function deepExtend(target: Object, source: Object): void {
       target[prop] = source[prop];
     }
   }
+  return target;
 }
 
 // Like JSON.stringify - but for single-quoted strings instead of double-quoted ones.
@@ -178,6 +179,10 @@ export function ensureObjectPath(obj: Object, parts: string[]): Object {
     if (!(name in obj)) {
       obj[name] = {};
     }
+    if (!isType(obj[name], 'object')) {
+      throw new Error("Cannot create child properties of '" +
+                      parts.slice(0, i + 1).join('.') + "' (a " + typeOf(obj[name]) + ")");
+    }
     obj = obj[name];
   }
   return obj;
@@ -185,7 +190,10 @@ export function ensureObjectPath(obj: Object, parts: string[]): Object {
 
 // Remove all empty, '{}',  children - returns true iff obj is empty.
 export function pruneEmptyChildren(obj: Object): boolean {
-  if (obj.constructor !== Object) {
+  if (obj === null || obj === undefined) {
+    return true;
+  }
+  if (!isType(obj, 'object')) {
     return false;
   }
   var hasChildren = false;
