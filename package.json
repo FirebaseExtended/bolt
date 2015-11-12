@@ -57,6 +57,7 @@
     "gulp-typescript": "^2.8.3",
     "gulp-util": "^3.0.6",
     "http-server": "^0.8.0",
+    "mkdirp": "^0.5.1",
     "pegjs": "^0.8.0",
     "source-map-support": "^0.3.2",
     "tslint": "^2.5.0-beta",

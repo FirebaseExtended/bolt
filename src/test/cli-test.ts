@@ -17,7 +17,8 @@ import chai = require('chai');
 var assert = chai.assert;
 import helper = require('./test-helper');
 import proc = require('child_process');
-import os = require('os');
+
+var TMP_DIR = 'tmp/';
 
 suite("firebase-bolt CLI", function() {
   var tests = [
@@ -36,16 +37,16 @@ suite("firebase-bolt CLI", function() {
       data: { stdin: "path / is String;" },
       expect: {out: /newData\.isString/, err: /^$/} },
     { label: "stdin -> file",
-      data: { stdin: "path / is String;", args: "--o " + os.tmpdir() + "test" },
-      expect: {out: /^$/, err: new RegExp("^bolt: Generating " + os.tmpdir() + "test")} },
+      data: { stdin: "path / is String;", args: "--o " + TMP_DIR + "test" },
+      expect: {out: /^$/, err: new RegExp("^bolt: Generating " + TMP_DIR + "test")} },
 
     // Reading from a file
     { data: "samples/all_access",
       expect: {out: /^$/, err: /^bolt: Generating samples\/all_access.json\.\.\.\n$/} },
     { data: "samples/all_access.bolt",
       expect: {out: /^$/, err: /^bolt: Generating samples\/all_access.json\.\.\.\n$/} },
-    { data: "samples/all_access --output " + os.tmpdir() + "all_access",
-      expect: {out: /^$/, err: new RegExp("^bolt: Generating " + os.tmpdir() + "all_access.json\\.\\.\\.\\n$")} },
+    { data: "samples/all_access --output " + TMP_DIR + "all_access",
+      expect: {out: /^$/, err: new RegExp("^bolt: Generating " + TMP_DIR + "all_access.json\\.\\.\\.\\n$")} },
     { data: "samples/all_access.json",
       expect: {out: /^$/, err: /bolt: Cannot overwrite/} },
 

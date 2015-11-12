@@ -26,6 +26,7 @@ var mocha = require('gulp-mocha');
 var gutil = require('gulp-util');
 var ts = require('gulp-typescript');
 var sourcemaps = require('gulp-sourcemaps');
+var mkdirp = require('mkdirp');
 
 var peg = require('gulp-peg');
 
@@ -50,7 +51,7 @@ var TS_SETTINGS = {
 };
 
 gulp.task('clean', function(cb) {
-  del(['lib', 'dist'], cb);
+  del(['lib', 'dist', 'tmp'], cb);
 });
 
 gulp.task('eslint', function() {
@@ -148,6 +149,7 @@ gulp.task('browserify', ['browserify-bolt',
 
 // Runs the Mocha test suite
 gulp.task('test', ['lint', 'build'], function() {
+  mkdirp('tmp');
   return gulp.src(TEST_FILES)
     .pipe(mocha({ui: 'tdd'}));
 });
