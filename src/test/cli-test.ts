@@ -17,6 +17,7 @@ import chai = require('chai');
 var assert = chai.assert;
 import helper = require('./test-helper');
 import proc = require('child_process');
+import Promise = require('promise');
 
 var TMP_DIR = 'tmp/';
 

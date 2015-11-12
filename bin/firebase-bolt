@@ -125,9 +125,9 @@ function usage(code) {
 
   console.error("  Options:\n");
   console.error(util.formatColumns(4, [
-    ["-v --version", "Display Firebase Bolt version."],
     ["-h --help", "Display this helpful message."],
     ["-o --output file", "Output to file.json."],
+    ["-v --version", "Display Firebase Bolt version."],
     []
   ]).join('\n'));
 
