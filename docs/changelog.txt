@@ -1,0 +1,1 @@
+feature - Handle command line arguments and help for firebase-bolt CLI.
