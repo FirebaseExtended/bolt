@@ -64,9 +64,10 @@
     "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {
-    "mocha": "^2.2.5",
     "chai": "^3.2.0",
     "firebase-token-generator": "^2.0.0",
+    "minimist": "^1.2.0",
+    "mocha": "^2.2.5",
     "node-uuid": "^1.4.3",
     "promise": "^7.0.4"
   }

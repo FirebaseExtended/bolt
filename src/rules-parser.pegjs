@@ -532,7 +532,7 @@ __ = (Whitespace / Comment)+
 // Optional whitespace
 _ = (Whitespace / Comment)*
 
-Whitespace = [ \t\r\n]+
+Whitespace "whitespace" = [ \t\r\n]+
 
 Comment "comment"
   = MultiLineComment
