@@ -67,7 +67,7 @@ suite("firebase-bolt CLI", function() {
       } else {
         args = data.args || '';
       }
-      let child = proc.exec('firebase-bolt ' + args, function(error, stdout, stderr) {
+      let child = proc.exec('bin/firebase-bolt ' + args, function(error, stdout, stderr) {
         if (expect.err) {
           assert.isTrue(expect.err.test(stderr), "Unexpected message: '" + stderr + "'");
         }
