@@ -101,8 +101,15 @@ export var getProp = maybePromise(function(obj, prop) {
   return obj[prop];
 });
 
-export function ensureExtension(fileName: string, extension: string) {
-  return fileName + '.' + extension;
+export function ensureExtension(fileName: string, extension: string): string {
+  if (fileName.indexOf('.') === -1) {
+    return fileName + '.' + extension;
+  }
+  return fileName;
+}
+
+export function replaceExtension(fileName: string, extension: string): string {
+  return fileName.replace(/\.[^\.]*$/, '.' + extension);
 }
 
 export function prettyJSON(o: any): string {
@@ -200,4 +207,53 @@ export function pruneEmptyChildren(obj: Object): boolean {
     }
   }
   return !hasChildren;
+}
+
+export function formatColumns(indent: number, lines: string[][]): string[] {
+  let result: string[] = [];
+  let columnSize = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    for (let j = 0; j < line.length; j++) {
+      if (columnSize[j] === undefined) {
+        columnSize[j] = 0;
+      }
+      columnSize[j] = Math.max(columnSize[j], line[j].length);
+    }
+  }
+
+  var prefix = repeatString(' ', indent);
+  var s: string;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    let sep = "";
+    s = "";
+    for (let j = 0; j < line.length; j++) {
+      if (j === 0) {
+        s = prefix;
+      }
+      if (j === line.length - 1) {
+        s += sep + line[j];
+      } else {
+        s += sep + fillString(line[j], columnSize[j]);
+      }
+      sep = "  ";
+    }
+    result.push(s);
+  }
+
+  return result;
+}
+
+function repeatString(s: string, n: number): string {
+  return new Array(n + 1).join(s);
+}
+
+function fillString(s: string, n: number): string {
+  let padding = n - s.length;
+  if (padding > 0) {
+    s += repeatString(' ', padding);
+  }
+  return s;
 }

@@ -31,10 +31,10 @@ export var rulesSuite = simulator.rulesSuite;
 
 // Usage:
 //   json = bolt.generate(bolt-text)
-function generateSync(symbols) {
+function generateSync(symbols: string | astReal.Symbols): generator.Validator {
   if (typeof symbols === 'string') {
     symbols = parser.parse(symbols);
   }
-  var gen = new generator.Generator(symbols);
+  var gen = new generator.Generator(<astReal.Symbols> symbols);
   return gen.generateRules();
 }

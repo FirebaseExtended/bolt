@@ -15,24 +15,148 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+'use strict';
 
+var fs = require('fs');
+var parseArgs = require('minimist');
+
+var util = require('../lib/util');
 var bolt = require('../lib/bolt');
+var pkg = require('../package.json');
 
-var input = "";
+var VERSION_STRING = "Firebase Bolt v" + pkg.version;
 
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(chunk) {
-  input += chunk;
-});
+var opts = {
+  boolean: ['version', 'help'],
+  string: ['output'],
+  alias: {
+    'v': 'version',
+    'h': 'help',
+    'o': 'output',
+  },
+  unknown: function(flag) {
+    if (flag[0] == '-') {
+      log("Unknown flag: '" + flag + "'");
+      usage(1);
+    }
+  }
+};
 
-process.stdin.on('end', function() {
+function main() {
+  var args = parseArgs(process.argv.slice(2), opts);
+
+  // Option present - but missing value.
+  if (args.output == '') {
+    log("Missing output file name.");
+    process.exit(1);
+  }
+
+  if (args.version) {
+    console.log(VERSION_STRING);
+    return;
+  }
+
+  if (args.help) {
+    usage(0);
+  }
+
+  if (args._.length > 1) {
+    log("Can only compile a single file.");
+    usage(1);
+  }
+
+  // Read Bolt file from stdin
+  if (args._.length === 0) {
+    if (process.stdin.isTTY) {
+      log("Type in a Bolt file terminated by CTRL-D.");
+    }
+    readFile(process.stdin, function(data) {
+      if (args.output !== undefined) {
+        writeTranslation(util.ensureExtension(args.output, 'json'), data);
+      } else {
+        console.log(translateRules(data));
+      }
+    });
+    return;
+  }
+
+  // Read Bolt file and write json file.
+  var inFile = util.ensureExtension(args._[0], bolt.FILE_EXTENSION);
+  var outFile;
+  if (args.output) {
+    outFile = util.ensureExtension(args.output, 'json');
+  } else {
+    outFile = util.replaceExtension(inFile, 'json');
+  }
+  if (inFile === outFile) {
+    log("Cannot overwrite input file: " + inFile);
+    log("(Did you mean '" + util.replaceExtension(inFile, 'bolt') + "'?)");
+    process.exit(1);
+  }
+  fs.readFile(inFile, 'utf8', function(err, data) {
+    if (err) {
+      log("Could not read file: " + inFile);
+      process.exit(1);
+    }
+    writeTranslation(outFile, data);
+  });
+}
+
+function writeTranslation(outFile, data) {
+  log("Generating " + outFile + "...");
+  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
+    if (err2) {
+      log("Could not write file: " + outFile);
+      process.exit(1);
+    }
+  });
+}
+
+function usage(code) {
+  var cmdName = process.argv[1].split('/').slice(-1);
+  console.error("Translate Firebase Bolt file into JSON rules format.\n");
+
+  console.error("  Usage: " + cmdName + " [options] [file]\n");
+
+  console.error("  Examples: " + cmdName + " myapp.bolt --output rules.json");
+  console.error("            " + cmdName + " < myapp.bolt > rules.json");
+  console.error("            " + cmdName + " myapp");
+  console.error("              (myapp.bolt =>  myapp.json)\n");
+
+  console.error("  Options:\n");
+  console.error(util.formatColumns(4, [
+    ["-h --help", "Display this helpful message."],
+    ["-o --output file", "Output to file.json."],
+    ["-v --version", "Display Firebase Bolt version."],
+    []
+  ]).join('\n'));
+
+  process.exit(code);
+}
+
+main();
+
+function readFile(f, callback) {
+  var input = "";
+
+  f.setEncoding('utf8');
+  f.on('data', function(chunk) {
+    input += chunk;
+  });
+
+  f.on('end', function() {
+    callback(input);
+  });
+}
+
+function translateRules(input) {
   var symbols;
   var rules;
 
   try {
     symbols = bolt.parse(input);
   } catch (e) {
-    console.error('bolt:' + e.line + ':' + e.column + ': ' + e.message);
+    log(e.message, e.line, e.column);
     process.exit(1);
   }
 
@@ -40,9 +164,18 @@ process.stdin.on('end', function() {
     var gen = new bolt.Generator(symbols);
     rules = gen.generateRules();
   } catch (e) {
-    console.error('bolt: ' + e.message);
+    log(e.message);
     process.exit(2);
   }
 
-  console.log(JSON.stringify(rules, null, 2));
-});
+  return JSON.stringify(rules, null, 2);
+}
+
+function log(message, line, column) {
+  var parts = ['bolt'];
+  if (line) {
+    util.extendArray(parts, [line, column]);
+  }
+  parts.push(' ' + message);
+  console.error(parts.join(':'));
+}
