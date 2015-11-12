@@ -41,11 +41,11 @@ suite("firebase-bolt CLI", function() {
 
     // Reading from a file
     { data: "samples/all_access",
-      expect: {out: /^$/, err: /^bolt: Generating samples\/all_access.json.\n$/} },
+      expect: {out: /^$/, err: /^bolt: Generating samples\/all_access.json\.\.\.\n$/} },
     { data: "samples/all_access.bolt",
-      expect: {out: /^$/, err: /^bolt: Generating samples\/all_access.json.\n$/} },
+      expect: {out: /^$/, err: /^bolt: Generating samples\/all_access.json\.\.\.\n$/} },
     { data: "samples/all_access --output " + os.tmpdir() + "all_access",
-      expect: {out: /^$/, err: new RegExp("^bolt: Generating " + os.tmpdir() + "all_access.json.\\n$")} },
+      expect: {out: /^$/, err: new RegExp("^bolt: Generating " + os.tmpdir() + "all_access.json\\.\\.\\.\\n$")} },
     { data: "samples/all_access.json",
       expect: {out: /^$/, err: /bolt: Cannot overwrite/} },
 

@@ -67,6 +67,9 @@ function main() {
 
   // Read Bolt file from stdin
   if (args._.length === 0) {
+    if (process.stdin.isTTY) {
+      log("Type in a Bolt file terminated by CTRL-D.");
+    }
     readFile(process.stdin, function(data) {
       if (args.output !== undefined) {
         writeTranslation(util.ensureExtension(args.output, 'json'), data);
@@ -100,7 +103,7 @@ function main() {
 }
 
 function writeTranslation(outFile, data) {
-  log("Generating " + outFile + ".");
+  log("Generating " + outFile + "...");
   fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
