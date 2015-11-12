@@ -20,7 +20,7 @@ import ast = require('../ast');
 
 /*
  * Run data drive test with tests is one of these formats:
- * [ { data: <input>, expect: <expected output> }, ... ]
+ * [ { label: (opt) <string>, data: <input>, expect: (opt) <expected output> }, ... ]
  * [ [ <input>, <expected output> ], ... ]
  * [ scalar, ... ]
  *
@@ -29,7 +29,7 @@ import ast = require('../ast');
 export function dataDrivenTest(tests, testIt, formatter?) {
   var data;
   var expect;
-  var label;
+  var label: string;
 
   formatter = formatter || format;
 

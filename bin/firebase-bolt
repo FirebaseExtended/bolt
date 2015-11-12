@@ -28,13 +28,14 @@ var VERSION_STRING = "Firebase Bolt v" + pkg.version;
 
 var opts = {
   boolean: ['version', 'help'],
+  string: ['output'],
   alias: {
     'v': 'version',
     'h': 'help',
     'o': 'output',
   },
   unknown: function(flag) {
-    if (flag.slice(0, 2) == '--') {
+    if (flag[0] == '-') {
       log("Unknown flag: '" + flag + "'");
       usage(1);
     }
@@ -43,6 +44,12 @@ var opts = {
 
 function main() {
   var args = parseArgs(process.argv.slice(2), opts);
+
+  // Option present - but missing value.
+  if (args.output == '') {
+    log("Missing output file name.");
+    process.exit(1);
+  }
 
   if (args.version) {
     console.log(VERSION_STRING);
@@ -58,10 +65,14 @@ function main() {
     usage(1);
   }
 
-  // Pipe Bolt file from stdin
+  // Read Bolt file from stdin
   if (args._.length === 0) {
     readFile(process.stdin, function(data) {
-      console.log(translateRules(data));
+      if (args.output !== undefined) {
+        writeTranslation(util.ensureExtension(args.output, 'json'), data);
+      } else {
+        console.log(translateRules(data));
+      }
     });
     return;
   }
@@ -74,7 +85,6 @@ function main() {
   } else {
     outFile = util.replaceExtension(inFile, 'json');
   }
-  log("Generating " + outFile + ".");
   if (inFile === outFile) {
     log("Cannot overwrite input file: " + inFile);
     log("(Did you mean '" + util.replaceExtension(inFile, 'bolt') + "'?)");
@@ -85,12 +95,17 @@ function main() {
       log("Could not read file: " + inFile);
       process.exit(1);
     }
-    fs.writeFile(outFile, translateRules(data), 'utf8', function(err2) {
-      if (err2) {
-        log("Could not write file: " + outFile);
-        process.exit(1);
-      }
-    });
+    writeTranslation(outFile, data);
+  });
+}
+
+function writeTranslation(outFile, data) {
+  log("Generating " + outFile + ".");
+  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
+    if (err2) {
+      log("Could not write file: " + outFile);
+      process.exit(1);
+    }
   });
 }
 
