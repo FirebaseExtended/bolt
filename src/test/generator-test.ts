@@ -75,6 +75,7 @@ suite("Rules Generator Tests", function() {
                  "multi-update",
                  "chat",
                  "serialized",
+                 "map-scalar"
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
@@ -393,6 +394,8 @@ suite("Rules Generator Tests", function() {
         expect: /No type.*non-generic/ },
       { data: "path / is String<Number>;",
         expect: /No type.*generic/ },
+      { data: "path / is Map<Object, Number>;",
+        expect: /must derive from String/ },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect, t) {
