@@ -121,7 +121,7 @@ function usage(code) {
   console.error("  Examples: " + cmdName + " myapp.bolt --output rules.json");
   console.error("            " + cmdName + " < myapp.bolt > rules.json");
   console.error("            " + cmdName + " myapp");
-  console.error("              (writes to myapp.json)\n");
+  console.error("              (myapp.bolt =>  myapp.json)\n");
 
   console.error("  Options:\n");
   console.error(util.formatColumns(4, [
