@@ -1,0 +1,1 @@
+fixed - Invoke validation function for all String ancestors types.
