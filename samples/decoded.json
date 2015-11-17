@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid",
+        "name": {
+          ".validate": "newData.isString()"
+        }
+      }
+    }
+  }
+}

@@ -58,6 +58,12 @@ suite("firebase-bolt CLI", function() {
       expect: {out: /^$/, err: /bolt: Could not read file: nosuchfile.bolt/} },
     { data: "two files",
       expect: {out: /^$/, err: /bolt: Can only compile a single file/} },
+    { data: "migrate",
+      expect: {out: /^$/, err: /bolt-migrate: Missing JSON file name/} },
+
+    // Migrate from json file
+    { data: "migrate samples/decoded --output " + TMP_DIR + "decoded",
+      expect: {out: /^$/, err: /^bolt-migrate: Generating tmp\/decoded.bolt\.\.\.\n$/} },
   ];
 
   helper.dataDrivenTest(tests, function(data, expect) {

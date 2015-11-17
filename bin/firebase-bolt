@@ -26,6 +26,8 @@ var pkg = require('../package.json');
 
 var VERSION_STRING = "Firebase Bolt v" + pkg.version;
 
+var commandName = 'bolt';
+
 var opts = {
   boolean: ['version', 'help'],
   string: ['output'],
@@ -39,6 +41,20 @@ var opts = {
       log("Unknown flag: '" + flag + "'");
       usage(1);
     }
+  }
+};
+
+var commands = {
+  migrate: function(args) {
+    if (args._.length != 2) {
+      log("Missing JSON file name to migrate to bolt file.");
+      process.exit(1);
+    }
+    var inputFileName = getInputFileName(args._[1], 'json');
+    var outputFileName = getOutputFileName(args.output, inputFileName, 'bolt');
+    readInputFile(inputFileName, 'JSON', function(jsonData) {
+      writeOutputFile(outputFileName, bolt.decodeJSON(jsonData));
+    });
   }
 };
 
@@ -60,73 +76,105 @@ function main() {
     usage(0);
   }
 
+  // command file
+  if (args._.length >= 1 && commands[args._[0]] !== undefined) {
+    commandName += '-' + args._[0];
+    commands[args._[0]](args);
+    return;
+  }
+
   if (args._.length > 1) {
     log("Can only compile a single file.");
     usage(1);
   }
 
-  // Read Bolt file from stdin
-  if (args._.length === 0) {
-    if (process.stdin.isTTY) {
-      log("Type in a Bolt file terminated by CTRL-D.");
-    }
-    readFile(process.stdin, function(data) {
-      if (args.output !== undefined) {
-        writeTranslation(util.ensureExtension(args.output, 'json'), data);
-      } else {
-        console.log(translateRules(data));
-      }
-    });
-    return;
-  }
-
-  // Read Bolt file and write json file.
-  var inFile = util.ensureExtension(args._[0], bolt.FILE_EXTENSION);
-  var outFile;
-  if (args.output) {
-    outFile = util.ensureExtension(args.output, 'json');
-  } else {
-    outFile = util.replaceExtension(inFile, 'json');
-  }
-  if (inFile === outFile) {
-    log("Cannot overwrite input file: " + inFile);
-    log("(Did you mean '" + util.replaceExtension(inFile, 'bolt') + "'?)");
-    process.exit(1);
-  }
-  fs.readFile(inFile, 'utf8', function(err, data) {
-    if (err) {
-      log("Could not read file: " + inFile);
-      process.exit(1);
-    }
-    writeTranslation(outFile, data);
+  var inputFileName = getInputFileName(args._[0], 'bolt');
+  var outputFileName = getOutputFileName(args.output, inputFileName, 'json');
+  readInputFile(inputFileName, 'Bolt', function(boltData) {
+    writeOutputFile(outputFileName, translateRules(boltData));
   });
 }
 
-function writeTranslation(outFile, data) {
-  log("Generating " + outFile + "...");
-  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
-    if (err2) {
-      log("Could not write file: " + outFile);
+function getInputFileName(name, extension) {
+  // Read file from stdin
+  if (name === undefined) {
+    return undefined;
+  }
+  return util.ensureExtension(name, extension);
+}
+
+function getOutputFileName(name, inputFileName, extension) {
+  if (name === undefined) {
+    if (inputFileName === undefined) {
+      return undefined;
+    }
+    name = util.replaceExtension(inputFileName, extension);
+  } else {
+    name = util.ensureExtension(name, extension);
+  }
+  if (name === inputFileName) {
+    log("Cannot overwrite input file: " + inputFileName);
+    log("(Did you mean '" +
+        util.replaceExtension(name, extension == 'json' ? 'bolt' : 'json') +
+        "'?)");
+    process.exit(1);
+  }
+  return name;
+}
+
+function readInputFile(name, kind, callback) {
+  if (name === undefined) {
+    if (process.stdin.isTTY) {
+      log("Type in a " + kind + " file terminated by CTRL-D.");
+    }
+    readStream(process.stdin, callback);
+    return;
+  }
+
+  fs.readFile(name, 'utf8', function(err, data) {
+    if (err) {
+      log("Could not read file: " + name);
       process.exit(1);
     }
+    callback(data);
   });
+}
+
+function writeOutputFile(name, data) {
+  if (name === undefined) {
+    console.log(data + '\n');
+  } else {
+    log("Generating " + name + "...");
+    fs.writeFile(name, data + '\n', 'utf8', function(err) {
+      if (err) {
+        log("Could not write file: " + outputFile);
+        process.exit(1);
+      }
+    });
+  }
 }
 
 function usage(code) {
   var cmdName = process.argv[1].split('/').slice(-1);
-  console.error("Translate Firebase Bolt file into JSON rules format.\n");
+  console.error("Translate Firebase Bolt file into JSON rules format");
+  console.error("  (or use migrate sub-command to generate a Bolt file equivalent\n" +
+                "   of a Firebase JSON rule set).\n");
 
-  console.error("  Usage: " + cmdName + " [options] [file]\n");
+  console.error("  Usage: " + cmdName + " [options] [file[.bolt]]");
+  console.error("         " + cmdName + " [options] migrate [file[.json]]\n");
 
-  console.error("  Examples: " + cmdName + " myapp.bolt --output rules.json");
-  console.error("            " + cmdName + " < myapp.bolt > rules.json");
-  console.error("            " + cmdName + " myapp");
-  console.error("              (myapp.bolt =>  myapp.json)\n");
+  console.error("  Examples: " + cmdName + " rules.bolt --output rules.json");
+  console.error("            " + cmdName + " < rules.bolt > rules.json");
+  console.error("            " + cmdName + " rules");
+  console.error("              (rules.bolt =>  rules.json)");
+  console.error("            " + cmdName + " migrate rules.json");
+  console.error("              (rules.json =>  rules.bolt)\n");
+
 
   console.error("  Options:\n");
   console.error(util.formatColumns(4, [
     ["-h --help", "Display this helpful message."],
-    ["-o --output file", "Output to file.json."],
+    ["-o --output file", "Output to file."],
     ["-v --version", "Display Firebase Bolt version."],
     []
   ]).join('\n'));
@@ -136,7 +184,7 @@ function usage(code) {
 
 main();
 
-function readFile(f, callback) {
+function readStream(f, callback) {
   var input = "";
 
   f.setEncoding('utf8');
@@ -172,7 +220,7 @@ function translateRules(input) {
 }
 
 function log(message, line, column) {
-  var parts = ['bolt'];
+  var parts = [commandName];
   if (line) {
     util.extendArray(parts, [line, column]);
   }

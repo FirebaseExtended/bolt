@@ -17,16 +17,19 @@
 
 var parser = require('./rules-parser');
 import generator = require('./rules-generator');
+import decoder = require('./rules-decoder');
 import simulator = require('./simulator');
 import astReal = require('./ast');
 import util = require('./util');
 
 export var FILE_EXTENSION = 'bolt';
+
 export var parse = util.maybePromise(parser.parse);
 export var generate = util.maybePromise(generateSync);
 export var Generator = generator.Generator;
 export var ast = astReal;
 export var decodeExpression = ast.decodeExpression;
+export var decodeJSON = decoder.decodeJSON;
 export var rulesSuite = simulator.rulesSuite;
 
 // Usage:
