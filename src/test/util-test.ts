@@ -20,7 +20,7 @@ import helper = require('./test-helper');
 var util = require('../util');
 
 suite("Util", function() {
-  suite("pruneEmptyChildren", function() {
+  suite("pruneEmptyChildren", () => {
     function T() {
       this.x = 'dummy';
     }
@@ -36,9 +36,25 @@ suite("Util", function() {
       [ {a: {a: {a: {}, b: 1}}}, {a: {a: {b: 1}}} ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, (data, expect) => {
       util.pruneEmptyChildren(data);
       assert.deepEqual(data, expect);
+    });
+  });
+
+  suite("stripComments", () => {
+    var tests = [
+      [ "abc", "abc" ],
+      [ "a /* comment */ c", "a  c" ],
+      [ "a /* comment */ c /* comment */ d", "a  c  d" ],
+      [ "a /* comment\n */ c\n /* comment\n */ d", "a  c\n  d" ],
+      [ "a // comment", "a " ],
+      [ "a // comment \nb", "a \nb" ],
+    ];
+
+    helper.dataDrivenTest(tests, (data, expect) => {
+      let result = util.stripComments(data);
+      assert.equal(result, expect);
     });
   });
 });

@@ -53,7 +53,8 @@ var commands = {
     var inputFileName = getInputFileName(args._[1], 'json');
     var outputFileName = getOutputFileName(args.output, inputFileName, 'bolt');
     readInputFile(inputFileName, 'JSON', function(jsonData) {
-      writeOutputFile(outputFileName, bolt.decodeJSON(jsonData));
+      jsonData = util.stripComments(jsonData);
+      writeOutputFile(outputFileName, bolt.decodeJSON(JSON.parse(jsonData)));
     });
   }
 };

@@ -15,8 +15,68 @@
  */
 /// <reference path="typings/node.d.ts" />
 // import util = require('./util');
-// import ast = require('./ast');
+import ast = require('./ast');
+var parser = require('./rules-parser');
 
-export function decodeJSON(json) {
-  return "// Bolt file auto-generated from JSON file.";
+export var PREAMBLE = "// Bolt file auto-generated from JSON file.\n";
+
+export function decodeJSON(json: Object): string {
+  var formatter = new Formatter;
+  formatter.decodeParts('/', json['rules']);
+  return formatter.toString();
+}
+
+class Formatter {
+  exps: { [path: string]: { [method: string]: string } };
+  indent: number;
+
+  constructor() {
+    this.exps = {};
+  }
+
+  decodeParts(path: string, json: Object) {
+    for (var key in json) {
+      if (key[0] === '.') {
+        this.emit(path, key.slice(1), json[key]);
+      } else {
+        this.decodeParts(childPath(path, key), json[key]);
+      }
+    }
+  }
+
+  emit(path: string, method: string, expString: string) {
+    if (this.exps[path] === undefined) {
+      this.exps[path] = {};
+    }
+    this.exps[path][method] = decodeJSONExpression(expString);
+  }
+
+  toString(): string {
+    let lines = [];
+    Object.keys(this.exps).sort().forEach((path) => {
+      let methods = this.exps[path];
+      lines.push("path " + path + " {");
+      for (let method in methods) {
+        lines.push("  " + method + "() = " + methods[method] + ";");
+      }
+      lines.push("}");
+    });
+    return PREAMBLE + lines.join('\n') + '\n';
+  }
+}
+
+function decodeJSONExpression(expString: string): string {
+  return ast.decodeExpression(parse(expString));
+}
+
+function parse(s: string): ast.Exp {
+  var result = parser.parse("f() = " + s + ";");
+  return result.functions.f.body;
+}
+
+function childPath(path: string, child: string): string {
+  if (path.slice(-1) === '/') {
+    return path + child;
+  }
+  return path + '/' + child;
 }
