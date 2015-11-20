@@ -17,17 +17,17 @@ type SocialSecurity extends String {
 
 // Only an integer string
 type IntegerString extends String {
-  validate() = this.test(/^\d+$/);
+  validate() = this.test(/^-?\d+$/);
 }
 
 // A floating point number (or integer).
 type FloatString extends String {
-  validate() = this.test(/^\d+(\.\d*)$/);
+  validate() = this.test(/^-?(\d+\.?\d*|\.\d+)$/);
 }
 
 // An integral number (no fractional part)
 type Integer extends Number {
-  validate() = (this + '').test(/^\d+$/);
+  validate() = (this + '').test(/^-?\d+$/);
 }
 
 // Only letters

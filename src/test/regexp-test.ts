@@ -52,6 +52,15 @@ rulesSuite("RegExp", function(test) {
       .write('0')
       .succeeds("Zero.")
 
+      .write('123')
+      .succeeds("Example.")
+
+      .write('-123')
+      .succeeds("Negative Example.")
+
+      .write('--123')
+      .fails("Double negative.")
+
       .write('')
       .fails("Empty string.")
 
@@ -75,14 +84,23 @@ rulesSuite("RegExp", function(test) {
       .write('123.456')
       .succeeds("Fixed point number.")
 
-      .write('.0')
-      .fails("No leading digits.")
+      .write('-123.456')
+      .succeeds("Negative ixed point number.")
 
-      .write('0.')
+      .write('.1')
+      .succeeds("No leading digits.")
+
+      .write('1.')
       .succeeds("No trailing digits.")
 
+      .write('-.1')
+      .succeeds("Negative fraction only.")
+
+      .write('.')
+      .fails("Just decimal point.")
+
       .write('0')
-      .fails("Zero.")
+      .succeeds("Zero.")
 
       .write('')
       .fails("Empty string.")
@@ -99,10 +117,16 @@ rulesSuite("RegExp", function(test) {
     rules
       .at('/int')
       .write(0)
-      .succeeds("Zero")
+      .succeeds("Zero.")
 
       .write(0.0)
-      .succeeds("Floating Zero")
+      .succeeds("Floating Zero.")
+
+      .write(123)
+      .succeeds("Example.")
+
+      .write(-123)
+      .succeeds("Negative example.")
 
       .write(1.1)
       .fails("No fractional part allowed.")

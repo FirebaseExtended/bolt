@@ -6,13 +6,13 @@
       ".validate": "newData.isString() && newData.val().matches(/^\\d\\d\\d-\\d\\d-\\d\\d\\d\\d$/)"
     },
     "integer": {
-      ".validate": "newData.isString() && newData.val().matches(/^\\d+$/)"
+      ".validate": "newData.isString() && newData.val().matches(/^-?\\d+$/)"
     },
     "float": {
-      ".validate": "newData.isString() && newData.val().matches(/^\\d+(\\.\\d*)$/)"
+      ".validate": "newData.isString() && newData.val().matches(/^-?(\\d+\\.?\\d*|\\.\\d+)$/)"
     },
     "int": {
-      ".validate": "newData.isNumber() && (newData.val() + '').matches(/^\\d+$/)"
+      ".validate": "newData.isNumber() && (newData.val() + '').matches(/^-?\\d+$/)"
     },
     "alpha": {
       ".validate": "newData.isString() && newData.val().matches(/^[a-z]+$/i)"
