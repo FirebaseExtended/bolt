@@ -1,0 +1,1 @@
+feature - Support string.test(/regexp/) format (formerly required regexp in a quoted string).

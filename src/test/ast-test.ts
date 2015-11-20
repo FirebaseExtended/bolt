@@ -147,6 +147,8 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "'st\\'ring'"],
       [ "'st\\ring'" ],
       [ "'\\u000d'", "'\\r'" ],
+      [ "/pattern/" ],
+      [ "/pattern/i" ],
       [ "a" ],
       [ "a.b" ],
       [ "a.b.c" ],
