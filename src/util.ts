@@ -257,11 +257,3 @@ function fillString(s: string, n: number): string {
   }
   return s;
 }
-
-// Remove all single and multi-line command from string.
-// Note use of *? - "lazy" match (not greedy).
-export function stripComments(s: string) : string {
-  return s
-    .replace(/\/\*[^]*?\*\//g, '')
-    .replace(/\/\/.*/g, '');
-}

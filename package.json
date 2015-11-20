@@ -70,6 +70,7 @@
     "minimist": "^1.2.0",
     "mocha": "^2.2.5",
     "node-uuid": "^1.4.3",
-    "promise": "^7.0.4"
+    "promise": "^7.0.4",
+    "strip-json-comments": "^2.0.0"
   }
 }

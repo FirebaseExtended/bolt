@@ -62,7 +62,11 @@ class Formatter {
 
   emit(path: string, method: string, expString: string) {
     // Normalize expression
-    expString = ast.decodeExpression(parse(expString));
+    try {
+      expString = ast.decodeExpression(parse(expString));
+    } catch (e) {
+      throw new Error("Could not parse expression: '" + expString + "'");
+    }
 
     if (this.exps[path] === undefined) {
       this.exps[path] = new PathConstraints('Any');

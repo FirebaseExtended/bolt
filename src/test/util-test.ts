@@ -41,20 +41,4 @@ suite("Util", function() {
       assert.deepEqual(data, expect);
     });
   });
-
-  suite("stripComments", () => {
-    var tests = [
-      [ "abc", "abc" ],
-      [ "a /* comment */ c", "a  c" ],
-      [ "a /* comment */ c /* comment */ d", "a  c  d" ],
-      [ "a /* comment\n */ c\n /* comment\n */ d", "a  c\n  d" ],
-      [ "a // comment", "a " ],
-      [ "a // comment \nb", "a \nb" ],
-    ];
-
-    helper.dataDrivenTest(tests, (data, expect) => {
-      let result = util.stripComments(data);
-      assert.equal(result, expect);
-    });
-  });
 });

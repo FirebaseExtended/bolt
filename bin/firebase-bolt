@@ -23,6 +23,7 @@ var parseArgs = require('minimist');
 var util = require('../lib/util');
 var bolt = require('../lib/bolt');
 var pkg = require('../package.json');
+var stripComments = require('strip-json-comments');
 
 var VERSION_STRING = "Firebase Bolt v" + pkg.version;
 
@@ -53,7 +54,11 @@ var commands = {
     var inputFileName = getInputFileName(args._[1], 'json');
     var outputFileName = getOutputFileName(args.output, inputFileName, 'bolt');
     readInputFile(inputFileName, 'JSON', function(jsonData) {
-      jsonData = util.stripComments(jsonData);
+      jsonData = stripComments(jsonData);
+      jsonData = jsonData.replace(/"([^\\"]|\\[^])*"/g, function(s) {
+        return s.replace(/\n/g, '\\n');
+      });
+      console.log(jsonData);
       writeOutputFile(outputFileName, bolt.decodeJSON(JSON.parse(jsonData)));
     });
   }
