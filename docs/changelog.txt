@@ -1,3 +1,4 @@
 changed - Support string.test(/regexp/) format (formerly required regexp in a quoted string).
 feature - Added regexp test and samples.
+feature - Allow quoted property names in type statements.
 fixed - Parser failed when empty string used.
