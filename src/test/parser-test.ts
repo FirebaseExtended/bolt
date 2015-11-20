@@ -312,6 +312,13 @@ suite("Rules Parser Tests", function() {
                   methods: {},
                   params: [],
                 }},
+
+      { data: "type Foo { 'hyphen-prop': String }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {"hyphen-prop": ast.typeType('String')},
+                  methods: {},
+                  params: [],
+                }},
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

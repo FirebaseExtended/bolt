@@ -34,7 +34,10 @@ var errors = {
   invalidGeneric: "Invalid generic schema usage: ",
   invalidMapKey: "Map<Key, T> - Key must derive from String type.",
   invalidWildChildren: "Types can have at most one $wild property and cannot mix with other properties.",
+  invalidPropertyName: "Property names cannot contain any of: . $ # [ ] / or control characters: ",
 };
+
+let INVALID_KEY_REGEX = /[\[\].#$\/\u0000-\u001F\u007F]/;
 
 /*
    A Validator is a JSON heriarchical structure. The "leaves" are "dot-properties"
@@ -418,6 +421,13 @@ export class Generator {
     Object.keys(schema.properties).forEach((propName) => {
       if (propName[0] === '$') {
         wildProperties += 1;
+        if (INVALID_KEY_REGEX.test(propName.slice(1))) {
+          this.fatal(errors.invalidPropertyName + propName);
+        }
+      } else {
+        if (INVALID_KEY_REGEX.test(propName)) {
+          this.fatal(errors.invalidPropertyName + propName);
+        }
       }
       if (!validator[propName]) {
         validator[propName] = {};

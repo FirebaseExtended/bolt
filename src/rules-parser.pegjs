@@ -194,7 +194,7 @@ Properties = head:PropertyDefinition tail:(_ PropSep part:PropertyDefinition { r
 
 PropSep = ("," / ";")? _
 
-PropertyDefinition = name:Identifier _ ":" _ type:TypeExpression {
+PropertyDefinition = name:(Identifier / String) _ ":" _ type:TypeExpression {
       return {
         name:  name,
         type: type
@@ -473,9 +473,11 @@ RegExpCharacters = chars:( [^\\/] / RegExpEscaped )+ { return chars.join(""); }
 
 RegExpEscaped = "\\" char_:. { return "\\" + char_; }
 
-StringLiteral "string"
+StringLiteral "string" = s:String { return ast.string(s); }
+
+String
   = parts:('"' DoubleStringCharacters '"' / "'" SingleStringCharacters "'") {
-    return ast.string(parts[1]);
+    return parts[1];
   }
 
 DoubleStringCharacters
@@ -536,7 +538,7 @@ UnicodeEscapeSequence
       return String.fromCharCode(parseInt(digits, 16));
     }
 
-Identifier "identifier" = start:[a-zA-Z_$] rest:[a-zA-Z0-9_]* {
+Identifier "identifier" = start:[a-zA-Z_$] rest:[a-zA-Z_$0-9]* {
   return start + rest.join("");
 }
 

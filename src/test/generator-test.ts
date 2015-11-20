@@ -242,6 +242,11 @@ suite("Rules Generator Tests", function() {
         expect: {'.validate': "newData.hasChildren()",
                  '$key': {'.validate': "newData.isNumber()"}} },
 
+      { data: "type T { 'a b': Number }",
+        expect: {'.validate': "newData.hasChildren(['a b'])",
+                 'a b': {'.validate': "newData.isNumber()"},
+                 '$other': {'.validate': 'false'}} },
+
       { data: "type T {a: Number, b: String}",
         expect: {'.validate': "newData.hasChildren(['a', 'b'])",
                  a: {'.validate': "newData.isNumber()"},
@@ -393,6 +398,10 @@ suite("Rules Generator Tests", function() {
         expect: /recursive/i },
       { data: "type X { $n: Number, $s: String } path / is X;",
         expect: /wild property/ },
+      { data: "type X { $$n: Number } path / is X;",
+        expect: /property names/i },
+      { data: "type X { '\x01': Number } path / is X;",
+        expect: /property names/i },
       { data: "path / is Map;",
         expect: /No type.*non-generic/ },
       { data: "type Pair<X, Y> {a: X, b: Y} path / is Pair;",
