@@ -18,7 +18,13 @@
 import ast = require('./ast');
 var parser = require('./rules-parser');
 
-export var PREAMBLE = "// Bolt file auto-generated from JSON file.\n";
+export let PREAMBLE = "// Bolt file auto-generated from JSON file.\n";
+
+let typeIndicators = {
+  "newData.isString()": "String",
+  "newData.isNumber()": "Number",
+  "newData.isBoolean()": "Boolean"
+};
 
 export function decodeJSON(json: Object): string {
   var formatter = new Formatter;
@@ -26,8 +32,18 @@ export function decodeJSON(json: Object): string {
   return formatter.toString();
 }
 
+class PathConstraints {
+  type: ast.ExpType;
+  methods: { [name: string]: string };
+
+  constructor(typeName: string) {
+    this.type = ast.typeType('Any');
+    this.methods = {};
+  }
+}
+
 class Formatter {
-  exps: { [path: string]: { [method: string]: string } };
+  exps: { [path: string]: PathConstraints };
   indent: number;
 
   constructor() {
@@ -45,28 +61,43 @@ class Formatter {
   }
 
   emit(path: string, method: string, expString: string) {
+    // Normalize expression
+    expString = ast.decodeExpression(parse(expString));
+
     if (this.exps[path] === undefined) {
-      this.exps[path] = {};
+      this.exps[path] = new PathConstraints('Any');
     }
-    this.exps[path][method] = decodeJSONExpression(expString);
+
+    let pc = this.exps[path];
+
+    if (method === 'validate' && typeIndicators[expString]) {
+      pc.type = ast.typeType(typeIndicators[expString]);
+    } else {
+      pc.methods[method] = expString;
+    }
   }
 
   toString(): string {
     let lines = [];
     Object.keys(this.exps).sort().forEach((path) => {
-      let methods = this.exps[path];
-      lines.push("path " + path + " {");
-      for (let method in methods) {
-        lines.push("  " + method + "() = " + methods[method] + ";");
+      let pc = this.exps[path];
+      let line = "path " + path;
+
+      if ((<ast.ExpSimpleType> pc.type).name !== 'Any') {
+        line += " is " + ast.decodeExpression(pc.type);
+      }
+      if (Object.keys(pc.methods).length === 0) {
+        lines.push(line + ";");
+        return;
+      }
+      lines.push(line + " {");
+      for (let method in pc.methods) {
+        lines.push("  " + method + "() = " + pc.methods[method] + ";");
       }
       lines.push("}");
     });
-    return PREAMBLE + lines.join('\n') + '\n';
+    return PREAMBLE + lines.join('\n');
   }
-}
-
-function decodeJSONExpression(expString: string): string {
-  return ast.decodeExpression(parse(expString));
 }
 
 function parse(s: string): ast.Exp {

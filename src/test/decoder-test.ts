@@ -29,11 +29,15 @@ suite("JSON Rules Decoder", function() {
   suite("Basic Samples", function() {
     var tests = [
       { data: { rules: {".read": "true", ".write": "true"} },
-        expect: decoder.PREAMBLE + "path / {\n  read() = true;\n  write() = true;\n}\n",
+        expect: decoder.PREAMBLE + "path / {\n  read() = true;\n  write() = true;\n}",
       },
 
       { data: { rules: { "a": { ".read": "true", ".write": "true"}} },
-        expect: decoder.PREAMBLE + "path /a {\n  read() = true;\n  write() = true;\n}\n",
+        expect: decoder.PREAMBLE + "path /a {\n  read() = true;\n  write() = true;\n}",
+      },
+
+      { data: { rules: { "a": { ".validate": "newData.isString()"}} },
+        expect: decoder.PREAMBLE + "path /a is String;",
       },
     ];
 

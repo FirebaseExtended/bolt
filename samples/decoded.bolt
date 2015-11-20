@@ -1,6 +1,6 @@
+// Bolt file auto-generated from JSON file.
 path /users/$uid {
   read() = auth != null;
   write() = auth != null && auth.uid == $uid;
 }
-
 path /users/$uid/name is String;
