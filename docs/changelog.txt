@@ -1,1 +1,3 @@
-feature - Support string.test(/regexp/) format (formerly required regexp in a quoted string).
+changed - Support string.test(/regexp/) format (formerly required regexp in a quoted string).
+feature - Adde regexp test and samples.
+fixed - Parser failed when empty string used.

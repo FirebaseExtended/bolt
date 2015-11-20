@@ -474,15 +474,15 @@ RegExpCharacters = chars:( [^\\/] / RegExpEscaped )+ { return chars.join(""); }
 RegExpEscaped = "\\" char_:. { return "\\" + char_; }
 
 StringLiteral "string"
-  = parts:('"' DoubleStringCharacters? '"' / "'" SingleStringCharacters? "'") {
-      return ast.string(parts[1]);
-    }
+  = parts:('"' DoubleStringCharacters '"' / "'" SingleStringCharacters "'") {
+    return ast.string(parts[1]);
+  }
 
 DoubleStringCharacters
-  = chars:DoubleStringCharacter+ { return chars.join(""); }
+  = chars:DoubleStringCharacter* { return chars.join(""); }
 
 SingleStringCharacters
-  = chars:SingleStringCharacter+ { return chars.join(""); }
+  = chars:SingleStringCharacter* { return chars.join(""); }
 
 DoubleStringCharacter
   = !('"' / "\\" / NewLine) char_:. { return char_;     }

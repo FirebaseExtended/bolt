@@ -75,7 +75,8 @@ suite("Rules Generator Tests", function() {
                  "multi-update",
                  "chat",
                  "serialized",
-                 "map-scalar"
+                 "map-scalar",
+                 "regexp"
                 ];
 
     helper.dataDrivenTest(files, function(filename) {

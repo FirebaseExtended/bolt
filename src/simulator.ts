@@ -32,7 +32,7 @@ interface Window { bolt: any; }
 declare var window: Window;
 var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
 
-var MAX_TEST_MS = 30000;
+var MAX_TEST_MS = 60000;
 
 export function rulesSuite(suiteName, fnSuite) {
   new RulesSuite(suiteName, fnSuite).run();

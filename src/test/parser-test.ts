@@ -71,6 +71,7 @@ suite("Rules Parser Tests", function() {
       [ "[1, 2, 3]", ast.array([ast.number(1), ast.number(2), ast.number(3)]) ],
       [ "\"string\"", ast.string("string") ],
       [ "'string'", ast.string("string") ],
+      [ "''", ast.string('') ],
       [ "/pattern/", ast.regexp("pattern") ],
       [ "/pattern/i", ast.regexp("pattern", "i") ],
       [ "/pat\\ntern/", ast.regexp("pat\\ntern") ],
