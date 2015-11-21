@@ -29,7 +29,7 @@ export var generate = util.maybePromise(generateSync);
 export var Generator = generator.Generator;
 export var ast = astReal;
 export var decodeExpression = ast.decodeExpression;
-export var decodeJSON = decoder.decodeJSON;
+export var decodeRules = decoder.decodeRules;
 export var rulesSuite = simulator.rulesSuite;
 
 // Usage:

@@ -17,6 +17,7 @@
 // import util = require('./util');
 import ast = require('./ast');
 var parser = require('./rules-parser');
+var stripComments = require('strip-json-comments');
 
 export let PREAMBLE = "// Bolt file auto-generated from JSON file.\n";
 
@@ -25,6 +26,18 @@ let typeIndicators = {
   "newData.isNumber()": "Number",
   "newData.isBoolean()": "Boolean"
 };
+
+export function decodeRules(jsonString: string): string {
+  return decodeJSON(JSON.parse(cleanJSONString(jsonString)));
+}
+
+export function cleanJSONString(jsonString: string): string {
+  jsonString = stripComments(jsonString);
+  jsonString = jsonString.replace(/"([^\\"]|\\[^])*"/g, function(s) {
+    return s.replace(/\n/g, '\\n');
+  });
+  return jsonString;
+}
 
 export function decodeJSON(json: Object): string {
   var formatter = new Formatter;
@@ -60,12 +73,16 @@ class Formatter {
     }
   }
 
-  emit(path: string, method: string, expString: string) {
-    // Normalize expression
-    try {
-      expString = ast.decodeExpression(parse(expString));
-    } catch (e) {
-      throw new Error("Could not parse expression: '" + expString + "'");
+  emit(path: string, method: string, exp: string | Array<string>) {
+    let expString = <string> exp;
+
+    if (method !== 'indexOn') {
+      // Normalize expression
+      try {
+        expString = ast.decodeExpression(parse(expString));
+      } catch (e) {
+        throw new Error("Could not parse expression: '" + expString + "'");
+      }
     }
 
     if (this.exps[path] === undefined) {
@@ -74,10 +91,20 @@ class Formatter {
 
     let pc = this.exps[path];
 
-    if (method === 'validate' && typeIndicators[expString]) {
-      pc.type = ast.typeType(typeIndicators[expString]);
-    } else {
+    switch (method) {
+    case 'indexOn':
+      console.log("IO");
+      break;
+    case 'validate':
+      if (typeIndicators[expString]) {
+        pc.type = ast.typeType(typeIndicators[expString]);
+      } else {
+        pc.methods[method] = expString;
+      }
+      break;
+    default:
       pc.methods[method] = expString;
+      break;
     }
   }
 

@@ -17,8 +17,10 @@
 /// <reference path="../typings/mocha.d.ts" />
 /// <reference path="../typings/chai.d.ts" />
 
-import decoder = require('../rules-decoder');
+import bolt = require('../bolt');
+import fileio = require('../file-io');
 import helper = require('./test-helper');
+import decoder = require('../rules-decoder');
 
 import chai = require('chai');
 chai.config.truncateThreshold = 1000;
@@ -43,7 +45,40 @@ suite("JSON Rules Decoder", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       var result = decoder.decodeJSON(data);
-      assert.deepEqual(result, expect);
+      assert.equal(result, expect);
+    });
+  });
+
+  suite("Decode Sample JSON", function() {
+    var files = ["all_access",
+                 "userdoc",
+                 "mail",
+                 "type-extension",
+                 "children",
+                 "functional",
+                 "user-security",
+                 "generics",
+                 "groups",
+                 "multi-update",
+                 "chat",
+                 "serialized",
+                 "map-scalar",
+                 "regexp",
+                 "decoded"
+                ];
+
+    helper.dataDrivenTest(files, function(filename) {
+      filename = 'samples/' + filename + '.json';
+      return fileio.readFile(filename)
+        .then(function(response) {
+          let json = JSON.parse(decoder.cleanJSONString(response.content));
+          let boltString = decoder.decodeJSON(json);
+          let generatedJSON = bolt.generate(boltString);
+          assert.deepEqual(generatedJSON, json);
+        })
+        .catch(function(error) {
+          assert.ok(false, error.message);
+        });
     });
   });
 });
