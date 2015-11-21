@@ -204,8 +204,6 @@ in the database):
     s.toLowerCase()     - Returns an all lower case version of s.
     s.toUpperCase()     - Returns an all upper case version of s.
     s.test(regexp)      - Returns true iff the string matches the regular expression.
-                          Note that, in Bolt, the regexp is quoted inside a string value
-                          (e.g., '/test/i').
 
 [Regular Expression Syntax](https://www.firebase.com/docs/security/api/string/matches.html)
 
@@ -337,4 +335,4 @@ s.contains(sub) | s.includes(sub)
 s.beginsWith(sub) | s.startsWith(sub)
 s.endsWith(sub) | s.endsWith(sub)
 s.replace(old, new) | s.replace(old, new)
-s.matches(/reg/) | s.test('/reg/')
+s.matches(/reg/) | s.test(/reg/)
