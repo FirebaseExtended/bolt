@@ -58,7 +58,7 @@ var commands = {
       jsonData = jsonData.replace(/"([^\\"]|\\[^])*"/g, function(s) {
         return s.replace(/\n/g, '\\n');
       });
-      console.log(jsonData);
+      // console.log(jsonData);
       writeOutputFile(outputFileName, bolt.decodeJSON(JSON.parse(jsonData)));
     });
   }
