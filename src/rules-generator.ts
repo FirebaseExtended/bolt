@@ -34,7 +34,10 @@ var errors = {
   invalidGeneric: "Invalid generic schema usage: ",
   invalidMapKey: "Map<Key, T> - Key must derive from String type.",
   invalidWildChildren: "Types can have at most one $wild property and cannot mix with other properties.",
+  invalidPropertyName: "Property names cannot contain any of: . $ # [ ] / or control characters: ",
 };
+
+let INVALID_KEY_REGEX = /[\[\].#$\/\u0000-\u001F\u007F]/;
 
 /*
    A Validator is a JSON heriarchical structure. The "leaves" are "dot-properties"
@@ -196,16 +199,16 @@ export class Generator {
       replace: ast.method(['this', 's', 'r'],
                           ast.call(ast.reference(ast.value(thisVar), ast.string('replace')),
                                    [ ast.value(ast.variable('s')), ast.value(ast.variable('r')) ])),
-      test: ast.method(['this', 's'],
+      test: ast.method(['this', 'r'],
                        ast.call(ast.reference(ast.value(thisVar), ast.string('matches')),
-                                [ ast.call(ast.variable('@RegExp'), [ast.variable('s')]) ])),
+                                [ ast.call(ast.variable('@RegExp'), [ast.variable('r')]) ])),
     });
 
     registerAsCall('Number', 'isNumber');
     registerAsCall('Boolean', 'isBoolean');
 
-    this.symbols.registerFunction('@RegExp', ['s'],
-                                  ast.builtin(this.makeRegExp.bind(this)));
+    this.symbols.registerFunction('@RegExp', ['r'],
+                                  ast.builtin(this.ensureType.bind(this, 'RegExp')));
 
     let map = this.symbols.registerSchema('Map', ast.typeType('Any'), undefined, undefined,
                                           ['Key', 'Value']);
@@ -418,6 +421,13 @@ export class Generator {
     Object.keys(schema.properties).forEach((propName) => {
       if (propName[0] === '$') {
         wildProperties += 1;
+        if (INVALID_KEY_REGEX.test(propName.slice(1))) {
+          this.fatal(errors.invalidPropertyName + propName);
+        }
+      } else {
+        if (INVALID_KEY_REGEX.test(propName)) {
+          this.fatal(errors.invalidPropertyName + propName);
+        }
       }
       if (!validator[propName]) {
         validator[propName] = {};
@@ -756,16 +766,16 @@ export class Generator {
     return ast.snapshotVariable(this.thisIs);
   }
 
-  // Builtin function - convert string to RegExp
-  makeRegExp(args: ast.Exp[], params: { [name: string]: ast.Exp }) {
+  // Builtin function - ensure type of argument
+  ensureType(type: string, args: ast.Exp[], params: { [name: string]: ast.Exp }) {
     if (args.length !== 1) {
-      throw new Error(errors.application + "RegExp arguments.");
+      throw new Error(errors.application + "ensureType arguments.");
     }
     var exp = <ast.ExpValue> this.partialEval(args[0], params);
-    if (exp.type !== 'String' || !/\/.*\//.test(exp.value)) {
-      throw new Error(errors.coercion + ast.decodeExpression(exp) + " => RegExp");
+    if (exp.type !== type) {
+      throw new Error(errors.coercion + ast.decodeExpression(exp) + " => " + type);
     }
-    return ast.regexp(exp.value);
+    return exp;
   }
 
   // Builtin function - return the parent key of 'this'.

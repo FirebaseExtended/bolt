@@ -194,7 +194,7 @@ Properties = head:PropertyDefinition tail:(_ PropSep part:PropertyDefinition { r
 
 PropSep = ("," / ";")? _
 
-PropertyDefinition = name:Identifier _ ":" _ type:TypeExpression {
+PropertyDefinition = name:(Identifier / String) _ ":" _ type:TypeExpression {
       return {
         name:  name,
         type: type
@@ -413,24 +413,27 @@ Expression = ConditionalExpression
 // ===================================
 
 Literal
-  = "null" { return ast.nullType() }
-  / value:BooleanLiteral { return ast.boolean(value); }
-  / value:NumericLiteral { return ast.number(value); }
-  / value:StringLiteral { return ast.string(value); }
-  / elements:ArrayLiteral { return ast.array(elements); }
+  = Null
+  / BooleanLiteral
+  / NumericLiteral
+  / StringLiteral
+  / ArrayLiteral
+  / RegExp
 
-ArrayLiteral = "[" _ elements:ArgumentList? _ "]" { return elements; }
+Null  = "null" { return ast.nullType() }
+
+ArrayLiteral = "[" _ elements:ArgumentList? _ "]" { return ast.array(elements); }
 
 BooleanLiteral
-  = "true"  { return true; }
-  / "false" { return false; }
+  = "true"  { return ast.boolean(true); }
+  / "false" { return ast.boolean(false); }
 
 NumericLiteral "number"
   = unary:([+-])? literal:(HexIntegerLiteral / DecimalLiteral) {
       if (unary == '-') {
-         return -literal;
+         return ast.number(-literal);
       }
-      return literal;
+      return ast.number(literal);
     }
 
 DecimalLiteral
@@ -459,25 +462,38 @@ HexIntegerLiteral = "0" [xX] digits:$HexDigit+ { return parseInt(digits, 16); }
 
 HexDigit = [0-9a-fA-F]
 
-StringLiteral "string"
-  = parts:('"' DoubleStringCharacters? '"' / "'" SingleStringCharacters? "'") {
-      return parts[1];
-    }
+RegExp "regexp" = "/" pattern:RegExpCharacters? "/" modifiers:[a-z]* {
+  if (modifiers) {
+    return ast.regexp(pattern, modifiers.join(""));
+  }
+  return ast.regexp(pattern);
+}
+
+RegExpCharacters = chars:( [^\\/] / RegExpEscaped )+ { return chars.join(""); }
+
+RegExpEscaped = "\\" char_:. { return "\\" + char_; }
+
+StringLiteral "string" = s:String { return ast.string(s); }
+
+String
+  = parts:('"' DoubleStringCharacters '"' / "'" SingleStringCharacters "'") {
+    return parts[1];
+  }
 
 DoubleStringCharacters
-  = chars:DoubleStringCharacter+ { return chars.join(""); }
+  = chars:DoubleStringCharacter* { return chars.join(""); }
 
 SingleStringCharacters
-  = chars:SingleStringCharacter+ { return chars.join(""); }
+  = chars:SingleStringCharacter* { return chars.join(""); }
 
 DoubleStringCharacter
   = !('"' / "\\" / NewLine) char_:. { return char_;     }
-  / "\\" sequence:EscapeSequence                         { return sequence;  }
+  / "\\" sequence:EscapeSequence    { return sequence;  }
   / LineContinuation
 
 SingleStringCharacter
   = !("'" / "\\" / NewLine) char_:. { return char_;     }
-  / "\\" sequence:EscapeSequence                         { return sequence;  }
+  / "\\" sequence:EscapeSequence    { return sequence;  }
   / LineContinuation
 
 LineContinuation
@@ -522,7 +538,7 @@ UnicodeEscapeSequence
       return String.fromCharCode(parseInt(digits, 16));
     }
 
-Identifier "identifier" = start:[a-zA-Z_$] rest:[a-zA-Z0-9_]* {
+Identifier "identifier" = start:[a-zA-Z_$] rest:[a-zA-Z_$0-9]* {
   return start + rest.join("");
 }
 

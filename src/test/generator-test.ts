@@ -75,7 +75,8 @@ suite("Rules Generator Tests", function() {
                  "multi-update",
                  "chat",
                  "serialized",
-                 "map-scalar"
+                 "map-scalar",
+                 "regexp"
                 ];
 
     helper.dataDrivenTest(files, function(filename) {
@@ -165,7 +166,7 @@ suite("Rules Generator Tests", function() {
         expect: "'abc'.toUpperCase()" },
       { data: "this.toUpperCase()",
         expect: "newData.val().toUpperCase()" },
-      { data: "'ababa'.test('/bab/')",
+      { data: "'ababa'.test(/bab/)",
         expect: "'ababa'.matches(/bab/)" },
     ];
 
@@ -240,6 +241,11 @@ suite("Rules Generator Tests", function() {
       { data: "type T { $key: Number }",
         expect: {'.validate': "newData.hasChildren()",
                  '$key': {'.validate': "newData.isNumber()"}} },
+
+      { data: "type T { 'a b': Number }",
+        expect: {'.validate': "newData.hasChildren(['a b'])",
+                 'a b': {'.validate': "newData.isNumber()"},
+                 '$other': {'.validate': 'false'}} },
 
       { data: "type T {a: Number, b: String}",
         expect: {'.validate': "newData.hasChildren(['a', 'b'])",
@@ -380,14 +386,22 @@ suite("Rules Generator Tests", function() {
         expect: /No type.*NoSuchType/ },
       { data: "path /x { unsupported() { return true; } }",
         warn: /unsupported method/i },
+
       { data: "path /x { validate() { return this.test(123); } }",
         expect: /convert value/i },
       { data: "path /x { validate() { return this.test('a/'); } }",
         expect: /convert value/i },
+      { data: "path /x { validate() { return this.test('/a/'); } }",
+        expect: /convert value/i },
+
       { data: "function f(a) { return f(a); } path / { validate() { return f(1); }}",
         expect: /recursive/i },
       { data: "type X { $n: Number, $s: String } path / is X;",
         expect: /wild property/ },
+      { data: "type X { $$n: Number } path / is X;",
+        expect: /property names/i },
+      { data: "type X { '\x01': Number } path / is X;",
+        expect: /property names/i },
       { data: "path / is Map;",
         expect: /No type.*non-generic/ },
       { data: "type Pair<X, Y> {a: X, b: Y} path / is Pair;",

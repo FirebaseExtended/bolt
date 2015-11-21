@@ -30,6 +30,10 @@ export interface ExpValue extends Exp {
   value: any;
 }
 
+export interface RegExpValue extends ExpValue {
+  modifiers: string;
+}
+
 export interface ExpNull extends Exp {
 }
 
@@ -106,11 +110,10 @@ export interface Loggers {
   error: (message: string) => void;
   warn: (message: string) => void;
 };
-export var string: (string) => ExpValue = valueGen('String');
-export var boolean: (boolean) => ExpValue = valueGen('Boolean');
-export var number: (number) => ExpValue  = valueGen('Number');
-export var array = valueGen('Array');
-export var regexp = valueGen('RegExp');
+export var string: (v: string) => ExpValue = valueGen('String');
+export var boolean: (v: boolean) => ExpValue = valueGen('Boolean');
+export var number: (v: number) => ExpValue = valueGen('Number');
+export var array: (v: Array<any>) => ExpValue = valueGen('Array');
 
 export var neg = opGen('neg', 1);
 export var not = opGen('!', 1);
@@ -281,6 +284,22 @@ function valueGen(typeName: string): ((val: any) => ExpValue) {
       valueType: typeName, // The type of the result of evaluating this expression.
       value: val           // The (constant) value itself.
     };
+  };
+}
+
+export function regexp(pattern: string, modifiers = ""): RegExpValue {
+  switch (modifiers) {
+  case "":
+  case "i":
+    break;
+  default:
+    throw new Error("Unsupported RegExp modifier: " + modifiers);
+  }
+  return {
+    type: 'RegExp',
+    valueType: 'RegExp',
+    value: pattern,
+    modifiers: modifiers
   };
 }
 
@@ -546,9 +565,13 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     result = util.quoteString((<ExpValue> exp).value);
     break;
 
-  // RegExp assumed to be in correct format.
+  // RegExp assumed to be in pre-quoted format.
   case 'RegExp':
-    result = (<ExpValue> exp).value;
+    let regexp = <RegExpValue> exp;
+    result = '/' + regexp.value + '/';
+    if (regexp.modifiers !== '') {
+      result += regexp.modifiers;
+    }
     break;
 
   case 'Array':

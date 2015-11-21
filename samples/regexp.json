@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": "true",
+    ".write": "true",
+    "ss": {
+      ".validate": "newData.isString() && newData.val().matches(/^\\d\\d\\d-\\d\\d-\\d\\d\\d\\d$/)"
+    },
+    "integer": {
+      ".validate": "newData.isString() && newData.val().matches(/^-?\\d+$/)"
+    },
+    "float": {
+      ".validate": "newData.isString() && newData.val().matches(/^-?(\\d+\\.?\\d*|\\.\\d+)$/)"
+    },
+    "int": {
+      ".validate": "newData.isNumber() && (newData.val() + '').matches(/^-?\\d+$/)"
+    },
+    "alpha": {
+      ".validate": "newData.isString() && newData.val().matches(/^[a-z]+$/i)"
+    },
+    "year": {
+      ".validate": "newData.isString() && newData.val().matches(/^(19|20)\\d\\d$/)"
+    },
+    "date": {
+      ".validate": "newData.isString() && newData.val().matches(/^(19|20)\\d\\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/)"
+    }
+  }
+}

@@ -71,6 +71,12 @@ suite("Rules Parser Tests", function() {
       [ "[1, 2, 3]", ast.array([ast.number(1), ast.number(2), ast.number(3)]) ],
       [ "\"string\"", ast.string("string") ],
       [ "'string'", ast.string("string") ],
+      [ "''", ast.string('') ],
+      [ "/pattern/", ast.regexp("pattern") ],
+      [ "/pattern/i", ast.regexp("pattern", "i") ],
+      [ "/pat\\ntern/", ast.regexp("pat\\ntern") ],
+      [ "/pat\\/tern/", ast.regexp("pat\\/tern") ],
+      [ "/pat\\tern/", ast.regexp("pat\\tern") ],
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -306,6 +312,13 @@ suite("Rules Parser Tests", function() {
                   methods: {},
                   params: [],
                 }},
+
+      { data: "type Foo { 'hyphen-prop': String }",
+        expect: { derivedFrom: ast.typeType('Object'),
+                  properties: {"hyphen-prop": ast.typeType('String')},
+                  methods: {},
+                  params: [],
+                }},
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -412,6 +425,8 @@ suite("Rules Parser Tests", function() {
         expect: /./ },
       { data: "path // is String;",
         expect: /./ },
+      { data: "path /x { validate() { return this.test(/a/g); } }",
+        expect: /unsupported regexp modifier/i },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
