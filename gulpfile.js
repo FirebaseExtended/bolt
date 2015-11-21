@@ -36,8 +36,14 @@ var TS_SOURCES = ['src/*.ts',
                   'src/test/*.ts'];
 
 // Subset of tests required for 'gulp test'.
-var TEST_FILES = ['lib/test/generator-test.js', 'lib/test/parser-test.js',
-                  'lib/test/ast-test.js', 'lib/test/util-test.js', 'lib/test/cli-test.js'];
+var TEST_FILES = [
+  'lib/test/ast-test.js',
+  'lib/test/cli-test.js',
+  'lib/test/decoder-test.js',
+  'lib/test/generator-test.js',
+  'lib/test/parser-test.js',
+  'lib/test/util-test.js'
+];
 
 // Ignore ts-compile errors while watching (but not in normal builds).
 var watching = false;
