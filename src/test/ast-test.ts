@@ -209,6 +209,7 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "a && b || c && d" ],
       [ "a ? b : c",  ],
       [ "a || b ? c : d" ],
+      [ "(this + ' ').test(/\d+/)" ],
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
