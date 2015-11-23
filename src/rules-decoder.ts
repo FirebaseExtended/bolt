@@ -93,7 +93,7 @@ class Formatter {
 
     switch (method) {
     case 'indexOn':
-      console.log("IO");
+      pc.methods['index'] = JSON.stringify(exp);
       break;
     case 'validate':
       if (typeIndicators[expString]) {

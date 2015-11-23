@@ -41,6 +41,14 @@ suite("JSON Rules Decoder", function() {
       { data: { rules: { "a": { ".validate": "newData.isString()"}} },
         expect: decoder.PREAMBLE + "path /a is String;",
       },
+
+      { data: { rules: { "a": { ".indexOn": "prop"}} },
+        expect: decoder.PREAMBLE + "path /a {\n  index() = \"prop\";\n}",
+      },
+
+      { data: { rules: { "a": { ".indexOn": ["prop1", "prop2"]}} },
+        expect: decoder.PREAMBLE + "path /a {\n  index() = [\"prop1\",\"prop2\"];\n}",
+      },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
