@@ -526,7 +526,7 @@ interface OpPriority {
 }
 
 var JS_OPS: { [op: string]: OpPriority; } = {
-  'value': { rep: "", p: 16 },
+  'value': { rep: "", p: 18 },
 
   'neg': { rep: "-", p: 15},
   '!': { p: 15},
@@ -590,7 +590,7 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
   case 'ref':
     let expRef = <ExpReference> exp;
     if (isIdentifierStringExp(expRef.accessor)) {
-      result = decodeExpression(expRef.base) + '.' + (<ExpValue> expRef.accessor).value;
+      result = decodeExpression(expRef.base, innerPrecedence) + '.' + (<ExpValue> expRef.accessor).value;
     } else {
       result = decodeExpression(expRef.base, innerPrecedence) +
         '[' + decodeExpression(expRef.accessor) + ']';
@@ -661,18 +661,26 @@ function decodeArray(args: Exp[]): string {
 }
 
 function precedenceOf(exp: Exp): number {
+  let result: number;
+
   switch (exp.type) {
   case 'op':
-    return JS_OPS[(<ExpOp> exp).op].p;
+    result = JS_OPS[(<ExpOp> exp).op].p;
+    break;
 
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
   // lists call as 17 and ref as 18 - but how could they be anything other than left to right?
   // http://www.scriptingmaster.com/javascript/operator-precedence.asp - agrees.
   case 'call':
-    return 18;
+    result = 18;
+    break;
   case 'ref':
-    return 18;
+    result = 18;
+    break;
   default:
-    return 19;
+    result = 19;
+    break;
   }
+
+  return result;
 }
