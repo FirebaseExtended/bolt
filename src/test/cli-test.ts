@@ -17,11 +17,20 @@ import chai = require('chai');
 var assert = chai.assert;
 import helper = require('./test-helper');
 import proc = require('child_process');
+import fs = require('fs');
 import Promise = require('promise');
 
 var TMP_DIR = 'tmp/';
 
 suite("firebase-bolt CLI", function() {
+  suiteSetup(() => {
+    try {
+      fs.mkdirSync(TMP_DIR);
+    } catch (e) {
+      console.log(TMP_DIR + " already exists.");
+    }
+  });
+
   var tests = [
     // Simple options tests.
     { data: "--help",
