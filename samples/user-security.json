@@ -21,7 +21,7 @@
         "$message_id": {
           ".validate": "newData.hasChildren(['user', 'message', 'timestamp']) && this == null",
           "user": {
-            ".validate": "newData.isString() && (auth != null && auth.uid == newData.val())"
+            ".validate": "newData.isString() && auth != null && auth.uid == newData.val()"
           },
           "message": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 50"

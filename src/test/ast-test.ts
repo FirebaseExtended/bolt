@@ -206,7 +206,11 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "a == 1 || b <= 2" ],
       [ "a && b && c" ],
       [ "a || b || c" ],
+      // Converts right-associatvie to left-associative for && and ||
+      [ "a && (b && c)", "a && b && c" ],
+      [ "a || (b || c)", "a || b || c" ],
       [ "a && b || c && d" ],
+      [ "(a || b) && (c || d)" ],
       [ "a ? b : c",  ],
       [ "a || b ? c : d" ],
     ];

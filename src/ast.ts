@@ -612,13 +612,18 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     if (expOp.args.length === 1) {
       result = rep + decodeExpression(expOp.args[0], innerPrecedence);
     } else if (expOp.args.length === 2) {
+      // All ops are left associative - so nudge the innerPrecendence
+      // down on the right hand side to force () for right-associating
+      // operations (but ignore right-associating && and || since
+      // short-circuiting makes it moot).
+      let nudge = 1;
+      if (rep === '&&' || rep === '||') {
+        nudge = 0;
+      }
       result =
         decodeExpression(expOp.args[0], innerPrecedence) +
         ' ' + rep + ' ' +
-        // All ops are left associative - so nudge the innerPrecendence
-        // down on the right hand side to force () for right-associating
-        // operations.
-        decodeExpression(expOp.args[1], innerPrecedence + 1);
+        decodeExpression(expOp.args[1], innerPrecedence + nudge);
     } else if (expOp.args.length === 3) {
       result =
         decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +

@@ -124,13 +124,19 @@ suite("Rules Parser Tests", function() {
                                     ast.lte(ast.variable('b'), ast.number(2))) ],
       [ "a == 1 || b <= 2", ast.or(ast.eq(ast.variable('a'), ast.number(1)),
                                    ast.lte(ast.variable('b'), ast.number(2))) ],
-      // Left associative (even though execution is short-circuited!
+      // Normal left associative && and ||
       [ "a && b && c", ast.and(ast.and(ast.variable('a'),
                                        ast.variable('b')),
                                ast.variable('c')) ],
       [ "a || b || c", ast.or(ast.or(ast.variable('a'),
                                      ast.variable('b')),
                               ast.variable('c')) ],
+      [ "a && (b && c)", ast.and(ast.variable('a'),
+                                 ast.and(ast.variable('b'),
+                                         ast.variable('c'))) ],
+      [ "a || (b || c)", ast.or(ast.variable('a'),
+                                ast.or(ast.variable('b'),
+                                       ast.variable('c'))) ],
       // && over || precendence
       [ "a && b || c && d", ast.or(ast.and(ast.variable('a'),
                                            ast.variable('b')),
