@@ -31,23 +31,23 @@ suite("JSON Rules Decoder", function() {
   suite("Basic Samples", function() {
     var tests = [
       { data: { rules: {".read": "true", ".write": "true"} },
-        expect: decoder.PREAMBLE + "path / {\n  read() = true;\n  write() = true;\n}",
+        expect: "path / {\n  read() = true;\n  write() = true;\n}",
       },
 
       { data: { rules: { "a": { ".read": "true", ".write": "true"}} },
-        expect: decoder.PREAMBLE + "path /a {\n  read() = true;\n  write() = true;\n}",
+        expect: "path /a {\n  read() = true;\n  write() = true;\n}",
       },
 
       { data: { rules: { "a": { ".validate": "newData.isString()"}} },
-        expect: decoder.PREAMBLE + "path /a is String;",
+        expect: "path /a is String;",
       },
 
       { data: { rules: { "a": { ".indexOn": "prop"}} },
-        expect: decoder.PREAMBLE + "path /a {\n  index() = \"prop\";\n}",
+        expect: "path /a {\n  index() = \"prop\";\n}",
       },
 
       { data: { rules: { "a": { ".indexOn": ["prop1", "prop2"]}} },
-        expect: decoder.PREAMBLE + "path /a {\n  index() = [\"prop1\",\"prop2\"];\n}",
+        expect: "path /a {\n  index() = [\"prop1\",\"prop2\"];\n}",
       },
     ];
 
@@ -57,7 +57,52 @@ suite("JSON Rules Decoder", function() {
     });
   });
 
-  suite("Decode Sample JSON", function() {
+  suite("Data references", function() {
+    var tests = [
+      { data: { rules: { "a": { ".read": "data.child('prop').val() > 0"}} },
+        expect: "path /a {\n  read() = this.prop > 0;",
+      },
+
+      { data: { rules: { "$a": { ".read": "data.child($a).val() > 0"}} },
+        expect: "path /a {\n  read() = this[$a] > 0;",
+      },
+
+      { data: { rules: { "a": { ".read": "data.exists()"}} },
+        expect: "path /a {\n  read() = this != null;",
+      },
+
+      { data: { rules: { "a": { ".validate": "newData.val() == data.val()"}} },
+        expect: "path /a {\n  validate() = this == prior(this);",
+      },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = decoder.decodeJSON(data);
+      assert.equal(result, expect);
+    });
+  });
+
+  suite("String methods", function() {
+    var tests = [
+      [ "length > 0", "length > 0" ],
+      [ "contains('x')", "includes('x')" ],
+      [ "beginsWith('x')", "startsWith('x')" ],
+      [ "endsWith('x')", "endsWith('x')" ],
+      [ "replace('a', 'b')", "replace('a', 'b')" ],
+      [ "matches(/\d+/)", "test(/\d+/)" ],
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let rules = { "rules": {
+        "a": { ".read": "data.val()." + data}
+      }};
+      let bolt = "path /a {\n  read() = this." + expect + ";";
+      var result = decoder.decodeJSON(rules);
+      assert.equal(result, bolt);
+    });
+  });
+
+  suite("Samples decoder round-trip", function() {
     var files = ["all_access",
                  "userdoc",
                  "mail",

@@ -19,8 +19,6 @@ import ast = require('./ast');
 var parser = require('./rules-parser');
 var stripComments = require('strip-json-comments');
 
-export let PREAMBLE = "// Bolt file auto-generated from JSON file.\n";
-
 let typeIndicators = {
   "newData.isString()": "String",
   "newData.isNumber()": "Number",
@@ -127,7 +125,7 @@ class Formatter {
       }
       lines.push("}");
     });
-    return PREAMBLE + lines.join('\n');
+    return lines.join('\n');
   }
 }
 
