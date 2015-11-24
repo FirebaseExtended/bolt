@@ -19,7 +19,7 @@
       "$room_id": {
         ".read": "root.child('room_names').child($room_id).val() != null",
         "$message_id": {
-          ".validate": "newData.hasChildren(['user', 'message', 'timestamp']) && this == null",
+          ".validate": "newData.hasChildren(['user', 'message', 'timestamp']) && data.val() == null",
           "user": {
             ".validate": "newData.isString() && (auth != null && auth.uid == newData.val())"
           },

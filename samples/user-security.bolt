@@ -56,4 +56,4 @@ path /messages/$room_id/$message_id is Message {
 
 isCurrentUser(id) = auth != null && auth.uid == id;
 
-isNew(ref) = prior(this) == null;
+isNew(ref) = prior(ref) == null;
