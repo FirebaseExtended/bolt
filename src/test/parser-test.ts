@@ -206,6 +206,25 @@ suite("Rules Parser Tests", function() {
         expect: {"/x/y": { isType: ast.typeType('Any'),
                            parts: ['x', 'y'],
                            methods: {read: {params: [], body: ast.boolean(true)}}}} },
+      { data: "path /x { read() = true; /y { write() = true; }}",
+        expect: {"/x": { isType: ast.typeType('Any'),
+                         parts: ['x'],
+                         methods: {read: {params: [], body: ast.boolean(true)}}},
+                 "/x/y": { isType: ast.typeType('Any'),
+                           parts: ['x', 'y'],
+                           methods: {write: {params: [], body: ast.boolean(true)}}}} },
+
+      { data: "path /x { read() = true; /y { write() = true; path /$id { validate() = false; }}}",
+        expect: {"/x": { isType: ast.typeType('Any'),
+                         parts: ['x'],
+                         methods: {read: {params: [], body: ast.boolean(true)}}},
+                 "/x/y": { isType: ast.typeType('Any'),
+                           parts: ['x', 'y'],
+                           methods: {write: {params: [], body: ast.boolean(true)}}},
+                 "/x/y/$id": { isType: ast.typeType('Any'),
+                             parts: ['x', 'y', '$id'],
+                             methods: {validate: {params: [], body: ast.boolean(false)}}},
+                } },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

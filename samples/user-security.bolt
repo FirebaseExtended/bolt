@@ -13,8 +13,27 @@
 //
 // See https://www.firebase.com/docs/security/guide/user-security.html
 
-path /room_names { read() = auth != null; }
-path /room_names/$room_id is String;
+path /room_names {
+  read() = auth != null;
+
+  /$room_id is String;
+}
+
+path /members/$room_id {
+  read() = this[auth.uid] != null;
+
+  /$user_id is Nickname {
+    write() = isCurrentUser($user_id);
+  }
+}
+
+path /messages/$room_id {
+  read() = root.room_names[$room_id] != null;
+
+  /$message_id is Message {
+    write() = root.members[$room_id][auth.uid] != null;
+  }
+}
 
 type Nickname extends String {
   validate() = this.length > 0 && this.length < 20;
@@ -22,14 +41,6 @@ type Nickname extends String {
 
 type UserID extends String {
   validate() = isCurrentUser(this);
-}
-
-path /members/$room_id {
-  read() = this[auth.uid] != null;
-}
-
-path /members/$room_id/$user_id is Nickname {
-  write() = isCurrentUser($user_id);
 }
 
 type MessageString extends String {
@@ -44,14 +55,6 @@ type Message {
   user: UserID,
   message: MessageString,
   timestamp: Timestamp
-}
-
-path /messages/$room_id {
-  read() = root.room_names[$room_id] != null;
-}
-
-path /messages/$room_id/$message_id is Message {
-  write() = root.members[$room_id][auth.uid] != null;
 }
 
 isCurrentUser(id) = auth != null && auth.uid == id;

@@ -1,1 +1,2 @@
 fixed - Testing-only: Create /tmp dir if not already created in CLI test.
+feature - Nested path statements.
