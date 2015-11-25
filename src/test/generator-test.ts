@@ -168,6 +168,10 @@ suite("Rules Generator Tests", function() {
         expect: "newData.val().toUpperCase()" },
       { data: "'ababa'.test(/bab/)",
         expect: "'ababa'.matches(/bab/)" },
+      { data: "('ababa' + 'c').test(/bab/)",
+        expect: "('ababa' + 'c').matches(/bab/)" },
+      { data: "(this + ' ').test(/\d+/)",
+        expect: "(newData.val() + ' ').matches(/\d+/)" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -319,6 +323,9 @@ suite("Rules Generator Tests", function() {
         expect: {'.validate': "newData.isString() && newData.parent().val() == 'new' && root.val() == 'old'",
                  'x': {'.read': "root.val() == 'old'"}
                 } },
+
+      { data: "type T extends String { validate() = (this + ' ').test(/\d+/); }",
+        expect: {'.validate': "newData.isString() && (newData.val() + ' ').matches(/\d+/)"} },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
