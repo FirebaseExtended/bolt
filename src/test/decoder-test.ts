@@ -31,15 +31,15 @@ suite("JSON Rules Decoder", function() {
   suite("Basic Samples", function() {
     var tests = [
       { data: { rules: {".read": "true", ".write": "true"} },
-        expect: "path / {\n  read() = true;\n  write() = true;\n}",
+        expect: "path / {\n  read() = true;\n  write() = true;\n}"
       },
 
       { data: { rules: { "a": { ".read": "true", ".write": "true"}} },
-        expect: "path /a {\n  read() = true;\n  write() = true;\n}",
+        expect: "path /a {\n  read() = true;\n  write() = true;\n}"
       },
 
       { data: { rules: { "a": { ".validate": "newData.isString()"}} },
-        expect: "path /a is String;",
+        expect: "path /a is String;"
       },
 
       { data: { rules: { "a": { ".indexOn": "prop"}} },
@@ -47,7 +47,12 @@ suite("JSON Rules Decoder", function() {
       },
 
       { data: { rules: { "a": { ".indexOn": ["prop1", "prop2"]}} },
-        expect: "path /a {\n  index() = [\"prop1\",\"prop2\"];\n}",
+        expect: "path /a {\n  index() = [\"prop1\",\"prop2\"];\n}"
+      },
+
+      { data: { rules: { "a": { ".read": "true",
+                                "b": { ".write": "true" }}} },
+        expect: "path /a {\n  read() = true;\n  /b {\n    write() = true;\n  }\n}"
       },
     ];
 

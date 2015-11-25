@@ -16,6 +16,7 @@
 /// <reference path="typings/node.d.ts" />
 // import util = require('./util');
 import ast = require('./ast');
+import util = require('./util');
 var parser = require('./rules-parser');
 var stripComments = require('strip-json-comments');
 
@@ -108,23 +109,49 @@ class Formatter {
 
   toString(): string {
     let lines = [];
-    Object.keys(this.exps).sort().forEach((path) => {
+    let paths = Object.keys(this.exps).sort();
+    let openPaths: string[] = [];
+    let parts: string[];
+
+    function closeOpenPaths(path: string) {
+      while (openPaths.length > 0 && openPaths.slice(-1)[0].length > path.length) {
+        openPaths.pop();
+        lines.push(indent(openPaths.length) + "}");
+      }
+    }
+
+    for (let i = 0; i < paths.length; i++) {
+      let path = paths[i];
       let pc = this.exps[path];
-      let line = "path " + path;
+      parts = pathParts(path);
+      let isParent = i < paths.length - 1 && util.isPrefix(parts, pathParts(paths[i + 1]));
+
+      closeOpenPaths(path);
+
+      let childPath: string;
+      if (openPaths.length === 0) {
+        childPath = path;
+      } else {
+        childPath = path.slice(openPaths.slice(-1)[0].length);
+      }
+      let line = indent(openPaths.length) + (openPaths.length === 0 ? 'path ' : '') + childPath;
 
       if ((<ast.ExpSimpleType> pc.type).name !== 'Any') {
         line += " is " + ast.decodeExpression(pc.type);
       }
-      if (Object.keys(pc.methods).length === 0) {
+      if (Object.keys(pc.methods).length === 0 && !isParent) {
         lines.push(line + ";");
-        return;
+        continue;
       }
       lines.push(line + " {");
+      openPaths.push(path);
       for (let method in pc.methods) {
-        lines.push("  " + method + "() = " + pc.methods[method] + ";");
+        lines.push(indent(openPaths.length) + method + "() = " + pc.methods[method] + ";");
       }
-      lines.push("}");
-    });
+    }
+
+    closeOpenPaths('');
+
     return lines.join('\n');
   }
 }
@@ -139,4 +166,20 @@ function childPath(path: string, child: string): string {
     return path + child;
   }
   return path + '/' + child;
+}
+
+function pathParts(path: string): string[] {
+  if (path === undefined) {
+    return [];
+  }
+  // Remove initial slash.
+  path = path.slice(1);
+  if (path === '') {
+    return [];
+  }
+  return path.split('/');
+}
+
+function indent(n: number): string {
+  return util.repeatString(' ', 2 * n);
 }

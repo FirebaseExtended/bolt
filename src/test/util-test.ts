@@ -41,4 +41,20 @@ suite("Util", function() {
       assert.deepEqual(data, expect);
     });
   });
+
+  suite("commonPrefix", () => {
+    var tests = [
+      [ ["abc", "acd"], "a" ],
+      [ ["abc", "def"], "" ],
+      [ ["", "abc"], "" ],
+      [ [[1, 2, 3], [1, 3, 4]], [1] ],
+      [ [[1, 2, 3], [5, 3, 4]], [] ],
+      [ [[], [5, 3, 4]], [] ],
+    ];
+
+    helper.dataDrivenTest(tests, (data, expect) => {
+      let result = util.commonPrefix(data[0], data[1]);
+      assert.deepEqual(result, expect);
+    });
+  });
 });
