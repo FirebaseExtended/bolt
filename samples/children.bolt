@@ -5,5 +5,8 @@ type Child {
 type Parent {
 }
 
-path /parents/$parent        is Parent {}
-path /parents/$parent/$child is Child {}
+path /parents {
+  /$parent is Parent {
+    /$child is Child;
+  }
+}
