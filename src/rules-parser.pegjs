@@ -40,6 +40,22 @@
     warn: warn
   });
 
+  var rootPath = [];
+
+  function pushPath(path) {
+    util.extendArray(rootPath, path);
+  }
+
+  function popPath(path) {
+    path.forEach(function(part) {
+      rootPath.pop();
+    });
+  }
+
+  function currentPath() {
+    return util.copyArray(rootPath);
+  }
+
   function ensureLowerCase(s, m) {
     if (s instanceof Array) {
       s = s.map(function(id) {
@@ -97,26 +113,26 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function { symbols.registerFunction(f.name, f.params, f.body); }
-  / p:Path { symbols.registerPath(p.parts, p.isType, p.methods); }
-  / s:Schema { symbols.registerSchema(s.name, s.derivedFrom, s.properties, s.methods, s.params); }
+Statement = f:Function / p:Path / s:Schema
 
 Function "function definition" = ("function" __)? name:Identifier params:ParameterList _ body:FunctionBody {
-  return {
-    name: ensureLowerCase(name, "Function names"),
-    params: params,
-    body: body
-  }
+  symbols.registerFunction(ensureLowerCase(name, "Function names"), params, body);
 }
 
-Path "path statement" = ("path" __)? path:PathExpression isType:(__ "is" __ id:TypeExpression { return id; })? _
-  methods:("{" _ methods:Methods "}" { return methods; }
-           / ";" { return {}; } ) _ {
-  if (path.length === 1 && path[0] === null) {
-    path = [];
+Path "path statement" = ("path" __)? path:(path:PathExpression { pushPath(path); return path; })
+  isType:(__ "is" __ id:TypeExpression { return id; })? _
+  methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } ) _ {
+    symbols.registerPath(currentPath(), isType, methods);
+    popPath(path);
   }
+
+// Parse trailing slash and empty parts but emit error message.
+PathExpression "path" =  parts:("/" part:Identifier? { return part; })+ {
   var hasError = false;
-  path = path.map(function(part) {
+  if (parts.length === 1 && parts[0] === null) {
+    parts = [];
+  }
+  parts = parts.map(function(part) {
     if (part === null) {
       hasError = true;
       return '';
@@ -124,47 +140,42 @@ Path "path statement" = ("path" __)? path:PathExpression isType:(__ "is" __ id:T
     return part;
   });
   if (hasError) {
-    error((path[path.length - 1] === '' ? "Paths may not end in a slash (/) character"
-           : "Paths may not contain an empty part") + ": /" + path.join('/'));
+    error((parts[parts.length - 1] === '' ? "Paths may not end in a slash (/) character"
+           : "Paths may not contain an empty part") + ": /" + parts.join('/'));
   }
-  var result = {
-    parts: path,
-    methods: methods || {}
-  };
-  if (isType) {
-    result.isType = isType;
+  return parts;
+}
+
+PathsAndMethods = all:(Path / Method)* _ {
+  var result = {};
+  for (var i = 0; i < all.length; i++) {
+    var method = all[i];
+    // Skip embedded path statements.
+    if (method === undefined) {
+      continue;
+    }
+    if (method.name in result) {
+      error("Duplicate method name: " + method.name);
+    }
+    result[method.name] = ast.method(method.params, method.body);
   }
   return result;
 }
-
-// Allow trailing slash and empty parts for better error messages.
-PathExpression "path" =  parts:("/" part:Identifier? { return part; })+ { return parts; }
 
 Schema "type statement" =
   "type" __ type:Identifier
   params:("<" list:IdentifierList ">" { return ensureUpperCase(list, "Type names"); })?
   ext:(__ "extends" __ type:TypeExpression  _ { return type; })?
-  properties:(_ "{" _ properties:Properties? "}" { return properties; }
-              / _ ";" { return null; } ) {
-    var result = {
-      name: ensureUpperCase(type, "Type names"),
-      methods: {},
-      properties: {}
-    };
-    if (params) {
-      result.params = params;
+  body:(_ "{" _ all:PropertiesAndMethods "}" { return all; }
+        / _ ";" { return {properties: {}, methods: {}}; } ) {
+    if (params === null) {
+      params = [];
     }
-    if (properties) {
-      result.methods = properties.methods;
-      result.properties = properties.properties;
-    }
-    if (ext) {
-      result.derivedFrom = ext;
-    }
-    return result;
+    symbols.registerSchema(ensureUpperCase(type, "Type names"),
+                           ext, body.properties, body.methods, params);
 }
 
-Properties = head:PropertyDefinition tail:(_ PropSep part:PropertyDefinition { return part; })* _ PropSep {
+PropertiesAndMethods = all:(Property / Method)* _ {
   var result = {
      properties: {},
      methods: {}
@@ -185,34 +196,21 @@ Properties = head:PropertyDefinition tail:(_ PropSep part:PropertyDefinition { r
     }
   }
 
-  addPart(head);
-  for (var i = 0; i < tail.length; i++) {
-    addPart(tail[i]);
+  for (var i = 0; i < all.length; i++) {
+    addPart(all[i]);
   }
+
   return result;
+}
+
+Property = name:(Identifier / String) _ ":" _ type:TypeExpression _ PropSep {
+  return {
+    name:  name,
+    type: type
+  };
 }
 
 PropSep = ("," / ";")? _
-
-PropertyDefinition = name:(Identifier / String) _ ":" _ type:TypeExpression {
-      return {
-        name:  name,
-        type: type
-      };
-    }
-  / Method
-
-Methods = all:(Method)* _ {
-  var result = {};
-  for (var i = 0; i < all.length; i++) {
-    var method = all[i];
-    if (method.name in result) {
-      error("Duplicate method name: " + method.name);
-    }
-    result[method.name] = ast.method(method.params, method.body);
-  }
-  return result;
-}
 
 Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
   return {
