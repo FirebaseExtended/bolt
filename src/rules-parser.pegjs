@@ -380,19 +380,27 @@ EqualityExpression
 EqualityOperator = ("===" / "==") { return "=="; }
                  / ("!==" / "!=") { return "!="; }
 
-LogicalANDExpression
-  = head:EqualityExpression
-    tail:(_ op:LogicalANDOperator _ exp:EqualityExpression { return {op: op, exp: exp}; })* {
-      return leftAssociative(head, tail);
+LogicalANDExpression =
+  head:EqualityExpression
+  tail:(_ op:LogicalANDOperator _ exp:EqualityExpression { return exp; })* {
+    if (tail.length === 0) {
+      return head;
     }
+    tail.unshift(head);
+    return ast.op('&&', ast.flatten('&&', ast.op("&&", tail)));
+  }
 
 LogicalANDOperator = ("&&" / "and") { return "&&"; }
 
-LogicalORExpression
-  = head:LogicalANDExpression
-    tail:(_ op:LogicalOROperator _ exp:LogicalANDExpression { return {op: op, exp: exp}; })* {
-      return leftAssociative(head, tail);
+LogicalORExpression =
+  head:LogicalANDExpression
+  tail:(_ op:LogicalOROperator _ exp:LogicalANDExpression { return exp; })* {
+    if (tail.length === 0) {
+      return head;
     }
+    tail.unshift(head);
+    return ast.op('||', ast.flatten('||', ast.op("||", tail)));
+  }
 
 LogicalOROperator = ("||" / "or") { return "||"; }
 

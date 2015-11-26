@@ -361,7 +361,7 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
 
     var result = [];
     for (i = 0; i < flat.length; i++) {
-      // Remove identifyValues from array.
+      // Remove identityValues from array.
       if (cmpValues(flat[i], identityValue)) {
         continue;
       }
@@ -617,6 +617,11 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     var rep = JS_OPS[expOp.op].rep === undefined ? expOp.op : JS_OPS[expOp.op].rep;
     if (expOp.args.length === 1) {
       result = rep + decodeExpression(expOp.args[0], innerPrecedence);
+    } else if (expOp.op === '?:') {
+      result =
+        decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
+        decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
+        decodeExpression(expOp.args[2], innerPrecedence);
     } else if (expOp.args.length === 2) {
       // All ops are left associative - so nudge the innerPrecendence
       // down on the right hand side to force () for right-associating
@@ -630,11 +635,8 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
         decodeExpression(expOp.args[0], innerPrecedence) +
         ' ' + rep + ' ' +
         decodeExpression(expOp.args[1], innerPrecedence + nudge);
-    } else if (expOp.args.length === 3) {
-      result =
-        decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
-        decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
-        decodeExpression(expOp.args[2], innerPrecedence);
+    } else {
+      result = expOp.args.map(decodeExpression).join(' ' + rep + ' ');
     }
     break;
 
