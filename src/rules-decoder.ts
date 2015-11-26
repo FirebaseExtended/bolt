@@ -111,29 +111,31 @@ class Formatter {
     let lines = [];
     let paths = Object.keys(this.exps).sort();
     let openPaths: string[] = [];
-    let parts: string[];
 
     function closeOpenPaths(path: string) {
-      while (openPaths.length > 0 && openPaths.slice(-1)[0].length > path.length) {
+      while (openPaths.length > 0 &&
+             (path === '' || !util.isPrefix(pathParts(currentPath()), pathParts(path)))) {
         openPaths.pop();
         lines.push(indent(openPaths.length) + "}");
       }
     }
 
+    function currentPath(): string {
+      if (openPaths.length === 0) {
+        return '';
+      }
+      return openPaths.slice(-1)[0];
+    }
+
     for (let i = 0; i < paths.length; i++) {
       let path = paths[i];
       let pc = this.exps[path];
-      parts = pathParts(path);
-      let isParent = i < paths.length - 1 && util.isPrefix(parts, pathParts(paths[i + 1]));
+      let isParent = i < paths.length - 1 && util.isPrefix(pathParts(path), pathParts(paths[i + 1]));
 
       closeOpenPaths(path);
 
       let childPath: string;
-      if (openPaths.length === 0) {
-        childPath = path;
-      } else {
-        childPath = path.slice(openPaths.slice(-1)[0].length);
-      }
+      childPath = currentPath() === '/' ? path : path.slice(currentPath().length);
       let line = indent(openPaths.length) + (openPaths.length === 0 ? 'path ' : '') + childPath;
 
       if ((<ast.ExpSimpleType> pc.type).name !== 'Any') {

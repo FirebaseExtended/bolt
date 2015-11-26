@@ -54,11 +54,17 @@ suite("JSON Rules Decoder", function() {
                                 "b": { ".write": "true" }}} },
         expect: "path /a {\n  read() = true;\n  /b {\n    write() = true;\n  }\n}"
       },
+
+      { data: { rules: { "a": { ".read": "true",
+                                "b": { ".write": "true" },
+                                "c": { ".write": "false" }}} },
+        expect: "path /a {\n  read() = true;\n  /b {\n    write() = true;\n  }\n  /c {\n    write() = false;\n  }\n}"
+      },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
       var result = decoder.decodeJSON(data);
-      assert.equal(result, expect);
+      assert.equal(result, expect, result);
     });
   });
 
