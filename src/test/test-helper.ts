@@ -51,7 +51,7 @@ export function dataDrivenTest(tests, testIt, formatter?) {
         data = util.extend({}, data);
         delete data.expect;
       }
-      expect = tests[i].expect || tests[i][1];
+      expect = firstDefined(tests[i].expect, tests[i][1]);
       label = tests[i].label;
       if (label === undefined) {
         if (expect !== undefined) {
@@ -96,4 +96,13 @@ export function expFormat(x) {
     return result;
   }
   return JSON.stringify(x);
+}
+
+function firstDefined(...args: any[]) {
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] !== undefined) {
+      return args[i];
+    }
+  }
+  return undefined;
 }

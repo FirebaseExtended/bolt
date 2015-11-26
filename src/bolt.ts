@@ -20,24 +20,23 @@ import generator = require('./rules-generator');
 import decoder = require('./rules-decoder');
 import simulator = require('./simulator');
 import astReal = require('./ast');
-import util = require('./util');
 
 export var FILE_EXTENSION = 'bolt';
 
-export var parse = util.maybePromise(parser.parse);
-export var generate = util.maybePromise(generateSync);
+export var parse = parser.parse;
 export var Generator = generator.Generator;
 export var ast = astReal;
 export var decodeExpression = ast.decodeExpression;
 export var decodeRules = decoder.decodeRules;
 export var rulesSuite = simulator.rulesSuite;
 
-// Usage:
-//   json = bolt.generate(bolt-text)
-function generateSync(symbols: string | astReal.Symbols): generator.Validator {
-  if (typeof symbols === 'string') {
-    symbols = parser.parse(symbols);
-  }
-  var gen = new generator.Generator(<astReal.Symbols> symbols);
+export function generate(boltText: string): generator.Validator {
+  let symbols = <astReal.Symbols> parser.parse(boltText);
+  var gen = new generator.Generator(symbols);
   return gen.generateRules();
+}
+
+export function parseExpression(expression: string): astReal.Exp {
+  var result = parse('function f() {return ' + expression + ';}');
+  return result.functions.f.body;
 }

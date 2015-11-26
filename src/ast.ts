@@ -303,8 +303,14 @@ export function regexp(pattern: string, modifiers = ""): RegExpValue {
   };
 }
 
-function cmpValues(v1: ExpValue, v2: ExpValue): boolean {
-  return v1.type === v2.type && v1.value === v2.value;
+export function cmpValues(v1: ExpValue, v2: ExpValue): boolean {
+  if (v1.type !== v2.type || v1.value !== v2.value) {
+    return false;
+  }
+  if (v1.type === 'RegExp' && (<RegExpValue> v1).modifiers !== (<RegExpValue> v2).modifiers) {
+    return false;
+  }
+  return true;
 }
 
 function isOp(opType: string, exp: Exp): boolean {
@@ -683,4 +689,59 @@ function precedenceOf(exp: Exp): number {
   }
 
   return result;
+}
+
+export function childCount(exp: Exp): number {
+  switch (exp.type) {
+  default:
+    return 0;
+
+  case 'Array':
+    return (<ExpValue> exp).value.length;
+
+  case 'ref':
+    return 2;
+
+  case 'call':
+    return 1 + (<ExpCall> exp).args.length;
+
+  case 'op':
+    return (<ExpOp> exp).args.length;
+
+  case 'union':
+    return (<ExpUnionType> exp).types.length;
+
+  case 'generic':
+    return (<ExpGenericType> exp).params.length;
+  }
+}
+
+export function getChild(exp: Exp, index: number): Exp {
+  switch (exp.type) {
+  default:
+    return null;
+
+  case 'Array':
+    return (<ExpValue> exp).value[index];
+
+  case 'ref':
+    let expRef = <ExpReference> exp;
+    return [expRef.base, expRef.accessor][index];
+
+  case 'call':
+    let expCall = <ExpCall> exp;
+    if (index === 0) {
+      return expCall.ref;
+    }
+    return expCall.args[index - 1];
+
+  case 'op':
+    return (<ExpOp> exp).args[index];
+
+  case 'union':
+    return (<ExpUnionType> exp).types[index];
+
+  case 'generic':
+    return (<ExpGenericType> exp).params[index];
+  }
 }

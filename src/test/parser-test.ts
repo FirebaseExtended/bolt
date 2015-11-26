@@ -68,6 +68,7 @@ suite("Rules Parser Tests", function() {
       [ "+3", ast.number(3) ],
       [ "-3", ast.number(-3) ],
       [ "0x2", ast.number(2) ],
+      [ "[]", ast.array([]) ],
       [ "[1, 2, 3]", ast.array([ast.number(1), ast.number(2), ast.number(3)]) ],
       [ "\"string\"", ast.string("string") ],
       [ "'string'", ast.string("string") ],
@@ -80,8 +81,8 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var result = parse("function f() { return " + data + ";}");
-      assert.deepEqual(result.functions.f.body, expect);
+      let exp = bolt.parseExpression(data);
+      assert.deepEqual(exp, expect);
     });
   });
 
@@ -149,8 +150,8 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var result = parse("function f() { return " + data + ";}");
-      assert.deepEqual(result.functions.f.body, expect);
+      let exp = bolt.parseExpression(data);
+      assert.deepEqual(exp, expect);
     });
   });
 

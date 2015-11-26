@@ -70,8 +70,9 @@ util.methods(RulesSuite, {
           self.databaseReady = resolve;
         });
 
-        var rulesJSON = bolt.generate(util.getProp(fileIO.readFile(rulesPath),
-                                                   'content'));
+        let rulesJSON = fileIO.readFile(rulesPath).then(function(result) {
+          return bolt.generate(result.content);
+        });
 
         self.ready = Promise.all([rulesJSON, database])
           .then(self.onRulesReady.bind(self));

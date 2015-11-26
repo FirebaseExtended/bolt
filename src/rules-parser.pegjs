@@ -420,7 +420,12 @@ Literal
 
 Null  = "null" { return ast.nullType() }
 
-ArrayLiteral = "[" _ elements:ArgumentList? _ "]" { return ast.array(elements); }
+ArrayLiteral = "[" _ elements:ArgumentList? _ "]" {
+  if (elements === null) {
+    elements = [];
+  }
+  return ast.array(elements);
+}
 
 BooleanLiteral
   = "true"  { return ast.boolean(true); }
