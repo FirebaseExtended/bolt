@@ -18,12 +18,11 @@ var assert = chai.assert;
 import helper = require('./test-helper');
 
 import bolt = require('../bolt');
-import util = require('../util');
 import matcher = require('../ast-matcher');
 
 suite("AST Matching", function() {
-  suite("Values", () => {
-    let tests = ["false", "1", "'a'", "a", "[]"];
+  suite("Values to values", () => {
+    let tests = ["false", "1", "'a'", "a", "[]", "1.2", "null", "[1,2]"];
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let exp = bolt.parseExpression(data);
@@ -32,21 +31,40 @@ suite("AST Matching", function() {
     }, helper.expFormat);
   });
 
-  suite("Value expressions", () => {
+  suite("Values in expressions", () => {
     let tests = [
-      { data: { pattern: "false", exp: "true || false" },
-        expect:  "false"},
-      { data: { pattern: "false", exp: "true || true" },
-        expect: null },
+      { pattern: "false", exp: "true || false" },
+      { pattern: "a", exp: "a + 1" },
+      { pattern: "a", exp: "1 + a" },
+      { pattern: "1", exp: "2 + 3 + 1 + 5" },
+      { pattern: "'a'", exp: "2 + 3 + 'a' + 5" },
+      { pattern: "3", exp: "2 * (4 + 3)" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let match = matcher.forEachExp(bolt.parseExpression(data.pattern),
-                                     bolt.parseExpression(data.exp));
-      if (util.isType(expect, 'string')) {
-        expect = bolt.parseExpression(expect);
-      }
-      assert.deepEqual(match.exp, expect);
+      let pattern = bolt.parseExpression(data.pattern);
+      let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
+      assert.deepEqual(match.exp, pattern);
+    }, helper.expFormat);
+  });
+
+  suite("Sub-expressions in expressions", () => {
+    let tests = [
+      { pattern: "a + 1", exp: "a + 1" },
+      { pattern: "a || b", exp: "a || b" },
+      /*
+      { pattern: "a + 1", exp: "a + 1 + 2" },
+      { pattern: "a || b", exp: "a || b || c" },
+      { pattern: "b || c", exp: "a || b || c" },
+      { pattern: "a || c", exp: "a || b || c" },
+      */
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let pattern = bolt.parseExpression(data.pattern);
+      let exp = bolt.parseExpression(data.exp);
+      let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
+      assert.deepEqual(match.exp, exp);
     }, helper.expFormat);
   });
 });
