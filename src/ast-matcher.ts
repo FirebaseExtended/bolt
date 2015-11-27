@@ -15,6 +15,7 @@
  */
 /// <reference path="typings/node.d.ts" />
 import ast = require('./ast');
+import util = require('./util');
 
 /*
  * Post-order iterator over AST nodes.
@@ -92,9 +93,27 @@ export function forEachExp(pattern: ast.Exp,
   return match;
 }
 
-function equivalent(pattern: ast.Exp, exp: ast.Exp, params?: string[]): boolean {
+function equivalent(pattern: ast.Exp, exp: ast.Exp, params = <string[]>[]): boolean {
+  if (pattern.type === 'var' &&
+      util.arrayIncludes(params, (<ast.ExpVariable> pattern).name)) {
+    return true;
+  }
+
   if (pattern.type !== exp.type) {
     return false;
+  }
+
+  function equivalentChildren(): boolean {
+    let patternCount = ast.childCount(pattern);
+    if (patternCount !== ast.childCount(exp)) {
+      return false;
+    }
+    for (let i = 0; i < patternCount; i++) {
+      if (!equivalent(ast.getChild(pattern, i), ast.getChild(exp, i), params)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   switch (pattern.type) {
@@ -109,21 +128,51 @@ function equivalent(pattern: ast.Exp, exp: ast.Exp, params?: string[]): boolean 
 
   case 'Array':
   case 'call':
-  case 'op':
   case 'ref':
   case 'union':
+    return equivalentChildren();
+
   case 'generic':
-    let patternCount = ast.childCount(pattern);
-    if (patternCount !== ast.childCount(exp)) {
+    if ((<ast.ExpGenericType> pattern).name !== (<ast.ExpGenericType> exp).name) {
       return false;
     }
-    for (let i = 0; i < patternCount; i++) {
-      if (!equivalent(ast.getChild(pattern, i), ast.getChild(exp, i), params)) {
+    // NYI
+    return false;
+
+  case 'op':
+    let patternOp = <ast.ExpOp> pattern;
+    let expOp = <ast.ExpOp> exp;
+    if (patternOp.op !== expOp.op) {
+      return false;
+    }
+
+    // Any non-boolean operator requires arguments be in same order.
+    // Note that '+' is also not commutative when use for string args!
+    if (!(patternOp.op === '||' || patternOp.op === '&&')) {
+      return equivalentChildren();
+    }
+
+    // Find any (unique) occurance for all children of the pattern.
+    let matches: number[] = [];
+    while (matches.length < patternOp.args.length) {
+      let j: number;
+      for (j = 0; j < expOp.args.length; j++) {
+        if (util.arrayIncludes(matches, j)) {
+          continue;
+        }
+        if (equivalent(patternOp.args[matches.length], expOp.args[j], params)) {
+          matches.push(j);
+          break;
+        }
+      }
+      if (j >= expOp.args.length) {
         return false;
       }
     }
+
     return true;
 
+  case 'literal':
   case 'var':
     return (<ast.ExpVariable> pattern).name === (<ast.ExpVariable> exp).name;
 

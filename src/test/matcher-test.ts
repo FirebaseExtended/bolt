@@ -18,6 +18,7 @@ var assert = chai.assert;
 import helper = require('./test-helper');
 
 import bolt = require('../bolt');
+import ast = require('../ast');
 import matcher = require('../ast-matcher');
 
 suite("AST Matching", function() {
@@ -52,19 +53,65 @@ suite("AST Matching", function() {
     let tests = [
       { pattern: "a + 1", exp: "a + 1" },
       { pattern: "a || b", exp: "a || b" },
-      /*
-      { pattern: "a + 1", exp: "a + 1 + 2" },
+      { pattern: "a || b", exp: "b || a" },
       { pattern: "a || b", exp: "a || b || c" },
       { pattern: "b || c", exp: "a || b || c" },
       { pattern: "a || c", exp: "a || b || c" },
-      */
+      { pattern: "a || c", exp: "c || b || a" },
+      { pattern: "a || c", exp: "b && (a || b || c)" },
+      { pattern: "a.test(/x/)", exp: "a + a.test(/x/)" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let pattern = bolt.parseExpression(data.pattern);
-      let exp = bolt.parseExpression(data.exp);
       let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
-      assert.deepEqual(match.exp, exp);
+      assert.equal((<ast.ExpOp> match.exp).op, (<ast.ExpOp> match.exp).op);
+    }, helper.expFormat);
+  });
+
+  suite("Sub-expressions not in expressions", () => {
+    let tests = [
+      { pattern: "a + 1", exp: "1 + a" },
+      { pattern: "a || c", exp: "c || b || b" },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let pattern = bolt.parseExpression(data.pattern);
+      let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
+      assert.equal(match.exp, null);
+    }, helper.expFormat);
+  });
+
+  suite("Sub-expressions with params", () => {
+    let tests = [
+      { vars: ['a'], pattern: "a + 1", exp: "a + 1" },
+      { vars: ['a'], pattern: "a + 1", exp: "x + 1" },
+      { vars: ['x'], pattern: "x || true", exp: "a || b || true || c" },
+      { vars: ['x'], pattern: "x || x", exp: "a || b || a" },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let pattern = bolt.parseExpression(data.pattern);
+      let match = matcher.forEachExp(pattern,
+                                     bolt.parseExpression(data.exp),
+                                     data.vars);
+      assert.ok(match.exp !== null && (<ast.ExpOp> match.exp).op === (<ast.ExpOp> match.exp).op);
+    }, helper.expFormat);
+  });
+
+  suite("Sub-expressions with params not present", () => {
+    let tests = [
+      { vars: ['a'], pattern: "a + 1", exp: "a + 2" },
+      { vars: ['a'], pattern: "a + 1", exp: "x + 2" },
+      { vars: ['x'], pattern: "x || x", exp: "a || b || c" },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let pattern = bolt.parseExpression(data.pattern);
+      let match = matcher.forEachExp(pattern,
+                                     bolt.parseExpression(data.exp),
+                                     data.vars);
+      assert.ok(match.exp == null);
     }, helper.expFormat);
   });
 });
