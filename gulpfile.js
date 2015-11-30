@@ -41,6 +41,7 @@ var TEST_FILES = [
   'lib/test/cli-test.js',
   'lib/test/decoder-test.js',
   'lib/test/generator-test.js',
+  'lib/test/matcher-test.js',
   'lib/test/parser-test.js',
   'lib/test/util-test.js'
 ];

@@ -17,6 +17,12 @@
 import ast = require('./ast');
 import util = require('./util');
 
+let reverseOp = {
+  '<': '>',
+  '>': '<',
+  '<=': '>=',
+};
+
 /*
  * Post-order iterator over AST nodes.
  */
@@ -141,35 +147,51 @@ function equivalent(pattern: ast.Exp, exp: ast.Exp, params = <string[]>[]): bool
 
   case 'op':
     let patternOp = <ast.ExpOp> pattern;
+    let op = patternOp.op;
     let expOp = <ast.ExpOp> exp;
-    if (patternOp.op !== expOp.op) {
-      return false;
-    }
-
-    // Any non-boolean operator requires arguments be in same order.
-    // Note that '+' is also not commutative when use for string args!
-    if (!(patternOp.op === '||' || patternOp.op === '&&')) {
-      return equivalentChildren();
-    }
-
-    // Find any (unique) occurance for all children of the pattern.
-    let matches: number[] = [];
-    while (matches.length < patternOp.args.length) {
-      let j: number;
-      for (j = 0; j < expOp.args.length; j++) {
-        if (util.arrayIncludes(matches, j)) {
-          continue;
-        }
-        if (equivalent(patternOp.args[matches.length], expOp.args[j], params)) {
-          matches.push(j);
-          break;
-        }
-      }
-      if (j >= expOp.args.length) {
+    if (op !== expOp.op) {
+      if (reverseOp[op] === expOp.op) {
+        op = expOp.op;
+        exp = ast.copyExp(expOp);
+        (<ast.ExpOp> exp).args = [expOp.args[1], expOp.args[0]];
+      } else {
         return false;
       }
     }
 
+    switch (patternOp.op) {
+    default:
+      return equivalentChildren();
+
+    case '==':
+    case '!=':
+      if (equivalentChildren()) {
+        return true;
+      }
+      exp = ast.copyExp(expOp);
+      (<ast.ExpOp> exp).args = [expOp.args[1], expOp.args[0]];
+      return equivalentChildren();
+
+    case '||':
+    case '&&':
+      // Find any (unique) occurance for all children of the pattern.
+      let matches: number[] = [];
+      while (matches.length < patternOp.args.length) {
+        let j: number;
+        for (j = 0; j < expOp.args.length; j++) {
+          if (util.arrayIncludes(matches, j)) {
+            continue;
+          }
+          if (equivalent(patternOp.args[matches.length], expOp.args[j], params)) {
+            matches.push(j);
+            break;
+          }
+        }
+        if (j >= expOp.args.length) {
+          return false;
+        }
+      }
+    }
     return true;
 
   case 'literal':

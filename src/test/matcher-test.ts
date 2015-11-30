@@ -60,6 +60,13 @@ suite("AST Matching", function() {
       { pattern: "a || c", exp: "c || b || a" },
       { pattern: "a || c", exp: "b && (a || b || c)" },
       { pattern: "a.test(/x/)", exp: "a + a.test(/x/)" },
+      { pattern: "a < b", exp: "a < b" },
+      { pattern: "a < b", exp: "b > a" },
+      { pattern: "a <= b", exp: "b >= a" },
+      { pattern: "a == b", exp: "a == b" },
+      { pattern: "a == b", exp: "b == a" },
+      { pattern: "a != b", exp: "a != b" },
+      { pattern: "a != b", exp: "b != a" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
