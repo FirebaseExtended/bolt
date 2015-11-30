@@ -30,10 +30,12 @@ export class Match {
   path: {exp: ast.Exp,
          index: number}[];
   index: number;
+  params: ast.ExpParams;
 
   constructor(public exp: ast.Exp) {
     this.path = [];
     this.index = 0;
+    this.params = {};
     this.advance();
   }
 
@@ -80,29 +82,38 @@ export class Match {
   }
 }
 
-export function forEachExp(pattern: ast.Exp,
-                           exp: ast.Exp,
-                           params?: string[],
-                           emit?: (match: Match) => void): Match {
+export function findExp(pattern: ast.Exp,
+                        exp: ast.Exp,
+                        paramNames?: string[]) {
   let match = new Match(exp);
 
   while (match.exp !== null) {
-    if (equivalent(pattern, match.exp, params)) {
-      if (emit === undefined) {
-        return match;
-      } else {
-        emit(match);
-      }
+    let params: ast.ExpParams = {};
+    if (equivalent(pattern, match.exp, paramNames, params)) {
+      match.params = params;
+      return match;
     }
     match.next();
   }
   return match;
 }
 
-function equivalent(pattern: ast.Exp, exp: ast.Exp, params = <string[]>[]): boolean {
-  if (pattern.type === 'var' &&
-      util.arrayIncludes(params, (<ast.ExpVariable> pattern).name)) {
-    return true;
+function equivalent(pattern: ast.Exp,
+                    exp: ast.Exp,
+                    paramNames?: string[],
+                    params: ast.ExpParams = {}
+                   ): boolean {
+  if (paramNames !== undefined && pattern.type === 'var') {
+    let name = (<ast.ExpVariable> pattern).name;
+    if (util.arrayIncludes(paramNames, name)) {
+      if (params[name] === undefined) {
+        console.log(name + " = " + ast.decodeExpression(exp));
+        params[name] = ast.copyExp(exp);
+        return true;
+      } else {
+        return equivalent(params[name], exp, paramNames, params);
+      }
+    }
   }
 
   if (pattern.type !== exp.type) {
@@ -115,7 +126,7 @@ function equivalent(pattern: ast.Exp, exp: ast.Exp, params = <string[]>[]): bool
       return false;
     }
     for (let i = 0; i < patternCount; i++) {
-      if (!equivalent(ast.getChild(pattern, i), ast.getChild(exp, i), params)) {
+      if (!equivalent(ast.getChild(pattern, i), ast.getChild(exp, i), paramNames, params)) {
         return false;
       }
     }
@@ -182,7 +193,7 @@ function equivalent(pattern: ast.Exp, exp: ast.Exp, params = <string[]>[]): bool
           if (util.arrayIncludes(matches, j)) {
             continue;
           }
-          if (equivalent(patternOp.args[matches.length], expOp.args[j], params)) {
+          if (equivalent(patternOp.args[matches.length], expOp.args[j], paramNames, params)) {
             matches.push(j);
             break;
           }

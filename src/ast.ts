@@ -61,7 +61,11 @@ export interface ExpCall extends Exp {
   args: Exp[];
 }
 
-export type BuiltinFunction = (args: Exp[], params: { [name: string]: Exp; }) => Exp;
+export interface ExpParams {
+  [name: string]: Exp;
+}
+
+export type BuiltinFunction = (args: Exp[], params: ExpParams) => Exp;
 
 export interface ExpBuiltin extends Exp {
   fn: BuiltinFunction;

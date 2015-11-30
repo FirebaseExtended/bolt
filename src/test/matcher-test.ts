@@ -27,7 +27,7 @@ suite("AST Matching", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let exp = bolt.parseExpression(data);
-      let match = matcher.forEachExp(bolt.parseExpression(data), exp);
+      let match = matcher.findExp(bolt.parseExpression(data), exp);
       assert.deepEqual(match.exp, exp);
     }, helper.expFormat);
   });
@@ -44,7 +44,7 @@ suite("AST Matching", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
+      let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
       assert.deepEqual(match.exp, pattern);
     }, helper.expFormat);
   });
@@ -71,7 +71,7 @@ suite("AST Matching", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
+      let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
       assert.equal((<ast.ExpOp> match.exp).op, (<ast.ExpOp> match.exp).op);
     }, helper.expFormat);
   });
@@ -84,7 +84,7 @@ suite("AST Matching", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.forEachExp(pattern, bolt.parseExpression(data.exp));
+      let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
       assert.equal(match.exp, null);
     }, helper.expFormat);
   });
@@ -99,9 +99,9 @@ suite("AST Matching", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.forEachExp(pattern,
-                                     bolt.parseExpression(data.exp),
-                                     data.vars);
+      let match = matcher.findExp(pattern,
+                                  bolt.parseExpression(data.exp),
+                                  data.vars);
       assert.ok(match.exp !== null && (<ast.ExpOp> match.exp).op === (<ast.ExpOp> match.exp).op);
     }, helper.expFormat);
   });
@@ -115,9 +115,9 @@ suite("AST Matching", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.forEachExp(pattern,
-                                     bolt.parseExpression(data.exp),
-                                     data.vars);
+      let match = matcher.findExp(pattern,
+                                  bolt.parseExpression(data.exp),
+                                  data.vars);
       assert.ok(match.exp == null);
     }, helper.expFormat);
   });
