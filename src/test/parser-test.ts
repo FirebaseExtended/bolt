@@ -152,6 +152,9 @@ suite("Rules Parser Tests", function() {
     helper.dataDrivenTest(tests, function(data, expect) {
       let exp = bolt.parseExpression(data);
       assert.deepEqual(exp, expect);
+
+      exp = ast.deepCopy(exp);
+      assert.deepEqual(exp, expect);
     });
   });
 

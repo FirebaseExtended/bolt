@@ -434,6 +434,10 @@ export function genericType(typeName: string, params: ExpType[]): ExpGenericType
   return { type: "generic", valueType: "type", name: typeName, params: params };
 }
 
+function isExpType(typeName): boolean {
+  return (typeName === 'type' || typeName === 'union' || typeName === 'generic');
+}
+
 export class Symbols {
   functions: { [name: string]: Method };
   paths: { [name: string]: Path };
@@ -750,4 +754,68 @@ export function getChild(exp: Exp, index: number): Exp {
   case 'generic':
     return (<ExpGenericType> exp).params[index];
   }
+}
+
+// Mutate the parent to set the ith child element.
+export function setChild(expChild: Exp, expParent: Exp, index: number) {
+  switch (expParent.type) {
+  default:
+    throw new Error("AST node has no children.");
+
+  case 'Array':
+    (<ExpValue> expParent).value[index] = expChild;
+    break;
+
+  case 'ref':
+    if (index > 1) {
+      throw new Error("Reference node has only two children.");
+    }
+    let expRef = <ExpReference> expParent;
+    if (index === 0) {
+      expRef.base = expChild;
+    } else {
+      expRef.accessor = expChild;
+    }
+    break;
+
+  case 'call':
+    let expCall = <ExpCall> expParent;
+    if (index === 0) {
+      if (expChild.type !== 'var' && expChild.type !== 'ref') {
+        throw new Error(errors.typeMismatch + "expected Variable or Reference (not " +
+                        expChild.type + ")");
+      }
+      expCall.ref = <ExpVariable> expChild;
+    } else {
+      expCall.args[index - 1] = expChild;
+    }
+    break;
+
+  case 'op':
+    (<ExpOp> expParent).args[index] = expChild;
+    break;
+
+  case 'union':
+    if (!isExpType(expChild)) {
+      throw new Error(errors.typeMismatch + "expected Type (not " + expChild.type + ")");
+    }
+    (<ExpUnionType> expParent).types[index] = <ExpType> expChild;
+    break;
+
+  case 'generic':
+    if (!isExpType(expChild)) {
+      throw new Error(errors.typeMismatch + "expected Type (not " + expChild.type + ")");
+    }
+    (<ExpGenericType> expParent).params[index] = <ExpType> expChild;
+    break;
+  }
+}
+
+export function deepCopy(exp: Exp): Exp {
+  exp = copyExp(exp);
+  let c = childCount(exp);
+  for (let i = 0; i < c; i++) {
+    setChild(deepCopy(getChild(exp, i)), exp, i);
+  }
+  return exp;
 }

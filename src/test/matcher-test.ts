@@ -29,7 +29,7 @@ suite("AST Matching", function() {
       let exp = bolt.parseExpression(data);
       let match = matcher.findExp(bolt.parseExpression(data), exp);
       assert.deepEqual(match.exp, exp);
-    }, helper.expFormat);
+    });
   });
 
   suite("Values in expressions", () => {
@@ -46,7 +46,7 @@ suite("AST Matching", function() {
       let pattern = bolt.parseExpression(data.pattern);
       let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
       assert.deepEqual(match.exp, pattern);
-    }, helper.expFormat);
+    });
   });
 
   suite("Sub-expressions in expressions", () => {
@@ -73,7 +73,7 @@ suite("AST Matching", function() {
       let pattern = bolt.parseExpression(data.pattern);
       let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
       assert.equal((<ast.ExpOp> match.exp).op, (<ast.ExpOp> match.exp).op);
-    }, helper.expFormat);
+    });
   });
 
   suite("Sub-expressions not in expressions", () => {
@@ -86,7 +86,7 @@ suite("AST Matching", function() {
       let pattern = bolt.parseExpression(data.pattern);
       let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
       assert.equal(match.exp, null);
-    }, helper.expFormat);
+    });
   });
 
   suite("Sub-expressions with params", () => {
@@ -103,7 +103,7 @@ suite("AST Matching", function() {
                                   bolt.parseExpression(data.exp),
                                   data.vars);
       assert.ok(match.exp !== null && (<ast.ExpOp> match.exp).op === (<ast.ExpOp> match.exp).op);
-    }, helper.expFormat);
+    });
   });
 
   suite("Sub-expressions with params not present", () => {
@@ -119,6 +119,92 @@ suite("AST Matching", function() {
                                   bolt.parseExpression(data.exp),
                                   data.vars);
       assert.ok(match.exp == null);
-    }, helper.expFormat);
+    });
+  });
+
+  suite("Re-writing descriptors", () => {
+    let tests = [
+      { data: "a => b",
+        expect: { params: [], pattern: "a", replacement: "b" } },
+      { data: "() a => b",
+        expect: { params: [], pattern: "a", replacement: "b" } },
+      { data: "()a => b",
+        expect: { params: [], pattern: "a", replacement: "b" } },
+      { data: "(a) a => b",
+        expect: { params: ['a'], pattern: "a", replacement: "b" } },
+      { data: "(a, b) a => b",
+        expect: { params: ['a', 'b'], pattern: "a", replacement: "b" } },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let rule = matcher.Rewriter.fromDescriptor(data);
+      assert.deepEqual(rule.paramNames, expect.params);
+      assert.equal(ast.decodeExpression(rule.pattern), expect.pattern);
+      assert.equal(ast.decodeExpression(rule.replacement), expect.replacement);
+    });
+  });
+
+  suite("ReplaceVars", () => {
+    let tests = [
+      { data: { exp: "a + 1", params: { a: "2" } },
+        expect: "2 + 1" },
+      { data: { exp: "a", params: { a: "2" } },
+        expect: "2" },
+      { data: { exp: "a.val()", params: { a: "newData" } },
+        expect: "newData.val()" },
+      { data: { exp: "a.val() + a", params: { a: "newData" } },
+        expect: "newData.val() + newData" },
+      // .a is a property name - not a variable
+      { data: { exp: "a.a()", params: { a: "newData" } },
+        expect: "newData.a()" },
+      { data: { exp: "a.val() != b.val()", params: { a: "this", b: "prior(this)" } },
+        expect: "this.val() != prior(this).val()" },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let exp = bolt.parseExpression(data.exp);
+      let params: ast.ExpParams = {};
+      Object.keys(data.params).forEach((key) => {
+        params[key] = bolt.parseExpression(data.params[key]);
+      });
+      let result = matcher.replaceVars(exp, params);
+      assert.equal(ast.decodeExpression(result), expect);
+    });
+  });
+
+  suite("Expression re-writing", () => {
+    let tests = [
+      { data: { rule: "newData => this", exp: "newData.val() != data.val()"},
+        expect: "this.val() != data.val()" },
+      { data: { rule: "data => prior(this)", exp: "newData.val() != data.val()"},
+        expect: "newData.val() != prior(this).val()" },
+      { data: { rule: "(a) a.val() => a", exp: "newData.val() != data.val()"},
+        expect: "newData != data" },
+
+      { data: { rule: "(a) a || true => true", exp: "one || two"},
+        expect: "one || two" },
+      { data: { rule: "(a) a || true => true", exp: "one || true"},
+        expect: "true" },
+      { data: { rule: "(a) a || true => true", exp: "one || two || true"},
+        expect: "true" },
+      { data: { rule: "(a) a || true => true", exp: "true || one || two"},
+        expect: "true" },
+
+      { data: { rule: "(a) a || false => a", exp: "one || two"},
+        expect: "one || two" },
+      { data: { rule: "(a) a || false => a", exp: "one || false"},
+        expect: "one" },
+      { data: { rule: "(a) a || false => a", exp: "one || two || false"},
+        expect: "one || two" },
+      { data: { rule: "(a) a || false => a", exp: "false || one || two"},
+        expect: "one || two" },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let exp = bolt.parseExpression(data.exp);
+      let rule = matcher.Rewriter.fromDescriptor(data.rule);
+      let result = rule.apply(exp);
+      assert.equal(ast.decodeExpression(result), expect);
+    });
   });
 });

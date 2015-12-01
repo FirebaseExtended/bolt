@@ -43,6 +43,7 @@ var TEST_FILES = [
   'lib/test/generator-test.js',
   'lib/test/matcher-test.js',
   'lib/test/parser-test.js',
+  'lib/test/permutation-test.js',
   'lib/test/util-test.js'
 ];
 

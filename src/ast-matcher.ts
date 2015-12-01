@@ -15,6 +15,7 @@
  */
 /// <reference path="typings/node.d.ts" />
 import ast = require('./ast');
+import bolt = require('./bolt');
 import util = require('./util');
 
 let reverseOp = {
@@ -80,16 +81,93 @@ export class Match {
     this.exp = node.exp;
     this.index = node.index + 1;
   }
+
+  replaceExp(replacement: ast.Exp) {
+    if (this.path.length === 0) {
+      return replacement;
+    }
+    let parentPart = this.path.slice(-1)[0];
+    ast.setChild(replacement, parentPart.exp, parentPart.index);
+    return this.path[0].exp;
+  }
+
+}
+
+// "[(<params>)] <pattern> => <replacement>"
+// E.g. "(a) a.val() => a"
+let descriptorRegexp = /^\s*(?:\((.*)\))?\s*(.*\S)\s*=>\s*(.*\S)\s*$/;
+
+export class Rewriter {
+  constructor(public paramNames: string[],
+              public pattern: ast.Exp,
+              public replacement: ast.Exp) {
+  }
+
+  static fromDescriptor(descriptor: string): Rewriter {
+    let match = descriptorRegexp.exec(descriptor);
+    if (match === null) {
+      return null;
+    }
+    let paramNames: string[];
+    if (match[1] === undefined) {
+      paramNames = [];
+    } else {
+      paramNames = match[1].split(/,\s+/);
+      if (paramNames.length === 1 && paramNames[0] === '') {
+        paramNames = [];
+      }
+    }
+    return new Rewriter(paramNames,
+                        bolt.parseExpression(match[2]),
+                        bolt.parseExpression(match[3]));
+  }
+
+  apply(exp: ast.Exp): ast.Exp {
+    let match: Match;
+    let limit = 50;
+
+    while (match = findExp(this.pattern, exp, this.paramNames)) {
+      if (match.exp === null) {
+        break;
+      }
+      console.log("A", ast.decodeExpression(match.exp));
+      if (limit-- <= 0) {
+        throw new Error("Too many patterns (" + ast.decodeExpression(this.pattern) +
+                        ") in expression: " + ast.decodeExpression(exp));
+      }
+      let replacement = replaceVars(this.replacement, match.params);
+      exp = match.replaceExp(replacement);
+    }
+    return exp;
+  }
+}
+
+export function replaceVars(exp: ast.Exp, params: ast.ExpParams): ast.Exp {
+  exp = ast.deepCopy(exp);
+  let match = new Match(exp);
+
+  while (match.exp !== null) {
+    if (match.exp.type === 'var') {
+      let expVar = <ast.ExpVariable> match.exp;
+      if (params[expVar.name] !== undefined) {
+        exp = match.replaceExp(ast.deepCopy(params[expVar.name]));
+      }
+    }
+    match.next();
+  }
+  return exp;
 }
 
 export function findExp(pattern: ast.Exp,
                         exp: ast.Exp,
-                        paramNames?: string[]) {
+                        paramNames?: string[]): Match {
   let match = new Match(exp);
 
   while (match.exp !== null) {
     let params: ast.ExpParams = {};
+    console.log("FE", ast.decodeExpression(match.exp));
     if (equivalent(pattern, match.exp, paramNames, params)) {
+      console.log("FE2", ast.decodeExpression(match.exp));
       match.params = params;
       return match;
     }
@@ -107,7 +185,7 @@ function equivalent(pattern: ast.Exp,
     let name = (<ast.ExpVariable> pattern).name;
     if (util.arrayIncludes(paramNames, name)) {
       if (params[name] === undefined) {
-        console.log(name + " = " + ast.decodeExpression(exp));
+        console.log("EQ", name + " = " + ast.decodeExpression(exp));
         params[name] = ast.copyExp(exp);
         return true;
       } else {

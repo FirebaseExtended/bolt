@@ -602,7 +602,7 @@ export class Generator {
   // - Expand snapshot references using child('ref').
   // - Coerce snapshot references to values as needed.
   partialEvalReal(exp: ast.Exp,
-              params: { [name: string]: ast.Exp } = {},
+              params: ast.ExpParams = {},
               functionCalls: { [name: string]: boolean } = {})
   : ast.Exp {
     var self = this;
