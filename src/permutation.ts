@@ -15,23 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
 
-export class Permutation {
-  current: number[] = [];
-  locations: number[] = [];
-  remaining: number;
+export class IndexPermutation {
+  private current: number[] = [];
+  private locations: number[] = [];
+  private remaining: number;
 
   constructor(private n: number, private k?: number) {
     if (k === undefined) {
       this.k = n;
     }
-    this.remaining = 1;
     for (let i = 0; i < this.k; i++) {
       this.set(i, i);
-      this.remaining *= n - i;
     }
-    this.remaining -= 1;
+    this.remaining = this.getCount() - 1;
+  }
+
+  getCount(): number {
+    let count = 1;
+    for (let i = 0; i < this.k; i++) {
+      count *= this.n - i;
+    }
+    return count;
   }
 
   getCurrent(): number[] {
@@ -41,15 +46,14 @@ export class Permutation {
     return this.current.slice();
   }
 
-  next(): number[] {
+  next() {
     if (this.remaining === 0) {
       this.current = null;
     }
     if (this.current === null) {
-      return null;
+      return;
     }
     this.advance();
-    return this.current;
   }
 
   private advance() {
@@ -85,5 +89,33 @@ export class Permutation {
       }
     }
     return undefined;
+  }
+}
+
+export class Permutation<T> {
+  collection: T[];
+  p: IndexPermutation;
+
+  constructor(collection: T[], k?: number) {
+    this.p = new IndexPermutation(collection.length, k);
+    this.collection = collection.slice();
+  }
+
+  getCount(): number {
+    return this.p.getCount();
+  }
+
+  getCurrent(): T[] {
+    let indexes = this.p.getCurrent();
+    if (indexes === null) {
+      return null;
+    }
+    return indexes.map((i) => {
+      return this.collection[i];
+    });
+  }
+
+  next() {
+    this.p.next();
   }
 }
