@@ -72,7 +72,7 @@ let genRules = [
   "(a) a.exists() => a != null",
   "(a, b) a.contains(b) => a.includes(b)",
   "(a, b) a.beginsWith(b) => a.startsWith(b)",
-  "(a, b) a.matches(b) => this.test(b)",
+  "(a, b) a.matches(b) => a.test(b)",
 ];
 
 class Formatter {

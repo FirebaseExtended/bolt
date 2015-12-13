@@ -60,6 +60,9 @@ suite("JSON Rules Decoder", function() {
                                 "c": { ".write": "false" }}} },
         expect: "path /a {\n  read() = true;\n  /b {\n    write() = true;\n  }\n  /c {\n    write() = false;\n  }\n}"
       },
+
+      { data: { rules: {"a": { ".validate": "(newData.val() + '').matches(/^-?\\d+$/)" }}},
+        expect: "path /a {\n  validate() = (this + '').test(/^-?\\d+$/);\n}" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
