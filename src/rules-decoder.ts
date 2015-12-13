@@ -61,6 +61,8 @@ let readRules = [
 
 let writeRules = [
   "data => prior(this)",
+  "root => _oldRoot_",
+  "_oldRoot_ => prior(root)",
 ];
 
 let genRules = [
