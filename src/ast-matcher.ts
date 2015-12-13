@@ -18,6 +18,8 @@ import ast = require('./ast');
 import bolt = require('./bolt');
 import util = require('./util');
 
+import {Permutation} from './permutation';
+
 let reverseOp = {
   '<': '>',
   '>': '<',
@@ -90,7 +92,6 @@ export class Match {
     ast.setChild(replacement, parentPart.exp, parentPart.index);
     return this.path[0].exp;
   }
-
 }
 
 // "[(<params>)] <pattern> => <replacement>"
@@ -130,7 +131,6 @@ export class Rewriter {
       if (match.exp === null) {
         break;
       }
-      console.log("A", ast.decodeExpression(match.exp));
       if (limit-- <= 0) {
         throw new Error("Too many patterns (" + ast.decodeExpression(this.pattern) +
                         ") in expression: " + ast.decodeExpression(exp));
@@ -165,9 +165,7 @@ export function findExp(pattern: ast.Exp,
 
   while (match.exp !== null) {
     let params: ast.ExpParams = {};
-    console.log("FE", ast.decodeExpression(match.exp));
     if (equivalent(pattern, match.exp, paramNames, params)) {
-      console.log("FE2", ast.decodeExpression(match.exp));
       match.params = params;
       return match;
     }
@@ -176,6 +174,11 @@ export function findExp(pattern: ast.Exp,
   return match;
 }
 
+/*
+ * Test for equivalence of two expressions.  Allows for wildcard
+ * subexpressions (given in paramNames).  When a match is found,
+ * the value of the wildcards is returnd in params.
+ */
 function equivalent(pattern: ast.Exp,
                     exp: ast.Exp,
                     paramNames?: string[],
@@ -185,7 +188,6 @@ function equivalent(pattern: ast.Exp,
     let name = (<ast.ExpVariable> pattern).name;
     if (util.arrayIncludes(paramNames, name)) {
       if (params[name] === undefined) {
-        console.log("EQ", name + " = " + ast.decodeExpression(exp));
         params[name] = ast.copyExp(exp);
         return true;
       } else {
@@ -263,25 +265,52 @@ function equivalent(pattern: ast.Exp,
 
     case '||':
     case '&&':
-      // Find any (unique) occurance for all children of the pattern.
-      let matches: number[] = [];
-      while (matches.length < patternOp.args.length) {
-        let j: number;
-        for (j = 0; j < expOp.args.length; j++) {
-          if (util.arrayIncludes(matches, j)) {
-            continue;
-          }
-          if (equivalent(patternOp.args[matches.length], expOp.args[j], paramNames, params)) {
-            matches.push(j);
+      // For boolean expressions the first clause of the pattern must be a "free variable".
+      // After matching remainder of pattern against a permutation of the arguments we assign
+      // the free variable to the unmatched clauses.
+      let freeName: string;
+      if (patternOp.args[0].type === 'var' ||
+          util.arrayIncludes(paramNames, (<ast.ExpVariable> patternOp.args[0]).name)) {
+        freeName = (<ast.ExpVariable> patternOp.args[0]).name;
+      } else {
+        throw new Error("First clause of boolean pattern must be a free variable.");
+      }
+      let p: Permutation<ast.Exp>;
+      for (p = new Permutation(expOp.args, patternOp.args.length - 1);
+           p.getCurrent() != null;
+           p.next()) {
+        let tempParams = <ast.ExpParams> util.extend({}, params);
+        var args = p.getCurrent();
+        let i: number;
+        for (i = 0; i < args.length; i++) {
+          if (!equivalent(patternOp.args[i + 1], args[i], paramNames, tempParams)) {
             break;
           }
         }
-        if (j >= expOp.args.length) {
-          return false;
+
+        // Found a match!
+        if (i === args.length) {
+          util.extend(params, tempParams);
+          if (params[freeName] !== undefined) {
+            throw new Error("First clause of boolean expression cannot be repeated.");
+          }
+          var extraArgs: ast.Exp[] = [];
+          expOp.args.forEach((arg) => {
+            if (!util.arrayIncludes(args, arg)) {
+              extraArgs.push(arg);
+            }
+          });
+          if (extraArgs.length === 1) {
+            params[freeName] = extraArgs[0];
+          } else if (extraArgs.length > 1) {
+            params[freeName] = ast.op(patternOp.op, extraArgs);
+          }
+          return true;
         }
       }
+      return false;
     }
-    return true;
+    break;
 
   case 'literal':
   case 'var':
