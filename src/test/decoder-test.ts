@@ -71,19 +71,19 @@ suite("JSON Rules Decoder", function() {
   suite("Data references", function() {
     var tests = [
       { data: { rules: { "a": { ".read": "data.child('prop').val() > 0"}} },
-        expect: "path /a {\n  read() = this.prop > 0;",
+        expect: "path /a {\n  read() = this.prop > 0;\n}",
       },
 
       { data: { rules: { "$a": { ".read": "data.child($a).val() > 0"}} },
-        expect: "path /a {\n  read() = this[$a] > 0;",
+        expect: "path /$a {\n  read() = this[$a] > 0;\n}",
       },
 
       { data: { rules: { "a": { ".read": "data.exists()"}} },
-        expect: "path /a {\n  read() = this != null;",
+        expect: "path /a {\n  read() = this != null;\n}",
       },
 
       { data: { rules: { "a": { ".validate": "newData.val() == data.val()"}} },
-        expect: "path /a {\n  validate() = this == prior(this);",
+        expect: "path /a {\n  validate() = this == prior(this);\n}",
       },
     ];
 
@@ -107,7 +107,7 @@ suite("JSON Rules Decoder", function() {
       let rules = { "rules": {
         "a": { ".read": "data.val()." + data}
       }};
-      let bolt = "path /a {\n  read() = this." + expect + ";";
+      let bolt = "path /a {\n  read() = this." + expect + ";\n}";
       var result = decoder.decodeJSON(rules);
       assert.equal(result, bolt);
     });

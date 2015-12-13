@@ -17,13 +17,14 @@
 // import util = require('./util');
 import ast = require('./ast');
 import util = require('./util');
+import matcher = require('./ast-matcher');
 var parser = require('./rules-parser');
 var stripComments = require('strip-json-comments');
 
 let typeIndicators = {
-  "newData.isString()": "String",
-  "newData.isNumber()": "Number",
-  "newData.isBoolean()": "Boolean"
+  "this.isString()": "String",
+  "this.isNumber()": "Number",
+  "this.isBoolean()": "Boolean"
 };
 
 export function decodeRules(jsonString: string): string {
@@ -54,12 +55,43 @@ class PathConstraints {
   }
 }
 
+let readRules = [
+  "data => this",
+];
+
+let writeRules = [
+  "data => prior(this)",
+];
+
+let genRules = [
+  "newData => this",
+  "(a, b) a.child(b) => a[b]",
+  "(a) a.val() => a",
+  "(a) a.exists() => a != null",
+  "(a, b) a.contains(b) => a.includes(b)",
+  "(a, b) a.beginsWith(b) => a.startsWith(b)",
+  "(a, b) a.matches(b) => this.test(b)",
+];
+
 class Formatter {
   exps: { [path: string]: PathConstraints };
   indent: number;
+  readRewriters: matcher.Rewriter[];
+  writeRewriters: matcher.Rewriter[];
+  genRewriters: matcher.Rewriter[];
 
   constructor() {
     this.exps = {};
+    this.readRewriters = readRules.map(matcher.Rewriter.fromDescriptor);
+    this.writeRewriters = writeRules.map(matcher.Rewriter.fromDescriptor);
+    this.genRewriters = genRules.map(matcher.Rewriter.fromDescriptor);
+  }
+
+  applyRules(exp: ast.Exp, rules: matcher.Rewriter[]): ast.Exp {
+    rules.forEach((rewriter) => {
+      exp = rewriter.apply(exp);
+    });
+    return exp;
   }
 
   decodeParts(path: string, json: Object) {
@@ -78,7 +110,13 @@ class Formatter {
     if (method !== 'indexOn') {
       // Normalize expression
       try {
-        expString = ast.decodeExpression(parse(expString));
+        let expIn = parse(expString);
+        let expOut = this.applyRules(expIn,
+                                     method === 'read' ?
+                                     this.readRewriters :
+                                     this.writeRewriters);
+        expOut = this.applyRules(expOut, this.genRewriters);
+        expString = ast.decodeExpression(expOut);
       } catch (e) {
         throw new Error("Could not parse expression: '" + expString + "'");
       }
