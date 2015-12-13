@@ -127,7 +127,7 @@ Path "path statement" = ("path" __)? path:(path:PathExpression { pushPath(path);
   }
 
 // Parse trailing slash and empty parts but emit error message.
-PathExpression "path" =  parts:("/" part:Identifier? { return part; })+ {
+PathExpression "path" =  parts:("/" part:PathKey? { return part; })+ {
   var hasError = false;
   if (parts.length === 1 && parts[0] === null) {
     parts = [];
@@ -145,6 +145,8 @@ PathExpression "path" =  parts:("/" part:Identifier? { return part; })+ {
   }
   return parts;
 }
+
+PathKey = chars: [^ /;]+ { return chars.join(''); }
 
 PathsAndMethods = all:(Path / Method)* _ {
   var result = {};

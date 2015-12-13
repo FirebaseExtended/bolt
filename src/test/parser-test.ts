@@ -229,6 +229,8 @@ suite("Rules Parser Tests", function() {
                              parts: ['x', 'y', '$id'],
                              methods: {validate: {params: [], body: ast.boolean(false)}}},
                 } },
+      { data: "path /hyphen-key {}",
+        expect: {"/hyphen-key": { parts: ['hyphen-key'], isType: ast.typeType('Any'), methods: {} }} },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

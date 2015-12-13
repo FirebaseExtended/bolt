@@ -1,2 +1,3 @@
 fixed - Testing-only: Create /tmp dir if not already created in CLI test.
+fixed - Allow hyphens in paths.
 feature - Nested path statements.
