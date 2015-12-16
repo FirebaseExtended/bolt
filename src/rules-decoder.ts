@@ -70,6 +70,7 @@ let genRules = [
   "(a, b) a.child(b) => a[b]",
   "(a) a.val() => a",
   "(a) a.exists() => a != null",
+  "(a, b) a.hasChild(b) => a[b] != null",
   "(a, b) a.contains(b) => a.includes(b)",
   "(a, b) a.beginsWith(b) => a.startsWith(b)",
   "(a, b) a.matches(b) => a.test(b)",
