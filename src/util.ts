@@ -283,3 +283,19 @@ export function commonPrefixSize<T extends ArrayLike<any>>(s1: T, s2: T): number
   }
   return last;
 }
+
+export interface Functor<T> {
+  apply(t: T): T;
+}
+
+export class MultiFunctor<T> implements Functor<T> {
+  constructor(public funcs: Functor<T>[]) {
+  }
+
+  apply(t: T): T {
+    this.funcs.forEach((f) => {
+      t = f.apply(t);
+    });
+    return t;
+  }
+}

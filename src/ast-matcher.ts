@@ -15,7 +15,7 @@
  */
 /// <reference path="typings/node.d.ts" />
 import ast = require('./ast');
-import bolt = require('./bolt');
+import {parseExpression} from './parseUtil';
 import util = require('./util');
 
 import {Permutation} from './permutation';
@@ -104,7 +104,7 @@ export class Match {
 // E.g. "(a, b) a.val() + b => a + b"
 let descriptorRegexp = /^\s*(?:\((.*)\))?\s*(.*\S)\s*=>\s*(.*\S)\s*$/;
 
-export class Rewriter {
+export class Rewriter implements util.Functor<ast.Exp> {
   constructor(public paramNames: string[],
               public pattern: ast.Exp,
               public replacement: ast.Exp) {
@@ -125,8 +125,8 @@ export class Rewriter {
       }
     }
     return new Rewriter(paramNames,
-                        bolt.parseExpression(match[2]),
-                        bolt.parseExpression(match[3]));
+                        parseExpression(match[2]),
+                        parseExpression(match[3]));
   }
 
   static fromFunction(name: string, method: ast.Method) {

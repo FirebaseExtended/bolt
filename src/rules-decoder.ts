@@ -18,7 +18,7 @@
 import ast = require('./ast');
 import util = require('./util');
 import matcher = require('./ast-matcher');
-var parser = require('./rules-parser');
+import {parseExpression} from './parseUtil';
 var stripComments = require('strip-json-comments');
 
 let typeIndicators = {
@@ -56,17 +56,15 @@ class PathConstraints {
   }
 }
 
-let readRules = [
-  "data => this",
-];
+let readRewriter = matcher.Rewriter.fromDescriptor("data => this");
 
-let writeRules = [
+let writeRewriter = new util.MultiFunctor([
   "data => prior(this)",
   "root => _oldRoot_",
   "_oldRoot_ => prior(root)",
-];
+].map(matcher.Rewriter.fromDescriptor));
 
-let genRules = [
+let genRewriter = new util.MultiFunctor([
   "newData => this",
   "(a, b) a.child(b) => a[b]",
   "(a) a.val() => a",
@@ -76,27 +74,14 @@ let genRules = [
   "(a, b) a.beginsWith(b) => a.startsWith(b)",
   "(a, b) a.matches(b) => a.test(b)",
   "(a, b) !(a != b) => a == b",
-];
+].map(matcher.Rewriter.fromDescriptor));
 
 class Formatter {
   exps: { [path: string]: PathConstraints };
   indent: number;
-  readRewriters: matcher.Rewriter[];
-  writeRewriters: matcher.Rewriter[];
-  genRewriters: matcher.Rewriter[];
 
   constructor() {
     this.exps = {};
-    this.readRewriters = readRules.map(matcher.Rewriter.fromDescriptor);
-    this.writeRewriters = writeRules.map(matcher.Rewriter.fromDescriptor);
-    this.genRewriters = genRules.map(matcher.Rewriter.fromDescriptor);
-  }
-
-  applyRules(exp: ast.Exp, rules: matcher.Rewriter[]): ast.Exp {
-    rules.forEach((rewriter) => {
-      exp = rewriter.apply(exp);
-    });
-    return exp;
   }
 
   decodeParts(path: string, json: Object) {
@@ -115,12 +100,9 @@ class Formatter {
     if (method !== 'indexOn') {
       // Normalize expression
       try {
-        let expIn = parse(expString);
-        let expOut = this.applyRules(expIn,
-                                     method === 'read' ?
-                                     this.readRewriters :
-                                     this.writeRewriters);
-        expOut = this.applyRules(expOut, this.genRewriters);
+        let expIn = parseExpression(expString);
+        let expOut = (method === 'read' ? readRewriter : writeRewriter).apply(expIn);
+        expOut = genRewriter.apply(expOut);
         expString = ast.decodeExpression(expOut);
       } catch (e) {
         throw new Error("Could not parse expression: '" + expString + "'");
@@ -199,11 +181,6 @@ class Formatter {
 
     return lines.join('\n');
   }
-}
-
-function parse(s: string): ast.Exp {
-  var result = parser.parse("f() = " + s + ";");
-  return result.functions.f.body;
 }
 
 function childPath(path: string, child: string): string {
