@@ -37,6 +37,9 @@ export interface RegExpValue extends ExpValue {
 export interface ExpNull extends Exp {
 }
 
+export interface ExpVoid extends Exp {
+}
+
 export interface ExpOp extends Exp {
   op: string;
   args: Exp[];
@@ -151,6 +154,10 @@ export function literal(name): ExpLiteral {
 
 export function nullType(): ExpNull {
   return { type: 'Null', valueType: 'Null' };
+}
+
+export function voidType(): ExpVoid {
+  return { type: 'Void', valueType: 'Void' };
 }
 
 export function reference(base: Exp, prop: Exp): ExpReference {
@@ -350,6 +357,7 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
   return function(a: Exp[]): Exp {
     var i;
 
+    // TODO: No longer needed - just return flattened expression in one args array.
     function reducer(result, current) {
       if (result === undefined) {
         return current;
@@ -596,6 +604,11 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     result = 'null';
     break;
 
+  case 'Void':
+    // Missing expression!
+    result = 'void';
+    break;
+
   case 'var':
   case 'literal':
     result = (<ExpVariable> exp).name;
@@ -792,7 +805,16 @@ export function setChild(expChild: Exp, expParent: Exp, index: number) {
     break;
 
   case 'op':
-    (<ExpOp> expParent).args[index] = expChild;
+    let expOp = <ExpOp> expParent;
+    // Void indicates to removing element from parent.
+    if (expChild.type === 'Void') {
+      expOp.args.splice(index, 1);
+      if (expOp.args.length < 1) {
+        throw new Error("Removing last argument from " + expOp.op);
+      }
+    } else {
+      expOp.args[index] = expChild;
+    }
     break;
 
   case 'union':
@@ -812,6 +834,9 @@ export function setChild(expChild: Exp, expParent: Exp, index: number) {
 }
 
 export function deepCopy(exp: Exp): Exp {
+  if (exp === null) {
+    return null;
+  }
   exp = copyExp(exp);
   let c = childCount(exp);
   for (let i = 0; i < c; i++) {

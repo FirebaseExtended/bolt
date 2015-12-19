@@ -87,8 +87,7 @@ suite("AST Matching", function() {
       { vars: ['a'], pattern: "a + 1", exp: "a + 1" },
       { vars: ['a'], pattern: "a + 1", exp: "x + 1" },
       { vars: ['x'], pattern: "x || true", exp: "a || b || true || c" },
-      // Ignore this complex pattern for now.
-      // { vars: ['x'], pattern: "x || x", exp: "a || b || a" },
+      { vars: ['x'], pattern: "_x_ || x || x", exp: "a || b || a" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -200,6 +199,36 @@ suite("AST Matching", function() {
       let rule = matcher.Rewriter.fromDescriptor(data.rule);
       let result = rule.apply(exp);
       assert.equal(ast.decodeExpression(result), expect);
+    });
+  });
+
+  suite("Function rewriting", () => {
+    let tests = [
+      { data: { functions: "isUser(a) = auth.uid == a;",
+                exp: "auth.uid == this" },
+        expect: "isUser(this)" },
+      { data: { functions: "add(a, b) = a + b;",
+                exp: "x + y" },
+        expect: "add(x, y)" },
+      { data: { functions: "add(a, b) = a + b; sub(a, b) = a - b;",
+                exp: "x + y - z" },
+        expect: "sub(add(x, y), z)" },
+      { data: { functions: "add(a, b) = a + b; sub(a, b) = a - b;",
+                exp: "x + (y - z)" },
+        expect: "add(x, sub(y, z))" },
+      { data: { functions: "or(a, b) = a || b;",
+                exp: "x || y" },
+        expect: "or(x, y)" },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let exp = bolt.parseExpression(data.exp);
+      let functions = bolt.parse(data.functions).functions;
+      Object.keys(functions).forEach((name) => {
+        let rule = matcher.Rewriter.fromFunction(name, functions[name]);
+        exp = rule.apply(exp);
+      });
+      assert.equal(ast.decodeExpression(exp), expect);
     });
   });
 });

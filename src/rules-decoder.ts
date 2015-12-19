@@ -27,7 +27,8 @@ let typeIndicators = {
   "this.isBoolean()": "Boolean"
 };
 
-export function decodeRules(jsonString: string): string {
+export function decodeRules(jsonString: string,
+                            functions: {[ name: string ]: ast.Method}): string {
   return decodeJSON(JSON.parse(cleanJSONString(jsonString)));
 }
 

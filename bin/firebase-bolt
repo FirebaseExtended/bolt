@@ -32,9 +32,10 @@ var opts = {
   boolean: ['version', 'help'],
   string: ['output'],
   alias: {
-    'v': 'version',
+    'f': 'functions',
     'h': 'help',
     'o': 'output',
+    'v': 'version',
   },
   unknown: function(flag) {
     if (flag[0] == '-') {
@@ -50,10 +51,23 @@ var commands = {
       log("Missing JSON file name to migrate to bolt file.");
       process.exit(1);
     }
+    var functionsFileName = getInputFileName(args.functions, 'bolt');
+    var functions;
+    if (functionsFileName !== undefined) {
+      readInputFile(functionsFileName, 'Bolt', function(boltText) {
+        try {
+          var symbols = bolt.parse(boltText);
+          functions = symbols.functions;
+        } catch (e) {
+          log(e.message, e.line, e.column);
+          process.exit(1);
+        }
+      });
+    }
     var inputFileName = getInputFileName(args._[1], 'json');
     var outputFileName = getOutputFileName(args.output, inputFileName, 'bolt');
     readInputFile(inputFileName, 'JSON', function(jsonData) {
-      writeOutputFile(outputFileName, bolt.decodeRules(jsonData));
+      writeOutputFile(outputFileName, bolt.decodeRules(jsonData, functions));
     });
   }
 };
@@ -167,12 +181,12 @@ function usage(code) {
   console.error("            " + cmdName + " < rules.bolt > rules.json");
   console.error("            " + cmdName + " rules");
   console.error("              (rules.bolt =>  rules.json)");
-  console.error("            " + cmdName + " migrate rules.json");
+  console.error("            " + cmdName + " migrate [--functions file] rules.json");
   console.error("              (rules.json =>  rules.bolt)\n");
-
 
   console.error("  Options:\n");
   console.error(util.formatColumns(4, [
+    ["-f --functions file", "Include file of top level Bolt functions (for migrate)."],
     ["-h --help", "Display this helpful message."],
     ["-o --output file", "Output to file."],
     ["-v --version", "Display Firebase Bolt version."],

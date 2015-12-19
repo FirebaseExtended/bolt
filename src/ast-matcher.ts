@@ -24,6 +24,7 @@ let reverseOp = {
   '<': '>',
   '>': '<',
   '<=': '>=',
+  '>=': '<=',
 };
 
 /*
@@ -90,12 +91,17 @@ export class Match {
     }
     let parentPart = this.path.slice(-1)[0];
     ast.setChild(replacement, parentPart.exp, parentPart.index);
+    // When a boolean expression is collapsed to a single argument - hoist the argument
+    // to the parent.
+    if (parentPart.exp.type === 'op' && (<ast.ExpOp> parentPart.exp).args.length === 1) {
+      this.path.slice(-1)[0].exp = (<ast.ExpOp> parentPart.exp).args[0];
+    }
     return this.path[0].exp;
   }
 }
 
 // "[(<params>)] <pattern> => <replacement>"
-// E.g. "(a) a.val() => a"
+// E.g. "(a, b) a.val() + b => a + b"
 let descriptorRegexp = /^\s*(?:\((.*)\))?\s*(.*\S)\s*=>\s*(.*\S)\s*$/;
 
 export class Rewriter {
@@ -123,6 +129,32 @@ export class Rewriter {
                         bolt.parseExpression(match[3]));
   }
 
+  static fromFunction(name: string, method: ast.Method) {
+    if (method.body.type === 'op') {
+      let op = (<ast.ExpOp> method.body).op;
+      if (op === '&&' || op === '||') {
+        // f(a, b) = <boolean-exp> becomes (_x_, a, b) <boolean-exp> => _x_ <op> f(a, b)
+        let free = ast.variable('_x_');
+        let params = util.extendArray(['_x_'], method.params);
+        let body = <ast.ExpOp> ast.copyExp(method.body);
+        body.args = util.extendArray([free], body.args);
+        let result = new Rewriter(params,
+                              body,
+                              ast.op(op, [free,
+                                          ast.call(ast.variable(name),
+                                                   method.params.map(ast.variable))]));
+        console.log(result.toString());
+        return result;
+      }
+    }
+
+    // f(a, b) = <exp> becomes (a, b) <exp> => f(a, b)
+    return new Rewriter(method.params,
+                        method.body,
+                        ast.call(ast.variable(name),
+                                 method.params.map(ast.variable)));
+  }
+
   apply(exp: ast.Exp): ast.Exp {
     let match: Match;
     let limit = 50;
@@ -139,6 +171,17 @@ export class Rewriter {
       exp = match.replaceExp(replacement);
     }
     return exp;
+  }
+
+  toString(): string {
+    let result = '';
+    if (this.paramNames.length > 0) {
+      result += '(' + this.paramNames.join(', ') + ') ';
+    }
+    result += ast.decodeExpression(this.pattern);
+    result += ' => ';
+    result += ast.decodeExpression(this.replacement);
+    return result;
   }
 }
 
@@ -300,9 +343,11 @@ function equivalent(pattern: ast.Exp,
               extraArgs.push(arg);
             }
           });
-          if (extraArgs.length === 1) {
+          if (extraArgs.length === 0) {
+            params[freeName] = ast.voidType();
+          } else if (extraArgs.length === 1) {
             params[freeName] = extraArgs[0];
-          } else if (extraArgs.length > 1) {
+          } else {
             params[freeName] = ast.op(patternOp.op, extraArgs);
           }
           return true;
