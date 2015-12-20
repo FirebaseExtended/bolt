@@ -93,7 +93,10 @@ export class Match {
     ast.setChild(replacement, parentPart.exp, parentPart.index);
     // When a boolean expression is collapsed to a single argument - hoist the argument
     // to the parent.
-    if (parentPart.exp.type === 'op' && (<ast.ExpOp> parentPart.exp).args.length === 1) {
+    let parentBool = <ast.ExpOp> parentPart.exp;
+    if (parentBool.type === 'op' &&
+        (parentBool.op === '&&' || parentBool.op === '||') &&
+        parentBool.args.length === 1) {
       this.path.slice(-1)[0].exp = (<ast.ExpOp> parentPart.exp).args[0];
     }
     return this.path[0].exp;
@@ -384,5 +387,12 @@ function equivalent(pattern: ast.Exp,
 export let simplifyRewriter = new util.MultiFunctor([
   "(_a, _x) _a && _a && _x => _a && _x",
   "(_a, _x) _a || _a || _x => _a || _x",
+
+  "(_x) true || _x => true",
+  "(_x) true && _x => _x",
+  "(_x) false || _x => _x",
+  "(_x) false && _x => false",
+
   "(_a, _b) !(_a != _b) => _a == _b",
+  "(_x) !!_x => _x",
 ].map(Rewriter.fromDescriptor));

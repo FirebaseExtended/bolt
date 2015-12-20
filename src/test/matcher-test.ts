@@ -253,6 +253,17 @@ suite("AST Matching", function() {
 
       [ "hang && b || c && d && e",
         "hang && b || c && d && e" ],
+
+      [ "a || b || true || c", "true"],
+      [ "a && b && true && c", "a && b && c"],
+
+      [ "a || b || false || c", "a || b || c"],
+      [ "a && b && false && c", "false"],
+
+      [ "!a", "!a" ],
+      [ "!!a", "a" ],
+      [ "!!!a", "!a" ],
+      [ "!!!!a", "a" ],
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
