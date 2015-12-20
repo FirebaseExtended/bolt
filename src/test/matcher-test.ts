@@ -251,6 +251,8 @@ suite("AST Matching", function() {
       [ "a && b && c && a && e", "a && b && c && e"],
       [ "a && b && c && d && a", "a && b && c && d"],
 
+//      [ "/* bug */ a || !!(a || c)", "a || c" ],
+
       [ "hang && b || c && d && e",
         "hang && b || c && d && e" ],
 
@@ -264,6 +266,14 @@ suite("AST Matching", function() {
       [ "!!a", "a" ],
       [ "!!!a", "!a" ],
       [ "!!!!a", "a" ],
+
+      [ "a || !a", "true" ],
+      [ "a && !a", "false" ],
+
+      [ "a && b || a && c", "a && (b || c)" ],
+      [ "a && b && c || a && b && d", "a && b && (c || d)" ],
+      [ "a && b && d || c && a && e", "a && (b && d || c && e)" ],
+//      [ "/* bug */ b && d && a || c && a && e", "a && (b && d || c && e)" ],
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {

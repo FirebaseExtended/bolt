@@ -389,7 +389,7 @@ LogicalANDExpression =
       return head;
     }
     tail.unshift(head);
-    return ast.op('&&', ast.flatten('&&', ast.op("&&", tail)));
+    return ast.flattenOp(ast.op("&&", tail));
   }
 
 LogicalANDOperator = ("&&" / "and") { return "&&"; }
@@ -401,7 +401,7 @@ LogicalORExpression =
       return head;
     }
     tail.unshift(head);
-    return ast.op('||', ast.flatten('||', ast.op("||", tail)));
+    return ast.flattenOp(ast.op("||", tail));
   }
 
 LogicalOROperator = ("||" / "or") { return "||"; }

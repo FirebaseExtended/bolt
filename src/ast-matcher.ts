@@ -20,6 +20,8 @@ import util = require('./util');
 
 import {IndexPermutation, Permutation} from './permutation';
 
+let DEBUG = false;
+
 let reverseOp = {
   '<': '>',
   '>': '<',
@@ -172,7 +174,14 @@ export class Rewriter implements util.Functor<ast.Exp> {
                         ") in expression: " + ast.decodeExpression(exp));
       }
       let replacement = replaceVars(this.replacement, match.params);
+      let oldExp: ast.Exp;
+      if (DEBUG) {
+        oldExp = ast.copyExp(exp);
+      }
       exp = match.replaceExp(replacement);
+      if (DEBUG) {
+        console.log("Rewrite: " + [oldExp, exp].map(ast.decodeExpression).join(' => '));
+      }
     }
     return exp;
   }
@@ -231,10 +240,22 @@ function equivalent(pattern: ast.Exp,
                     paramNames?: string[],
                     params: ast.ExpParams = {}
                    ): boolean {
+ if (DEBUG) {
+   console.log([pattern, exp].map(ast.decodeExpression).join(' ~ ') + ' with {' +
+                Object.keys(params).map((name) => {
+                  return name + ': ' + ast.decodeExpression(params[name]);
+                }).join(', ') +
+                '}'
+               );
+  }
+
   if (paramNames !== undefined && pattern.type === 'var') {
     let name = (<ast.ExpVariable> pattern).name;
     if (util.arrayIncludes(paramNames, name)) {
       if (params[name] === undefined) {
+        if (DEBUG) {
+          console.log(name + ' := ' + ast.decodeExpression(exp));
+        }
         params[name] = ast.copyExp(exp);
         return true;
       } else {
@@ -385,6 +406,8 @@ function equivalent(pattern: ast.Exp,
 }
 
 export let simplifyRewriter = new util.MultiFunctor([
+  "(_x) !!_x => _x",
+
   "(_a, _x) _a && _a && _x => _a && _x",
   "(_a, _x) _a || _a || _x => _a || _x",
 
@@ -394,5 +417,9 @@ export let simplifyRewriter = new util.MultiFunctor([
   "(_x) false && _x => false",
 
   "(_a, _b) !(_a != _b) => _a == _b",
-  "(_x) !!_x => _x",
+
+  "(_a, _x) _a && !_a && _x => false",
+  "(_a, _x) _a || !_a || _x => true",
+
+  "(_a, _x1, _x2) _a && _x1 || _a && _x2 => _a && (_x1 || _x2)",
 ].map(Rewriter.fromDescriptor));

@@ -393,6 +393,15 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
   };
 }
 
+export function flattenOp(exp: Exp): Exp {
+  let expOp = <ExpOp> exp;
+  if (expOp.type !== 'op' || (expOp.op !== '||' && expOp.op !== '&&')) {
+    return exp;
+  }
+
+  return op(expOp.op, flatten(expOp.op, expOp));
+}
+
 // Flatten the top level tree of op into a single flat array of expressions.
 export function flatten(opType: string, exp: Exp, flat?: Exp[]): Exp[] {
   var i;
@@ -413,7 +422,7 @@ export function flatten(opType: string, exp: Exp, flat?: Exp[]): Exp[] {
   return flat;
 }
 
-export function op(opType, args): ExpOp {
+export function op(opType: string, args: Exp[]): ExpOp {
   return {
     type: 'op',     // This is (multi-argument) operator.
     valueType: 'Any',
