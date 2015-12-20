@@ -284,10 +284,13 @@ export function commonPrefixSize<T extends ArrayLike<any>>(s1: T, s2: T): number
   return last;
 }
 
+// An object that looks like a function (has apply() function over
+// values of type T).
 export interface Functor<T> {
   apply(t: T): T;
 }
 
+// Combine a sequence of Functors into one.
 export class MultiFunctor<T> implements Functor<T> {
   constructor(public funcs: Functor<T>[]) {
   }

@@ -18,7 +18,7 @@ import ast = require('./ast');
 import {parseExpression} from './parseUtil';
 import util = require('./util');
 
-import {Permutation} from './permutation';
+import {IndexPermutation, Permutation} from './permutation';
 
 let reverseOp = {
   '<': '>',
@@ -124,26 +124,27 @@ export class Rewriter implements util.Functor<ast.Exp> {
         paramNames = [];
       }
     }
-    return new Rewriter(paramNames,
-                        parseExpression(match[2]),
-                        parseExpression(match[3]));
+    let result = new Rewriter(paramNames,
+                              parseExpression(match[2]),
+                              parseExpression(match[3]));
+    return result;
   }
 
   static fromFunction(name: string, method: ast.Method) {
     if (method.body.type === 'op') {
       let op = (<ast.ExpOp> method.body).op;
       if (op === '&&' || op === '||') {
-        // f(a, b) = <boolean-exp> becomes (_x_, a, b) <boolean-exp> => _x_ <op> f(a, b)
-        let free = ast.variable('_x_');
-        let params = util.extendArray(['_x_'], method.params);
+        // f(a, b) = <boolean-exp> becomes (a, b, _x) <boolean-exp> OP _x => f(a, b) OP _x
+        let free = ast.variable('_x');
+        let params = util.copyArray(method.params);
+        params.push('_x');
         let body = <ast.ExpOp> ast.copyExp(method.body);
-        body.args = util.extendArray([free], body.args);
+        body.args.push(free);
         let result = new Rewriter(params,
-                              body,
-                              ast.op(op, [free,
-                                          ast.call(ast.variable(name),
-                                                   method.params.map(ast.variable))]));
-        console.log(result.toString());
+                                  body,
+                                  ast.op(op, [ast.call(ast.variable(name),
+                                                       method.params.map(ast.variable)),
+                                              free]));
         return result;
       }
     }
@@ -243,17 +244,33 @@ function equivalent(pattern: ast.Exp,
     return false;
   }
 
-  function equivalentChildren(): boolean {
+  function sameChildren(anyOrder = false): boolean {
     let patternCount = ast.childCount(pattern);
     if (patternCount !== ast.childCount(exp)) {
       return false;
     }
-    for (let i = 0; i < patternCount; i++) {
-      if (!equivalent(ast.getChild(pattern, i), ast.getChild(exp, i), paramNames, params)) {
+    for (let p = new IndexPermutation(patternCount);
+         p.getCurrent() != null;
+         p.next()) {
+      let indexes = p.getCurrent();
+      let tempParams = <ast.ExpParams> util.extend({}, params);
+      let i: number;
+      for (i = 0; i < patternCount; i++) {
+        if (!equivalent(ast.getChild(pattern, i),
+                        ast.getChild(exp, indexes[i]),
+                        paramNames, tempParams)) {
+          break;
+        }
+      }
+      if (i === patternCount) {
+        util.extend(params, tempParams);
+        return true;
+      }
+      if (!anyOrder) {
         return false;
       }
     }
-    return true;
+    return false;
   }
 
   switch (pattern.type) {
@@ -270,7 +287,7 @@ function equivalent(pattern: ast.Exp,
   case 'call':
   case 'ref':
   case 'union':
-    return equivalentChildren();
+    return sameChildren();
 
   case 'generic':
     if ((<ast.ExpGenericType> pattern).name !== (<ast.ExpGenericType> exp).name) {
@@ -295,38 +312,36 @@ function equivalent(pattern: ast.Exp,
 
     switch (patternOp.op) {
     default:
-      return equivalentChildren();
+      return sameChildren();
 
     case '==':
     case '!=':
-      if (equivalentChildren()) {
-        return true;
-      }
-      exp = ast.copyExp(expOp);
-      (<ast.ExpOp> exp).args = [expOp.args[1], expOp.args[0]];
-      return equivalentChildren();
+      return sameChildren(true);
 
     case '||':
     case '&&':
-      // For boolean expressions the first clause of the pattern must be a "free variable".
-      // After matching remainder of pattern against a permutation of the arguments we assign
-      // the free variable to the unmatched clauses.
-      let freeName: string;
-      if (patternOp.args[0].type === 'var' ||
-          util.arrayIncludes(paramNames, (<ast.ExpVariable> patternOp.args[0]).name)) {
-        freeName = (<ast.ExpVariable> patternOp.args[0]).name;
-      } else {
-        throw new Error("First clause of boolean pattern must be a free variable.");
+      // For boolean expressions if the last clause of the pattern is a "free variable", after
+      // matching remainder of pattern against a permutation of the arguments we assign the
+      // free variable to the unmatched clauses.
+      let lastArg = <ast.ExpVariable> patternOp.args[patternOp.args.length - 1];
+      if (lastArg.type !== 'var' || !util.arrayIncludes(paramNames, lastArg.name) ||
+          params[lastArg.name] !== undefined) {
+        return sameChildren(true);
+      }
+
+      let argCount = patternOp.args.length - 1;
+      if (argCount > expOp.args.length) {
+        return false;
       }
       let p: Permutation<ast.Exp>;
-      for (p = new Permutation(expOp.args, patternOp.args.length - 1);
+      for (p = new Permutation(expOp.args, argCount);
            p.getCurrent() != null;
            p.next()) {
         let tempParams = <ast.ExpParams> util.extend({}, params);
         var args = p.getCurrent();
         let i: number;
         for (i = 0; i < args.length; i++) {
-          if (!equivalent(patternOp.args[i + 1], args[i], paramNames, tempParams)) {
+          if (!equivalent(patternOp.args[i], args[i], paramNames, tempParams)) {
             break;
           }
         }
@@ -334,8 +349,8 @@ function equivalent(pattern: ast.Exp,
         // Found a match!
         if (i === args.length) {
           util.extend(params, tempParams);
-          if (params[freeName] !== undefined) {
-            throw new Error("First clause of boolean expression cannot be repeated.");
+          if (params[lastArg.name] !== undefined) {
+            throw new Error("Free-variable of boolean expression cannot be repeated.");
           }
           var extraArgs: ast.Exp[] = [];
           expOp.args.forEach((arg) => {
@@ -344,11 +359,11 @@ function equivalent(pattern: ast.Exp,
             }
           });
           if (extraArgs.length === 0) {
-            params[freeName] = ast.voidType();
+            params[lastArg.name] = ast.voidType();
           } else if (extraArgs.length === 1) {
-            params[freeName] = extraArgs[0];
+            params[lastArg.name] = extraArgs[0];
           } else {
-            params[freeName] = ast.op(patternOp.op, extraArgs);
+            params[lastArg.name] = ast.op(patternOp.op, extraArgs);
           }
           return true;
         }
@@ -362,6 +377,12 @@ function equivalent(pattern: ast.Exp,
     return (<ast.ExpVariable> pattern).name === (<ast.ExpVariable> exp).name;
 
   default:
-    return false;
+    throw new Error("Unknown expression pattern: " + ast.decodeExpression(pattern));
   }
 }
+
+export let simplifyRewriter = new util.MultiFunctor([
+  "(_a, _x) _a && _a && _x => _a && _x",
+  "(_a, _x) _a || _a || _x => _a || _x",
+  "(_a, _b) !(_a != _b) => _a == _b",
+].map(Rewriter.fromDescriptor));

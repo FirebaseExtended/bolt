@@ -60,20 +60,19 @@ let readRewriter = matcher.Rewriter.fromDescriptor("data => this");
 
 let writeRewriter = new util.MultiFunctor([
   "data => prior(this)",
-  "root => _oldRoot_",
-  "_oldRoot_ => prior(root)",
+  "root => _priorRoot",
+  "_priorRoot => prior(root)",
 ].map(matcher.Rewriter.fromDescriptor));
 
 let genRewriter = new util.MultiFunctor([
   "newData => this",
-  "(a, b) a.child(b) => a[b]",
-  "(a) a.val() => a",
-  "(a) a.exists() => a != null",
-  "(a, b) a.hasChild(b) => a[b] != null",
-  "(a, b) a.contains(b) => a.includes(b)",
-  "(a, b) a.beginsWith(b) => a.startsWith(b)",
-  "(a, b) a.matches(b) => a.test(b)",
-  "(a, b) !(a != b) => a == b",
+  "(_a, _b) _a.child(_b) => _a[_b]",
+  "(_a) _a.val() => _a",
+  "(_a) _a.exists() => _a != null",
+  "(_a, _b) _a.hasChild(_b) => _a[_b] != null",
+  "(_a, _b) _a.contains(_b) => _a.includes(_b)",
+  "(_a, _b) _a.beginsWith(_b) => _a.startsWith(_b)",
+  "(_a, _b) _a.matches(_b) => _a.test(_b)",
 ].map(matcher.Rewriter.fromDescriptor));
 
 class Formatter {
@@ -103,9 +102,10 @@ class Formatter {
         let expIn = parseExpression(expString);
         let expOut = (method === 'read' ? readRewriter : writeRewriter).apply(expIn);
         expOut = genRewriter.apply(expOut);
+        expOut = matcher.simplifyRewriter.apply(expOut);
         expString = ast.decodeExpression(expOut);
       } catch (e) {
-        throw new Error("Could not parse expression: '" + expString + "'");
+        throw new Error("Could not parse expression: '" + expString + "' (" + e.stack + ")");
       }
     }
 

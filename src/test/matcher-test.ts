@@ -17,6 +17,7 @@ import chai = require('chai');
 var assert = chai.assert;
 import helper = require('./test-helper');
 
+import {parseExpression} from '../parseUtil';
 import bolt = require('../bolt');
 import ast = require('../ast');
 import matcher = require('../ast-matcher');
@@ -26,8 +27,8 @@ suite("AST Matching", function() {
     let tests = ["false", "1", "'a'", "a", "[]", "1.2", "null", "[1,2]"];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let exp = bolt.parseExpression(data);
-      let match = matcher.findExp(bolt.parseExpression(data), exp);
+      let exp = parseExpression(data);
+      let match = matcher.findExp(parseExpression(data), exp);
       assert.deepEqual(match.exp, exp);
     });
   });
@@ -43,8 +44,8 @@ suite("AST Matching", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
+      let pattern = parseExpression(data.pattern);
+      let match = matcher.findExp(pattern, parseExpression(data.exp));
       assert.deepEqual(match.exp, pattern);
     });
   });
@@ -63,8 +64,8 @@ suite("AST Matching", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
+      let pattern = parseExpression(data.pattern);
+      let match = matcher.findExp(pattern, parseExpression(data.exp));
       assert.equal((<ast.ExpOp> match.exp).op, (<ast.ExpOp> match.exp).op);
     });
   });
@@ -76,8 +77,8 @@ suite("AST Matching", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let pattern = bolt.parseExpression(data.pattern);
-      let match = matcher.findExp(pattern, bolt.parseExpression(data.exp));
+      let pattern = parseExpression(data.pattern);
+      let match = matcher.findExp(pattern, parseExpression(data.exp));
       assert.equal(match.exp, null);
     });
   });
@@ -86,14 +87,14 @@ suite("AST Matching", function() {
     let tests = [
       { vars: ['a'], pattern: "a + 1", exp: "a + 1" },
       { vars: ['a'], pattern: "a + 1", exp: "x + 1" },
-      { vars: ['x'], pattern: "x || true", exp: "a || b || true || c" },
-      { vars: ['x'], pattern: "_x_ || x || x", exp: "a || b || a" },
+      { vars: ['_x'], pattern: "true || _x", exp: "a || b || true || c" },
+      { vars: ['_x', 'x'], pattern: "x || x || _x", exp: "a || b || a" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let pattern = bolt.parseExpression(data.pattern);
+      let pattern = parseExpression(data.pattern);
       let match = matcher.findExp(pattern,
-                                  bolt.parseExpression(data.exp),
+                                  parseExpression(data.exp),
                                   data.vars);
       assert.ok(match.exp !== null && (<ast.ExpOp> match.exp).op === (<ast.ExpOp> match.exp).op);
     });
@@ -108,9 +109,9 @@ suite("AST Matching", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let pattern = bolt.parseExpression(data.pattern);
+      let pattern = parseExpression(data.pattern);
       let match = matcher.findExp(pattern,
-                                  bolt.parseExpression(data.exp),
+                                  parseExpression(data.exp),
                                   data.vars);
       assert.ok(match.exp == null);
     });
@@ -156,10 +157,10 @@ suite("AST Matching", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let exp = bolt.parseExpression(data.exp);
+      let exp = parseExpression(data.exp);
       let params: ast.ExpParams = {};
       Object.keys(data.params).forEach((key) => {
-        params[key] = bolt.parseExpression(data.params[key]);
+        params[key] = parseExpression(data.params[key]);
       });
       let result = matcher.replaceVars(exp, params);
       assert.equal(ast.decodeExpression(result), expect);
@@ -175,27 +176,27 @@ suite("AST Matching", function() {
       { data: { rule: "(a) a.val() => a", exp: "newData.val() != data.val()"},
         expect: "newData != data" },
 
-      { data: { rule: "(a) a || true => true", exp: "one || two"},
+      { data: { rule: "(_x) true || _x => true", exp: "one || two"},
         expect: "one || two" },
-      { data: { rule: "(a) a || true => true", exp: "one || true"},
+      { data: { rule: "(_x) true || _x => true", exp: "one || true"},
         expect: "true" },
-      { data: { rule: "(a) a || true => true", exp: "one || two || true"},
+      { data: { rule: "(_x) true || _x => true", exp: "one || two || true"},
         expect: "true" },
-      { data: { rule: "(a) a || true => true", exp: "true || one || two"},
+      { data: { rule: "(_x) true || _x => true", exp: "true || one || two"},
         expect: "true" },
 
-      { data: { rule: "(a) a || false => a", exp: "one || two"},
+      { data: { rule: "(_x) false || _x => _x", exp: "one || two"},
         expect: "one || two" },
-      { data: { rule: "(a) a || false => a", exp: "one || false"},
+      { data: { rule: "(_x) false || _x => _x", exp: "one || false"},
         expect: "one" },
-      { data: { rule: "(a) a || false => a", exp: "one || two || false"},
+      { data: { rule: "(_x) false || _x => _x", exp: "one || two || false"},
         expect: "one || two" },
-      { data: { rule: "(a) a || false => a", exp: "false || one || two"},
+      { data: { rule: "(_x) false || _x => _x", exp: "false || one || two"},
         expect: "one || two" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let exp = bolt.parseExpression(data.exp);
+      let exp = parseExpression(data.exp);
       let rule = matcher.Rewriter.fromDescriptor(data.rule);
       let result = rule.apply(exp);
       assert.equal(ast.decodeExpression(result), expect);
@@ -219,16 +220,45 @@ suite("AST Matching", function() {
       { data: { functions: "or(a, b) = a || b;",
                 exp: "x || y" },
         expect: "or(x, y)" },
+      { data: { functions: "and(a, b) = a && b;",
+                exp: "x && y" },
+        expect: "and(x, y)" },
+      { data: { functions: "and(a, b) = a && b;",
+                exp: "x && y && z" },
+        expect: "and(and(x, y), z)" },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      let exp = bolt.parseExpression(data.exp);
+      let exp = parseExpression(data.exp);
       let functions = bolt.parse(data.functions).functions;
       Object.keys(functions).forEach((name) => {
         let rule = matcher.Rewriter.fromFunction(name, functions[name]);
         exp = rule.apply(exp);
       });
       assert.equal(ast.decodeExpression(exp), expect);
+    });
+  });
+
+  suite("Expression simplification", () => {
+    let tests = [
+      [ "a && a", "a" ],
+      [ "a || a", "a" ],
+      [ "a && b || a && b", "a && b" ],
+
+      [ "a && b && c && d && e", "a && b && c && d && e"],
+      [ "a && a && c && d && e", "a && c && d && e"],
+      [ "a && b && a && d && e", "a && b && d && e"],
+      [ "a && b && c && a && e", "a && b && c && e"],
+      [ "a && b && c && d && a", "a && b && c && d"],
+
+      [ "hang && b || c && d && e",
+        "hang && b || c && d && e" ],
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      let exp = parseExpression(data);
+      let result = matcher.simplifyRewriter.apply(exp);
+      assert.equal(ast.decodeExpression(result), expect);
     });
   });
 });

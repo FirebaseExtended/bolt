@@ -25,6 +25,9 @@ export class IndexPermutation {
     if (k === undefined) {
       this.k = n;
     }
+    if (k > n) {
+      throw new Error("Illegal permutation size " + k + " > " + n);
+    }
     for (let i = 0; i < this.k; i++) {
       this.set(i, i);
     }
