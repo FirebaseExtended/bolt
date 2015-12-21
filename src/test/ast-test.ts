@@ -192,6 +192,7 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "(a + b) + c", 'a + b + c' ],
       [ "a + b * c" ],
       [ "(a + b) * c" ],
+      [ "a * b * (d + d)" ],
       [ "a < 7" ],
       [ "a > 7" ],
       [ "a <= 7" ],
@@ -208,6 +209,8 @@ suite("Abstract Syntax Tree (AST)", function() {
       // Converts right-associatvie to left-associative for && and ||
       [ "a && (b && c)", "a && b && c" ],
       [ "a || (b || c)", "a || b || c" ],
+      [ "a && b && (c || d)" ],
+      [ "a || b || (c && d)", "a || b || c && d" ],
       [ "a && b || c && d" ],
       [ "(a || b) && (c || d)" ],
       [ "a ? b : c",  ],

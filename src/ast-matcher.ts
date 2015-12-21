@@ -92,14 +92,14 @@ export class Match {
       return replacement;
     }
     let parentPart = this.path.slice(-1)[0];
+    let parentBool = <ast.ExpOp> parentPart.exp;
     ast.setChild(replacement, parentPart.exp, parentPart.index);
     // When a boolean expression is collapsed to a single argument - hoist the argument
     // to the parent.
-    let parentBool = <ast.ExpOp> parentPart.exp;
     if (parentBool.type === 'op' &&
         (parentBool.op === '&&' || parentBool.op === '||') &&
         parentBool.args.length === 1) {
-      this.path.slice(-1)[0].exp = (<ast.ExpOp> parentPart.exp).args[0];
+      parentPart.exp = parentBool.args[0];
     }
     return this.path[0].exp;
   }

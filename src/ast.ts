@@ -393,13 +393,15 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
   };
 }
 
+// Mutates exp so nested boolean expressions are flattened.
 export function flattenOp(exp: Exp): Exp {
   let expOp = <ExpOp> exp;
   if (expOp.type !== 'op' || (expOp.op !== '||' && expOp.op !== '&&')) {
     return exp;
   }
 
-  return op(expOp.op, flatten(expOp.op, expOp));
+  expOp.args = flatten(expOp.op, expOp);
+  return expOp;
 }
 
 // Flatten the top level tree of op into a single flat array of expressions.
@@ -652,21 +654,19 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
         decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
         decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
         decodeExpression(expOp.args[2], innerPrecedence);
-    } else if (expOp.args.length === 2) {
+    } else {
       // All ops are left associative - so nudge the innerPrecendence
       // down on the right hand side to force () for right-associating
       // operations (but ignore right-associating && and || since
       // short-circuiting makes it moot).
-      let nudge = 1;
-      if (rep === '&&' || rep === '||') {
-        nudge = 0;
-      }
-      result =
-        decodeExpression(expOp.args[0], innerPrecedence) +
-        ' ' + rep + ' ' +
-        decodeExpression(expOp.args[1], innerPrecedence + nudge);
-    } else {
-      result = expOp.args.map(decodeExpression).join(' ' + rep + ' ');
+      let nudge = 0;
+      result = expOp.args.map((term) => {
+        let innerResult = decodeExpression(term, innerPrecedence + nudge);
+        if (rep !== '&&' && rep !== '||') {
+          nudge = 1;
+        }
+        return innerResult;
+      }).join(' ' + rep + ' ');
     }
     break;
 
@@ -824,6 +824,7 @@ export function setChild(expChild: Exp, expParent: Exp, index: number) {
     } else {
       expOp.args[index] = expChild;
     }
+    expParent = flattenOp(expParent);
     break;
 
   case 'union':
