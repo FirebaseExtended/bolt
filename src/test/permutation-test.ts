@@ -53,8 +53,8 @@ suite("Permutations", () => {
       let p = new IndexPermutation(data[0], data[1]);
       assert.equal(p.getCount(), expect.count);
       let results = [];
-      while (p.getCurrent() !== null) {
-        results.push(p.getCurrent());
+      while (p.current() !== null) {
+        results.push(p.current());
         p.next();
       }
       assert.deepEqual(results, expect.values);
@@ -81,8 +81,8 @@ suite("Permutations", () => {
       let p = new Permutation(data.c, data.k);
       assert.equal(p.getCount(), expect.count);
       let results = [];
-      while (p.getCurrent() !== null) {
-        results.push(p.getCurrent());
+      while (p.current() !== null) {
+        results.push(p.current());
         p.next();
       }
       assert.deepEqual(results, expect.values);

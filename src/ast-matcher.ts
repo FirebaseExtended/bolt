@@ -274,9 +274,9 @@ function equivalent(pattern: ast.Exp,
       return false;
     }
     for (let p = new IndexPermutation(patternCount);
-         p.getCurrent() != null;
+         p.current() != null;
          p.next()) {
-      let indexes = p.getCurrent();
+      let indexes = p.current();
       let tempParams = <ast.ExpParams> util.extend({}, params);
       let i: number;
       for (i = 0; i < patternCount; i++) {
@@ -359,10 +359,10 @@ function equivalent(pattern: ast.Exp,
       }
       let p: Permutation<ast.Exp>;
       for (p = new Permutation(expOp.args, argCount);
-           p.getCurrent() != null;
+           p.current() != null;
            p.next()) {
         let tempParams = <ast.ExpParams> util.extend({}, params);
-        var args = p.getCurrent();
+        var args = p.current();
         let i: number;
         for (i = 0; i < args.length; i++) {
           if (!equivalent(patternOp.args[i], args[i], paramNames, tempParams)) {

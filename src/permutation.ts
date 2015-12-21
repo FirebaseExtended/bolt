@@ -16,8 +16,18 @@
  * limitations under the License.
  */
 
-export class IndexPermutation {
-  private current: number[] = [];
+/*
+ * Usage:
+ *
+ *   for(i = new Iterator(); i.current(); t.next()) { ... }
+ */
+export interface Iterator<T> {
+  current(): T;
+  next(): void;
+}
+
+export class IndexPermutation implements Iterator<number[]> {
+  private values: number[] = [];
   private locations: number[] = [];
   private remaining: number;
 
@@ -42,18 +52,18 @@ export class IndexPermutation {
     return count;
   }
 
-  getCurrent(): number[] {
-    if (this.current === null) {
+  current(): number[] {
+    if (this.values === null) {
       return null;
     }
-    return this.current.slice();
+    return this.values.slice();
   }
 
   next() {
     if (this.remaining === 0) {
-      this.current = null;
+      this.values = null;
     }
-    if (this.current === null) {
+    if (this.values === null) {
       return;
     }
     this.advance();
@@ -62,7 +72,7 @@ export class IndexPermutation {
   private advance() {
     let location = this.k - 1;
     for (; location >= 0; location--) {
-      let value = this.nextValue(location, this.current[location] + 1);
+      let value = this.nextValue(location, this.values[location] + 1);
       this.set(location, value);
       if (value !== undefined) {
         break;
@@ -75,11 +85,11 @@ export class IndexPermutation {
   }
 
   private set(location: number, value?: number) {
-    let oldValue = this.current[location];
+    let oldValue = this.values[location];
     if (oldValue !== undefined) {
       this.locations[oldValue] = undefined;
     }
-    this.current[location] = value;
+    this.values[location] = value;
     if (value !== undefined) {
       this.locations[value] = location;
     }
@@ -95,7 +105,7 @@ export class IndexPermutation {
   }
 }
 
-export class Permutation<T> {
+export class Permutation<T> implements Iterator<T[]> {
   collection: T[];
   p: IndexPermutation;
 
@@ -108,8 +118,8 @@ export class Permutation<T> {
     return this.p.getCount();
   }
 
-  getCurrent(): T[] {
-    let indexes = this.p.getCurrent();
+  current(): T[] {
+    let indexes = this.p.current();
     if (indexes === null) {
       return null;
     }
