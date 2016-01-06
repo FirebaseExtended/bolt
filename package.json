@@ -1,7 +1,7 @@
 {
   "name": "firebase-bolt",
   "description": "Firebase Bolt Security and Modeling Language Compiler",
-  "version": "0.0.0",
+  "version": "0.6.0",
   "author": {
     "name": "Firebase",
     "email": "support@firebase.com",
