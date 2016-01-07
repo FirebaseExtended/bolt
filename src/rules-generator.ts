@@ -16,6 +16,7 @@
 /// <reference path="typings/node.d.ts" />
 import util = require('./util');
 import ast = require('./ast');
+import logger = require('./logger');
 
 var errors = {
   badIndex: "The index function must return a String or an array of Strings.",
@@ -79,7 +80,6 @@ var snapshotMethods = ['parent', 'child', 'hasChildren', 'val', 'isString', 'isN
 //   paths: {}
 export class Generator {
   symbols: ast.Symbols;
-  log: ast.Loggers;
   validators: { [schemaName: string]: Validator; };
   rules: Validator;
   errorCount: number;
@@ -91,7 +91,6 @@ export class Generator {
 
   constructor(symbols: ast.Symbols) {
     this.symbols = symbols;
-    this.log = symbols.log;
     this.validators = {};
     this.rules = {};
     this.errorCount = 0;
@@ -157,8 +156,8 @@ export class Generator {
   validateMethods(m: string, methods: { [name: string]: ast.Method }, allowed: string[]) {
     for (var method in methods) {
       if (!util.arrayIncludes(allowed, method)) {
-        this.log.warn(m + util.quoteString(method) +
-                      " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
+        logger.warn(m + util.quoteString(method) +
+                    " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
       }
     }
   }
@@ -840,13 +839,8 @@ export class Generator {
     return undefined;
   }
 
-  setLoggers(loggers: ast.Loggers) {
-    this.symbols.setLoggers(loggers);
-    this.log = this.symbols.log;
-  }
-
   fatal(s: string) {
-    this.log.error(s);
+    logger.error(s);
     this.errorCount += 1;
   }
 };

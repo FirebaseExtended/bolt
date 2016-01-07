@@ -24,6 +24,7 @@ var parse = bolt.parse;
 import generator = require('../rules-generator');
 import ast = require('../ast');
 import fileio = require('../file-io');
+import logger = require('../logger');
 import helper = require('./test-helper');
 
 import chai = require('chai');
@@ -413,17 +414,11 @@ suite("Rules Generator Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect, t) {
-      var symbols = parse(data);
-      var gen = new bolt.Generator(symbols);
-      var lastError;
-      gen.setLoggers({
-        error: function(s) {
-          lastError = s;
-        },
-        warn: function(s) {
-          lastError = s;
-        },
-      });
+      logger.reset();
+      logger.silent();
+      let symbols = parse(data);
+      let gen = new bolt.Generator(symbols);
+      let lastError;
 
       try {
         gen.generateRules();
@@ -431,7 +426,7 @@ suite("Rules Generator Tests", function() {
         if (!expect) {
           throw e;
         }
-        lastError = lastError || e.message;
+        lastError = logger.getLastMessage() || e.message;
         assert.match(lastError, expect);
         return;
       }
@@ -439,7 +434,7 @@ suite("Rules Generator Tests", function() {
         assert.fail(undefined, undefined, "No exception thrown.");
       }
       if (t.warn) {
-        assert.match(lastError, t.warn);
+        assert.match(logger.getLastMessage(), t.warn);
       }
     });
   });

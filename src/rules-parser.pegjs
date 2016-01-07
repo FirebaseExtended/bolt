@@ -21,8 +21,16 @@
 
   var ast = require('./ast');
   var util = require('./util');
+  var logger = require('./logger');
+  var error = logger.error;
+  var warn = logger.warn;
 
-  var errorCount = 0;
+  logger.setContext(function() {
+    return {
+      line: line(),
+      column: column()
+    };
+  });
 
   // Return a left-associative binary structure
   // consisting of head (exp), and tail (op, exp)*.
@@ -35,10 +43,6 @@
   }
 
   var symbols = new ast.Symbols();
-  symbols.setLoggers({
-    error: error,
-    warn: warn
-  });
 
   var rootPath = [];
 
@@ -84,29 +88,11 @@
     return s;
   }
 
-  var lastError = undefined;
-
-  function error(s) {
-    errorCount += 1;
-    lastError = errorString({line: line(), column: column()}, s);
-    console.error(lastError);
-  }
-
-  function warn(s) {
-    console.warn(errorString({line: line(), column: column()}, s));
-  }
-
-  function errorString(loc, s) {
-    return 'bolt:' + loc.line + ':' + loc.column + ': ' + s;
-  }
 }
 
 start = _ Statements _ {
-  if (errorCount === 1) {
-    throw(new Error(lastError));
-  }
-  if (errorCount != 0) {
-    throw(new Error("Fatal errors: " + errorCount));
+  if (logger.hasErrors()) {
+    throw(new Error(logger.errorSummary()));
   }
   return symbols;
 }

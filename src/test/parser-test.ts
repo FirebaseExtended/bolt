@@ -21,6 +21,7 @@ var assert = chai.assert;
 import fileIO = require('../file-io');
 var readFile = fileIO.readFile;
 import helper = require('./test-helper');
+import logger = require('../logger');
 
 interface Window { bolt: any; }
 declare var window: Window;
@@ -451,6 +452,8 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
+      logger.reset();
+      logger.silent();
       try {
         parse(data);
       } catch (e) {

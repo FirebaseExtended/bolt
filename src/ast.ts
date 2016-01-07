@@ -18,6 +18,7 @@
 /// <reference path="typings/node.d.ts" />
 
 import util = require('./util');
+import logger = require('./logger');
 
 export type Object = { [prop: string]: any };
 
@@ -106,10 +107,6 @@ export interface Schema {
   getValidator?: (params: Exp[]) => Object;
 };
 
-export interface Loggers {
-  error: (message: string) => void;
-  warn: (message: string) => void;
-};
 export var string: (v: string) => ExpValue = valueGen('String');
 export var boolean: (v: boolean) => ExpValue = valueGen('Boolean');
 export var number: (v: number) => ExpValue = valueGen('Number');
@@ -428,16 +425,11 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: { [name: string]: Path };
   schema: { [name: string]: Schema };
-  log: Loggers;
 
   constructor() {
     this.functions = {};
     this.paths = {};
     this.schema = {};
-    this.log = {
-      error: function(s) { console.error(s); },
-      warn: function(s) { console.warn(s); },
-    };
   }
 
   register(type: string, name: string, object: any) {
@@ -446,7 +438,7 @@ export class Symbols {
     }
 
     if (this[type][name]) {
-      this.log.error("Duplicated " + type + " definition: " + name + ".");
+      logger.error("Duplicated " + type + " definition: " + name + ".");
     } else {
       this[type][name] = object;
     }
@@ -512,10 +504,6 @@ export class Symbols {
     default:
       throw new Error("Unknown type: " + type.type);
       }
-  }
-
-  setLoggers(loggers: Loggers) {
-    this.log = loggers;
   }
 }
 
