@@ -17,9 +17,7 @@
 /// <reference path="../typings/mocha.d.ts" />
 /// <reference path="../typings/chai.d.ts" />
 
-interface Window { bolt: any; }
-declare var window: Window;
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
+import bolt = require('../bolt');
 var parse = bolt.parse;
 import generator = require('../rules-generator');
 import ast = require('../ast');
@@ -137,7 +135,7 @@ suite("Rules Generator Tests", function() {
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
       var json = gen.generateRules();
-      assert.equal(json.rules.x['.write'], expect);
+      assert.equal(json['rules']['x']['.write'], expect);
     });
   });
 
@@ -176,7 +174,7 @@ suite("Rules Generator Tests", function() {
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
       var json = gen.generateRules();
-      assert.equal(json.rules.x['.write'], expect);
+      assert.equal(json['rules']['x']['.write'], expect);
     });
   });
 
@@ -194,7 +192,7 @@ suite("Rules Generator Tests", function() {
       var gen = new bolt.Generator(symbols);
       gen.ensureValidator(ast.typeType(data));
 
-      var terms = gen.validators[data]['.validate'];
+      var terms = <ast.Exp[]> gen.validators[data]['.validate'];
       var result = bolt.decodeExpression(ast.andArray(terms));
       assert.deepEqual(result, expect);
     });

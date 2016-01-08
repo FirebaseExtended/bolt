@@ -24,13 +24,12 @@ You can easily install the bolt compiler using [npm](https://docs.npmjs.com/cli/
 
     $ npm install --global firebase-bolt
 
-Execute the Bolt compiler from the command line (it reads a Bolt file from standard input and writes a JSON
-rules file to standard output):
+Execute the Bolt compiler from the command line:
 
-    $ firebase-bolt < rules.bolt > rules.json
+    $ firebase-bolt rules.bolt
 
-You can then upload the resulting rules.json file via the
-[firebase command line](https://www.firebase.com/docs/hosting/command-line-tool.html):
+Will create a rules.json which you can then upload via the [firebase command
+line](https://www.firebase.com/docs/hosting/command-line-tool.html):
 
     $ firebase deploy
 

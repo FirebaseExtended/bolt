@@ -1,20 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Firebase Rules Parser Tests</title>
+  <title>Firebase Bolt Compiler - {{ set.title }}</title>
   <link rel="stylesheet" href="/node_modules/mocha/mocha.css">
   <script src="/node_modules/mocha/mocha.js"></script>
-  <script src="/dist/bolt.js"></script>
+  <style>
+    div.header {
+    margin: 15px;
+    }
+
+    .selected {
+    font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+  <div class="header">
+    <h1>Firebase Bolt Compiler - {{ set.title }}</h1>
+    <ul>
+      {{#sets}}
+      <li class="{{ selected }}"><a href="{{ filename }}">{{ title }}</a></li>
+      {{/sets}}
+    </ul>
+  </div>
+
   <div id="mocha"></div>
-  <script>mocha.setup('tdd')</script>
-  <script src="/dist/parser-test.js"></script>
-  <script src="/dist/generator-test.js"></script>
-  <script src="/dist/ast-test.js"></script>
-  <script src="/dist/util-test.js"></script>
+
+  <script>
+    mocha.setup('tdd')
+  </script>
+
+  {{#set.tests}}
+  <script src="{{.}}-test.js"></script>
+  {{/set.tests}}
+
   <script>
     mocha.checkLeaks();
     mocha.run();
-  </script></body>
+  </script>
+</body>
 </html>
