@@ -423,12 +423,12 @@ export function genericType(typeName: string, params: ExpType[]): ExpGenericType
 
 export class Symbols {
   functions: { [name: string]: Method };
-  paths: { [name: string]: Path };
+  paths: Path[];
   schema: { [name: string]: Schema };
 
   constructor() {
     this.functions = {};
-    this.paths = {};
+    this.paths = [];
     this.schema = {};
   }
 
@@ -456,7 +456,8 @@ export class Symbols {
       isType: <ExpType> isType,
       methods: methods
     };
-    return <Path> this.register('paths', '/' + parts.join('/'), p);
+    this.paths.push(p);
+    return p;
   }
 
   registerSchema(name: string,

@@ -87,7 +87,6 @@
     }
     return s;
   }
-
 }
 
 start = _ Statements _ {
@@ -132,7 +131,20 @@ PathExpression "path" =  parts:("/" part:PathKey? { return part; })+ {
   return parts;
 }
 
-PathKey = chars: [^ /;]+ { return chars.join(''); }
+PathKey = CaptureKey / LiteralPathKey
+
+CaptureKey = "{" _ id:Identifier _ ("=" _ "*" _ )? "}" {
+  return id;
+}
+
+LiteralPathKey = chars: [^ /;]+ {
+  var result = chars.join('');
+  if (chars[0] === '$') {
+    warn("Use of " + result + " to capture a path segment is deprecated; " +
+         "use {" + result + "} or {" + result.slice(1) + "}, instead.");
+  }
+  return result;
+}
 
 PathsAndMethods = all:(Path / Method)* _ {
   var result = {};

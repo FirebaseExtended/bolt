@@ -20,15 +20,12 @@ import chai = require('chai');
 var assert = chai.assert;
 import fileIO = require('../file-io');
 var readFile = fileIO.readFile;
-import helper = require('./test-helper');
 import logger = require('../logger');
-
-interface Window { bolt: any; }
-declare var window: Window;
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
-var ast = bolt.ast;
-var parse = bolt.parse;
-var BOLT_EXTENSION = bolt.FILE_EXTENSION;
+var parser = require('../rules-parser');
+var parse = parser.parse;
+import ast = require('../ast');
+import bolt = require('../bolt');
+import helper = require('./test-helper');
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
@@ -190,42 +187,46 @@ suite("Rules Parser Tests", function() {
   suite("Paths", function() {
     var tests = [
       { data: "path / {}",
-        expect: {"/": { parts: [], isType: ast.typeType('Any'), methods: {} }} },
+        expect: [{ parts: [], isType: ast.typeType('Any'), methods: {} }] },
       { data: "path /x {}",
-        expect: {"/x": { parts: ['x'], isType: ast.typeType('Any'), methods: {} }} },
-      { data: "path /p/$q { write() { return true;  }}",
-        expect: {"/p/$q": { isType: ast.typeType('Any'),
-                            parts: ['p', '$q'],
-                            methods: {write: {params: [], body: ast.boolean(true)}}}} },
+        expect: [{ parts: ['x'], isType: ast.typeType('Any'), methods: {} }] },
+      { data: "path /p/{$q} { write() { return true;  }}",
+        expect: [{ isType: ast.typeType('Any'),
+                   parts: ['p', '$q'],
+                   methods: {write: {params: [], body: ast.boolean(true)}}}] },
+      { data: "path /p/{q} { write() { return true;  }}",
+        expect: [{ isType: ast.typeType('Any'),
+                   parts: ['p', 'q'],
+                   methods: {write: {params: [], body: ast.boolean(true)}}}] },
       { data: "path /x/y { read() = true; }",
-        expect: {"/x/y": { isType: ast.typeType('Any'),
-                           parts: ['x', 'y'],
-                           methods: {read: {params: [], body: ast.boolean(true)}}}} },
+        expect: [{ isType: ast.typeType('Any'),
+                   parts: ['x', 'y'],
+                   methods: {read: {params: [], body: ast.boolean(true)}}}] },
       { data: "path /x { read() = true; /y { write() = true; }}",
-        expect: {"/x": { isType: ast.typeType('Any'),
-                         parts: ['x'],
-                         methods: {read: {params: [], body: ast.boolean(true)}}},
-                 "/x/y": { isType: ast.typeType('Any'),
-                           parts: ['x', 'y'],
-                           methods: {write: {params: [], body: ast.boolean(true)}}}} },
+        expect: [{ isType: ast.typeType('Any'),
+                   parts: ['x'],
+                   methods: {read: {params: [], body: ast.boolean(true)}}},
+                 { isType: ast.typeType('Any'),
+                   parts: ['x', 'y'],
+                   methods: {write: {params: [], body: ast.boolean(true)}}}] },
 
-      { data: "path /x { read() = true; /y { write() = true; path /$id { validate() = false; }}}",
-        expect: {"/x": { isType: ast.typeType('Any'),
-                         parts: ['x'],
-                         methods: {read: {params: [], body: ast.boolean(true)}}},
-                 "/x/y": { isType: ast.typeType('Any'),
-                           parts: ['x', 'y'],
-                           methods: {write: {params: [], body: ast.boolean(true)}}},
-                 "/x/y/$id": { isType: ast.typeType('Any'),
-                             parts: ['x', 'y', '$id'],
-                             methods: {validate: {params: [], body: ast.boolean(false)}}},
-                } },
+      { data: "path /x { read() = true; /y { write() = true; path /{$id} { validate() = false; }}}",
+        expect: [{ isType: ast.typeType('Any'),
+                   parts: ['x'],
+                   methods: {read: {params: [], body: ast.boolean(true)}}},
+                 { isType: ast.typeType('Any'),
+                   parts: ['x', 'y'],
+                   methods: {write: {params: [], body: ast.boolean(true)}}},
+                 { isType: ast.typeType('Any'),
+                   parts: ['x', 'y', '$id'],
+                   methods: {validate: {params: [], body: ast.boolean(false)}}},
+                ] },
       { data: "path /hyphen-key {}",
-        expect: {"/hyphen-key": { parts: ['hyphen-key'], isType: ast.typeType('Any'), methods: {} }} },
+        expect: [ { parts: ['hyphen-key'], isType: ast.typeType('Any'), methods: {} }] },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      assert.deepEqual(parse(data).paths, expect);
+      assert.deepEqual(sortPaths(parse(data).paths), sortPaths(expect));
     });
   });
 
@@ -398,8 +399,7 @@ suite("Rules Parser Tests", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       var result = parse(data);
-      assert.deepEqual(result.paths['/p/c'].parts,
-                       ['p', 'c']);
+      assert.deepEqual(result.paths[0].parts, ['p', 'c']);
     });
   });
 
@@ -426,7 +426,7 @@ suite("Rules Parser Tests", function() {
     var files = ["all_access", "userdoc", "mail", "children"];
 
     helper.dataDrivenTest(files, function(data) {
-      var filename = 'samples/' + data + '.' + BOLT_EXTENSION;
+      var filename = 'samples/' + data + '.' + bolt.FILE_EXTENSION;
       return readFile(filename)
         .then(function(response) {
           var result = parse(response.content);
@@ -464,3 +464,21 @@ suite("Rules Parser Tests", function() {
     });
   });
 });
+
+function sortPaths(paths: ast.Path[]): ast.Path[] {
+  function cmpStr(a, b) {
+    if (a < b) {
+      return -1;
+    }
+    if (a > b) {
+      return 1;
+    }
+    return 0;
+  }
+
+  paths.sort((a, b) => {
+    return cmpStr(a.parts.join('~'), b.parts.join('~'));
+  });
+
+  return paths;
+}

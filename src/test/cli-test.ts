@@ -27,7 +27,7 @@ suite("firebase-bolt CLI", function() {
     try {
       fs.mkdirSync(TMP_DIR);
     } catch (e) {
-      console.log(TMP_DIR + " already exists.");
+      // do nothing
     }
   });
 
