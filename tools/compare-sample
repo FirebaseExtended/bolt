@@ -4,4 +4,11 @@
 set -e
 
 cd $PROJ_DIR/samples
+echo "Compare $1.bolt => $1.json:"
 diff <(firebase-bolt < $1.bolt | flatten-json.py) <(flatten-json.py < $1.json)
+
+firebase-bolt migrate $1.json --output ../tmp/$1.bolt
+firebase-bolt ../tmp/$1.bolt
+
+echo -e "\nCompare decoded $.json roundtrip:"
+diff <(flatten-json.py < $1.json) <(flatten-json.py < ../tmp/$1.json)

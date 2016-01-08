@@ -37,6 +37,9 @@ export interface RegExpValue extends ExpValue {
 export interface ExpNull extends Exp {
 }
 
+export interface ExpVoid extends Exp {
+}
+
 export interface ExpOp extends Exp {
   op: string;
   args: Exp[];
@@ -61,7 +64,11 @@ export interface ExpCall extends Exp {
   args: Exp[];
 }
 
-export type BuiltinFunction = (args: Exp[], params: { [name: string]: Exp; }) => Exp;
+export interface ExpParams {
+  [name: string]: Exp;
+}
+
+export type BuiltinFunction = (args: Exp[], params: ExpParams) => Exp;
 
 export interface ExpBuiltin extends Exp {
   fn: BuiltinFunction;
@@ -147,6 +154,10 @@ export function literal(name): ExpLiteral {
 
 export function nullType(): ExpNull {
   return { type: 'Null', valueType: 'Null' };
+}
+
+export function voidType(): ExpVoid {
+  return { type: 'Void', valueType: 'Void' };
 }
 
 export function reference(base: Exp, prop: Exp): ExpReference {
@@ -303,8 +314,14 @@ export function regexp(pattern: string, modifiers = ""): RegExpValue {
   };
 }
 
-function cmpValues(v1: ExpValue, v2: ExpValue): boolean {
-  return v1.type === v2.type && v1.value === v2.value;
+export function cmpValues(v1: ExpValue, v2: ExpValue): boolean {
+  if (v1.type !== v2.type || v1.value !== v2.value) {
+    return false;
+  }
+  if (v1.type === 'RegExp' && (<RegExpValue> v1).modifiers !== (<RegExpValue> v2).modifiers) {
+    return false;
+  }
+  return true;
 }
 
 function isOp(opType: string, exp: Exp): boolean {
@@ -340,6 +357,7 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
   return function(a: Exp[]): Exp {
     var i;
 
+    // TODO: No longer needed - just return flattened expression in one args array.
     function reducer(result, current) {
       if (result === undefined) {
         return current;
@@ -355,7 +373,7 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
 
     var result = [];
     for (i = 0; i < flat.length; i++) {
-      // Remove identifyValues from array.
+      // Remove identityValues from array.
       if (cmpValues(flat[i], identityValue)) {
         continue;
       }
@@ -373,6 +391,17 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
     // Return left-associative expression of opType.
     return result.reduce(reducer);
   };
+}
+
+// Mutates exp so nested boolean expressions are flattened.
+export function flattenOp(exp: Exp): Exp {
+  let expOp = <ExpOp> exp;
+  if (expOp.type !== 'op' || (expOp.op !== '||' && expOp.op !== '&&')) {
+    return exp;
+  }
+
+  expOp.args = flatten(expOp.op, expOp);
+  return expOp;
 }
 
 // Flatten the top level tree of op into a single flat array of expressions.
@@ -395,7 +424,7 @@ export function flatten(opType: string, exp: Exp, flat?: Exp[]): Exp[] {
   return flat;
 }
 
-export function op(opType, args): ExpOp {
+export function op(opType: string, args: Exp[]): ExpOp {
   return {
     type: 'op',     // This is (multi-argument) operator.
     valueType: 'Any',
@@ -422,6 +451,10 @@ export function unionType(types: ExpType[]): ExpUnionType {
 
 export function genericType(typeName: string, params: ExpType[]): ExpGenericType {
   return { type: "generic", valueType: "type", name: typeName, params: params };
+}
+
+function isExpType(typeName): boolean {
+  return (typeName === 'type' || typeName === 'union' || typeName === 'generic');
 }
 
 export class Symbols {
@@ -582,6 +615,11 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     result = 'null';
     break;
 
+  case 'Void':
+    // Missing expression!
+    result = 'void';
+    break;
+
   case 'var':
   case 'literal':
     result = (<ExpVariable> exp).name;
@@ -611,19 +649,24 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     var rep = JS_OPS[expOp.op].rep === undefined ? expOp.op : JS_OPS[expOp.op].rep;
     if (expOp.args.length === 1) {
       result = rep + decodeExpression(expOp.args[0], innerPrecedence);
-    } else if (expOp.args.length === 2) {
-      result =
-        decodeExpression(expOp.args[0], innerPrecedence) +
-        ' ' + rep + ' ' +
-        // All ops are left associative - so nudge the innerPrecendence
-        // down on the right hand side to force () for right-associating
-        // operations.
-        decodeExpression(expOp.args[1], innerPrecedence + 1);
-    } else if (expOp.args.length === 3) {
+    } else if (expOp.op === '?:') {
       result =
         decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
         decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
         decodeExpression(expOp.args[2], innerPrecedence);
+    } else {
+      // All ops are left associative - so nudge the innerPrecendence
+      // down on the right hand side to force () for right-associating
+      // operations (but ignore right-associating && and || since
+      // short-circuiting makes it moot).
+      let nudge = 0;
+      result = expOp.args.map((term) => {
+        let innerResult = decodeExpression(term, innerPrecedence + nudge);
+        if (rep !== '&&' && rep !== '||') {
+          nudge = 1;
+        }
+        return innerResult;
+      }).join(' ' + rep + ' ');
     }
     break;
 
@@ -678,4 +721,136 @@ function precedenceOf(exp: Exp): number {
   }
 
   return result;
+}
+
+export function childCount(exp: Exp): number {
+  switch (exp.type) {
+  default:
+    return 0;
+
+  case 'Array':
+    return (<ExpValue> exp).value.length;
+
+  case 'ref':
+    return 2;
+
+  case 'call':
+    return 1 + (<ExpCall> exp).args.length;
+
+  case 'op':
+    return (<ExpOp> exp).args.length;
+
+  case 'union':
+    return (<ExpUnionType> exp).types.length;
+
+  case 'generic':
+    return (<ExpGenericType> exp).params.length;
+  }
+}
+
+export function getChild(exp: Exp, index: number): Exp {
+  switch (exp.type) {
+  default:
+    return null;
+
+  case 'Array':
+    return (<ExpValue> exp).value[index];
+
+  case 'ref':
+    let expRef = <ExpReference> exp;
+    return [expRef.base, expRef.accessor][index];
+
+  case 'call':
+    let expCall = <ExpCall> exp;
+    if (index === 0) {
+      return expCall.ref;
+    }
+    return expCall.args[index - 1];
+
+  case 'op':
+    return (<ExpOp> exp).args[index];
+
+  case 'union':
+    return (<ExpUnionType> exp).types[index];
+
+  case 'generic':
+    return (<ExpGenericType> exp).params[index];
+  }
+}
+
+// Mutate the parent to set the ith child element.
+export function setChild(expChild: Exp, expParent: Exp, index: number) {
+  switch (expParent.type) {
+  default:
+    throw new Error("AST node has no children.");
+
+  case 'Array':
+    (<ExpValue> expParent).value[index] = expChild;
+    break;
+
+  case 'ref':
+    if (index > 1) {
+      throw new Error("Reference node has only two children.");
+    }
+    let expRef = <ExpReference> expParent;
+    if (index === 0) {
+      expRef.base = expChild;
+    } else {
+      expRef.accessor = expChild;
+    }
+    break;
+
+  case 'call':
+    let expCall = <ExpCall> expParent;
+    if (index === 0) {
+      if (expChild.type !== 'var' && expChild.type !== 'ref') {
+        throw new Error(errors.typeMismatch + "expected Variable or Reference (not " +
+                        expChild.type + ")");
+      }
+      expCall.ref = <ExpVariable> expChild;
+    } else {
+      expCall.args[index - 1] = expChild;
+    }
+    break;
+
+  case 'op':
+    let expOp = <ExpOp> expParent;
+    // Void indicates to removing element from parent.
+    if (expChild.type === 'Void') {
+      expOp.args.splice(index, 1);
+      if (expOp.args.length < 1) {
+        throw new Error("Removing last argument from " + expOp.op);
+      }
+    } else {
+      expOp.args[index] = expChild;
+    }
+    expParent = flattenOp(expParent);
+    break;
+
+  case 'union':
+    if (!isExpType(expChild)) {
+      throw new Error(errors.typeMismatch + "expected Type (not " + expChild.type + ")");
+    }
+    (<ExpUnionType> expParent).types[index] = <ExpType> expChild;
+    break;
+
+  case 'generic':
+    if (!isExpType(expChild)) {
+      throw new Error(errors.typeMismatch + "expected Type (not " + expChild.type + ")");
+    }
+    (<ExpGenericType> expParent).params[index] = <ExpType> expChild;
+    break;
+  }
+}
+
+export function deepCopy(exp: Exp): Exp {
+  if (exp === null) {
+    return null;
+  }
+  exp = copyExp(exp);
+  let c = childCount(exp);
+  for (let i = 0; i < c; i++) {
+    setChild(deepCopy(getChild(exp, i)), exp, i);
+  }
+  return exp;
 }

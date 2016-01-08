@@ -68,6 +68,7 @@ suite("Rules Parser Tests", function() {
       [ "+3", ast.number(3) ],
       [ "-3", ast.number(-3) ],
       [ "0x2", ast.number(2) ],
+      [ "[]", ast.array([]) ],
       [ "[1, 2, 3]", ast.array([ast.number(1), ast.number(2), ast.number(3)]) ],
       [ "\"string\"", ast.string("string") ],
       [ "'string'", ast.string("string") ],
@@ -80,8 +81,8 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var result = parse("function f() { return " + data + ";}");
-      assert.deepEqual(result.functions.f.body, expect);
+      let exp = bolt.parseExpression(data);
+      assert.deepEqual(exp, expect);
     });
   });
 
@@ -124,13 +125,19 @@ suite("Rules Parser Tests", function() {
                                     ast.lte(ast.variable('b'), ast.number(2))) ],
       [ "a == 1 || b <= 2", ast.or(ast.eq(ast.variable('a'), ast.number(1)),
                                    ast.lte(ast.variable('b'), ast.number(2))) ],
-      // Left associative (even though execution is short-circuited!
-      [ "a && b && c", ast.and(ast.and(ast.variable('a'),
-                                       ast.variable('b')),
-                               ast.variable('c')) ],
-      [ "a || b || c", ast.or(ast.or(ast.variable('a'),
-                                     ast.variable('b')),
-                              ast.variable('c')) ],
+      // Normal left associative && and ||
+      [ "a && b && c", ast.op('&&', [ast.variable('a'),
+                                     ast.variable('b'),
+                                     ast.variable('c')]) ],
+      [ "a || b || c", ast.op('||', [ast.variable('a'),
+                                     ast.variable('b'),
+                                     ast.variable('c')]) ],
+      [ "a && (b && c)", ast.op('&&', [ast.variable('a'),
+                                       ast.variable('b'),
+                                       ast.variable('c')]) ],
+      [ "a || (b || c)", ast.op('||', [ast.variable('a'),
+                                       ast.variable('b'),
+                                       ast.variable('c')]) ],
       // && over || precendence
       [ "a && b || c && d", ast.or(ast.and(ast.variable('a'),
                                            ast.variable('b')),
@@ -143,8 +150,11 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      var result = parse("function f() { return " + data + ";}");
-      assert.deepEqual(result.functions.f.body, expect);
+      let exp = bolt.parseExpression(data);
+      assert.deepEqual(exp, expect);
+
+      exp = ast.deepCopy(exp);
+      assert.deepEqual(exp, expect);
     });
   });
 

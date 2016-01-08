@@ -20,7 +20,7 @@ import helper = require('./test-helper');
 var util = require('../util');
 
 suite("Util", function() {
-  suite("pruneEmptyChildren", function() {
+  suite("pruneEmptyChildren", () => {
     function T() {
       this.x = 'dummy';
     }
@@ -36,9 +36,25 @@ suite("Util", function() {
       [ {a: {a: {a: {}, b: 1}}}, {a: {a: {b: 1}}} ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, (data, expect) => {
       util.pruneEmptyChildren(data);
       assert.deepEqual(data, expect);
+    });
+  });
+
+  suite("commonPrefix", () => {
+    var tests = [
+      [ ["abc", "acd"], "a" ],
+      [ ["abc", "def"], "" ],
+      [ ["", "abc"], "" ],
+      [ [[1, 2, 3], [1, 3, 4]], [1] ],
+      [ [[1, 2, 3], [5, 3, 4]], [] ],
+      [ [[], [5, 3, 4]], [] ],
+    ];
+
+    helper.dataDrivenTest(tests, (data, expect) => {
+      let result = util.commonPrefix(data[0], data[1]);
+      assert.deepEqual(result, expect);
     });
   });
 });

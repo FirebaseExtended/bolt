@@ -19,7 +19,6 @@ import helper = require('./test-helper');
 
 import ast = require('../ast');
 var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
-var parse = bolt.parse;
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {
@@ -193,6 +192,7 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "(a + b) + c", 'a + b + c' ],
       [ "a + b * c" ],
       [ "(a + b) * c" ],
+      [ "a * b * (d + d)" ],
       [ "a < 7" ],
       [ "a > 7" ],
       [ "a <= 7" ],
@@ -206,7 +206,13 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "a == 1 || b <= 2" ],
       [ "a && b && c" ],
       [ "a || b || c" ],
+      // Converts right-associatvie to left-associative for && and ||
+      [ "a && (b && c)", "a && b && c" ],
+      [ "a || (b || c)", "a || b || c" ],
+      [ "a && b && (c || d)" ],
+      [ "a || b || (c && d)", "a || b || c && d" ],
       [ "a && b || c && d" ],
+      [ "(a || b) && (c || d)" ],
       [ "a ? b : c",  ],
       [ "a || b ? c : d" ],
       [ "(this + ' ').test(/\d+/)" ],
@@ -215,8 +221,7 @@ suite("Abstract Syntax Tree (AST)", function() {
     helper.dataDrivenTest(tests, function(data, expect) {
       // Decode to self by default
       expect = expect || data;
-      var result = parse('function f() {return ' + data + ';}');
-      var exp = result.functions.f.body;
+      var exp = bolt.parseExpression(data);
       var decode = bolt.decodeExpression(exp);
       assert.equal(decode, expect);
     });

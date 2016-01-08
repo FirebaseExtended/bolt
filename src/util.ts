@@ -246,7 +246,7 @@ export function formatColumns(indent: number, lines: string[][]): string[] {
   return result;
 }
 
-function repeatString(s: string, n: number): string {
+export function repeatString(s: string, n: number): string {
   return new Array(n + 1).join(s);
 }
 
@@ -256,4 +256,49 @@ function fillString(s: string, n: number): string {
     s += repeatString(' ', padding);
   }
   return s;
+}
+
+// String or Array conform
+// TODO: Yuck!  Replace with polymorphic this when upgrade to TS 1.7.
+export interface ArrayLike<T extends ArrayLike<any>> {
+  length: number;
+  slice: (start: number, end: number) => T;
+}
+
+export function commonPrefix<T extends ArrayLike<any>>(s1: T, s2: T): T {
+  let last = commonPrefixSize(s1, s2);
+  return s1.slice(0, last);
+}
+
+export function isPrefix<T extends ArrayLike<any>>(prefix: T, other: T): boolean {
+  return commonPrefixSize(prefix, other) === prefix.length;
+}
+
+export function commonPrefixSize<T extends ArrayLike<any>>(s1: T, s2: T): number {
+  let last = Math.min(s1.length, s2.length);
+  for (let i = 0; i < last; i++) {
+    if (s1[i] !== s2[i]) {
+      return i;
+    }
+  }
+  return last;
+}
+
+// An object that looks like a function (has apply() function over
+// values of type T).
+export interface Functor<T> {
+  apply(t: T): T;
+}
+
+// Combine a sequence of Functors into one.
+export class MultiFunctor<T> implements Functor<T> {
+  constructor(public funcs: Functor<T>[]) {
+  }
+
+  apply(t: T): T {
+    this.funcs.forEach((f) => {
+      t = f.apply(t);
+    });
+    return t;
+  }
 }

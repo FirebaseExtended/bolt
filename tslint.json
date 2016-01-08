@@ -4,7 +4,7 @@
     "comment-format": [true, "check-space"],
     "curly": true,
     "eofline": true,
-    "forin": true,
+    "forin": false,
     "indent": [true, "spaces"],
     "label-position": true,
     "label-undefined": true,
