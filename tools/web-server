@@ -166,7 +166,7 @@ start_webserver () {
 
 open_browser () {
     local port="$1"; shift
-    python -m webbrowser -t http://localhost:${port}/src/test
+    python -m webbrowser -t http://localhost:${port}/dist
 }
 
 # Print heading over all the ps status's echoed below.

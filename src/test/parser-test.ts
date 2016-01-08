@@ -20,14 +20,12 @@ import chai = require('chai');
 var assert = chai.assert;
 import fileIO = require('../file-io');
 var readFile = fileIO.readFile;
-import helper = require('./test-helper');
-
-interface Window { bolt: any; }
-declare var window: Window;
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
+import bolt = require('../bolt');
 var ast = bolt.ast;
 var parse = bolt.parse;
 var BOLT_EXTENSION = bolt.FILE_EXTENSION;
+import helper = require('./test-helper');
+
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
