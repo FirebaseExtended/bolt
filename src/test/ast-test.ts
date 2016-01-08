@@ -17,9 +17,9 @@ import chai = require('chai');
 var assert = chai.assert;
 import helper = require('./test-helper');
 
-import ast = require('../ast');
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
+import bolt = require('../bolt');
 var parse = bolt.parse;
+import ast = require('../ast');
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {

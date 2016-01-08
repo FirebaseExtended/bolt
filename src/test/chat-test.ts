@@ -15,7 +15,7 @@
  */
 /// <reference path="../typings/node.d.ts" />
 
-var bolt = (typeof(window) !== 'undefined' && window.bolt) || require('../bolt');
+import bolt = require('../bolt');
 var rulesSuite = bolt.rulesSuite;
 var secrets = require('../../auth-secrets');
 
