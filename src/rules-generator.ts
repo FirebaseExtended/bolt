@@ -113,14 +113,10 @@ export class Generator {
     var schema = this.symbols.schema;
     var name;
 
-    for (name in paths) {
-      if (!paths.hasOwnProperty(name)) {
-        continue;
-      }
-
-      this.validateMethods(errors.badPathMethod, paths[name].methods,
+    paths.forEach((path) => {
+      this.validateMethods(errors.badPathMethod, path.methods,
                            ['validate', 'read', 'write', 'index']);
-    }
+    });
 
     for (name in schema) {
       if (!util.arrayIncludes(builtinSchemaNames, name)) {
@@ -129,17 +125,11 @@ export class Generator {
       }
     }
 
-    if (Object.keys(paths).length === 0) {
+    if (paths.length === 0) {
       this.fatal(errors.noPaths);
     }
 
-    for (var pathName in paths) {
-      if (!paths.hasOwnProperty(pathName)) {
-        continue;
-      }
-
-      this.updateRules(paths[pathName]);
-    }
+    paths.forEach((path) => this.updateRules(path));
     this.convertExpressions(this.rules);
 
     if (this.errorCount !== 0) {
