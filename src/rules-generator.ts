@@ -547,7 +547,7 @@ export class Generator {
                                                    'Snapshot') });
     // Now re-evaluate the flattened expression.
     this.allowUndefinedFunctions = false;
-    this.thisIs = thisIs || 'newData';
+    this.thisIs = thisIs;
     this.symbols.registerFunction('@getThis', [],
                                   ast.builtin(this.getThis.bind(this)));
     this.symbols.registerFunction('@root', [],
@@ -864,7 +864,7 @@ export function extendValidator(target: Validator, src: Validator): Validator {
   return target;
 }
 
-// Call fn(value, prop) on all '.props' and assiging the value back into the
+// Call fn(value, prop, path) on all '.props' and assiging the value back into the
 // validator.
 export function mapValidator(v: Validator,
                              fn: (val: ValidatorValue, prop: string, path: string[]) => ValidatorValue,
