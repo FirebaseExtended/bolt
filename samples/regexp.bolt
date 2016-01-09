@@ -10,6 +10,7 @@ path /int is Integer;
 path /alpha is Alpha;
 path /year is Year;
 path /date is ISODate;
+path /slug is Slug;
 
 type SocialSecurity extends String {
   validate() = this.test(/^\d\d\d-\d\d-\d\d\d\d$/);
@@ -44,4 +45,8 @@ type Year extends String {
 // Note: Does not validate day-of-month is valid.
 type ISODate extends String {
   validate() = this.test(/^(19|20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/);
+}
+
+type Slug extends String {
+  validate() = this.test(/^([a-z0-9]+-)+[a-z0-9]+$/);
 }

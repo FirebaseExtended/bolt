@@ -213,4 +213,36 @@ rulesSuite("RegExp", function(test) {
       .fails("Empty string.")
     ;
   });
+
+  test("Slug", (rules) => {
+    rules
+      .at('/slug')
+      .write('this-is-a-slug')
+      .succeeds("Typical slug text.")
+
+      .write('numbers-2016-ok')
+      .succeeds("Number are ok.")
+
+      .write('double--hyphen')
+      .fails("Double hyphen not ok.")
+
+      .write('-leading-hyphen')
+      .fails("Leading hyphen not ok.")
+
+      .write('trailing-hyphen-')
+      .fails("Trailing hyphen not ok.")
+
+      .write('nohyphen')
+      .fails("Must have at least one hyphen.")
+
+      .write('no-Upper')
+      .fails("No upper case.")
+
+      .write('no-special&-char')
+      .fails("No special characters.")
+
+      .write('no spaces')
+      .fails("No spaces allowed.")
+    ;
+  });
 });
