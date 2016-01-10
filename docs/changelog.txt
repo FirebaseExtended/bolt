@@ -1,1 +1,2 @@
 changed - Path expressions should now use path template syntax instead of wildcard variables.
+changed - Deprecate fn(x) = exp; function definition format (with deprecation warning).

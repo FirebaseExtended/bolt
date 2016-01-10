@@ -28,12 +28,12 @@ and overwrite all your data. In Bolt, these default permissions can be written a
 [all_access.bolt](../samples/all_access.bolt)
 ```javascript
 path / {
-  read() = true;
-  write() = true;
+  read() { true }
+  write() { true }
 }
 ```
 
-The `read() = true` and `write() = true` methods allow everyone to read and write this location
+The `read() { true }` and `write() { true }` methods allow everyone to read and write this location
 (and all children under this location). You can also use more complex expressions instead of
 `true`.  When the expression evaluates to `true` the read or write operation is allowed.
 
@@ -79,16 +79,16 @@ _posts.bolt_
 ```javascript
 // Allow anyone to read the list of Posts.
 path /posts {
-  read() = true;
+  read() { true }
 }
 
 // All individual Posts are writable by anyone.
 path /posts/{id} is Post {
-  write() = true;
+  write() { true }
 }
 
 type Post {
-  validate() = this.message.length <= 140;
+  validate() { this.message.length <= 140 }
 
   message: String,
   from: String
@@ -106,7 +106,7 @@ captured variable `id` being equal to (the string) '123'.
 The Post type allows for exactly two string properties in each post (message and
 from). It also ensures that no message is longer than 140 characters.
 
-Bolt type statements can contain a `validate()` method (defined as `validate() = <expression>`,
+Bolt type statements can contain a `validate()` method (defined as `validate() { <expression> }`,
 where the expression evaluates to `true` if the data is valid (can be saved to the
 database). When the expression evaluates to `false`, the attempt to write the data will return
 an error to the Firebase client and the database will be unmodified.
@@ -202,7 +202,7 @@ type Room {
 }
 
 type NameString extends String {
-  validate() = this.length > 0 && this.length <= 32;
+  validate() { this.length > 0 && this.length <= 32 }
 }
 ```
 
@@ -255,8 +255,8 @@ definitions look just like _type_ and _path_ methods, except they can also accep
 
 ```javascript
 path /users/{userid} is User {
-  read() = true;
-  write() = isCurrentUser(userid);
+  read() { true }
+  write() { isCurrentUser(userid) }
 }
 
 type User {
@@ -266,7 +266,7 @@ type User {
 
 // Define isCurrentUser() function to test if the given user id
 // matches the currently signed-in user.
-isCurrentUser(uid) = auth != null && auth.uid == uid;
+isCurrentUser(uid) { auth != null && auth.uid == uid }
 ```
 
 ```JSON
@@ -308,7 +308,7 @@ path /posts/{id} is Post;
 
 type Post {
   // Make sure that the only value allowed to be written is now.
-  validate() = this.modified == now;
+  validate() { this.modified == now }
 
   message: String,
   modified: Number
@@ -322,8 +322,8 @@ A handy way to express this is to use a user-defined type for the CurrentTimesta
 
 ```javascript
 path /posts/{id} is Post {
-  read() = true;
-  write() = true;
+  read() { true }
+  write() { true }
 }
 
 type Post {
@@ -332,7 +332,7 @@ type Post {
 }
 
 type CurrentTimestamp extends Number {
-  validate() = this == now;
+  validate() { this == now }
 }
 ```
 
@@ -341,8 +341,8 @@ when first written, and never change thereafter:
 
 ```javascript
 path /posts/{id} is Post {
-  read() = true;
-  write() = true;
+  read() { true }
+  write() { true }
 }
 
 type Post {
@@ -352,16 +352,16 @@ type Post {
 }
 
 type CurrentTimestamp extends Number {
-  validate() = this == now;
+  validate() { this == now }
 }
 
 type InitialTimestamp extends Number {
-  validate() = initial(this, now);
+  validate() { initial(this, now) }
 }
 
 // Returns true if the value is intialized to init, or if it retains it's prior
 // value, otherwise.
-initial(value, init) = value == (prior(value) == null ? init : prior(value));
+initial(value, init) { value == (prior(value) == null ? init : prior(value)) }
 ```
 
 Note the special function `prior(ref)` - returns the previous value stored at a given database location
@@ -401,8 +401,8 @@ to define the Timestamp example above is:
 ```javascript
 // Note the use of Timestamped version of a Post type.
 path /posts/{id} is Timestamped<Post> {
-  read() = true;
-  write() = true;
+  read() { true }
+  write() { true }
 }
 
 type Post {
@@ -415,16 +415,16 @@ type Timestamped<T> extends T {
 }
 
 type CurrentTimestamp extends Number {
-  validate() = this == now;
+  validate() { this == now }
 }
 
 type InitialTimestamp extends Number {
-  validate() = initial(this, now);
+  validate() { initial(this, now) }
 }
 
 // Returns true if the value is intialized to init, or retains it's prior
 // value, otherwise.
-initial(value, init) = value == (prior(value) == null ? init : prior(value));
+initial(value, init) { value == (prior(value) == null ? init : prior(value)) }
 ```
 
 ```JSON
@@ -463,34 +463,34 @@ Rules](https://www.firebase.com/docs/security/guide/user-security.html#section-r
 // Room Names
 //
 path /rooms_names is String[] {
-  read() = isSignedIn();
+  read() { isSignedIn() }
 }
 
-getRoomName(id) = prior(root.room_names[id]);
+getRoomName(id) { prior(root.room_names[id]) }
 
 //
 // Room Members
 //
 path /members/{room_id} {
-  read() = isRoomMember(room_id);
+  read() { isRoomMember(room_id) }
 }
 
 path /members/{room_id}/{user_id} is NameString {
-  write() = isCurrentUser(user_id);
+  write() { isCurrentUser(user_id) }
 }
 
-isRoomMember(room_id) = isSignedIn() && prior(root.members[room_id][auth.uid]) != null;
+isRoomMember(room_id) { isSignedIn() && prior(root.members[room_id][auth.uid]) != null }
 
 //
 // Messages
 //
 path /messages/{room_id} {
-  read() = isRoomMember(room_id);
-  validate() = getRoomName(room_id) != null;
+  read() { isRoomMember(room_id) }
+  validate() { getRoomName(room_id) != null }
 }
 
 path /messages/{room_id}/{message_id} is Message {
-  write() = createOnly(this) && isRoomMember(room_id);
+  write() { createOnly(this) && isRoomMember(room_id) }
 }
 
 type Message {
@@ -500,26 +500,26 @@ type Message {
 }
 
 type MessageString extends String {
-  validate() = this.length > 0 && this.length < 50;
+  validate() { this.length > 0 && this.length < 50 }
 }
 
 //
 // Helper Types
 //
 type CurrentTimestamp extends Number {
-  validate() = this == now;
+  validate() { this == now }
 }
 
 type NameString {
-  validate() = this.length > 0 && this.length < 20;
+  validate() { this.length > 0 && this.length < 20 }
 }
 
 //
 // Helper Functions
 //
-isCurrentUser(uid) = isSignedIn() && auth.uid == uid;
-isSignedIn() = auth != null;
-createOnly(value) = prior(value) == null && value != null;
+isCurrentUser(uid) { isSignedIn() && auth.uid == uid }
+isSignedIn() { auth != null }
+createOnly(value) { prior(value) == null && value != null }
 ```
 
 ```JSON
