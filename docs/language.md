@@ -168,7 +168,7 @@ database to determine these permissions.
 The `validate` expression can be used to check for additional constraints
 (beyond the Type `validate` rules) required to store a value at the given path,
 and especially perform constraints that are path-dependent.  Path
-statements can include wildcard parts whose values can then be used within
+templates can include _captured_ parts whose values can then be used within
 an expression as a variable parameter:
 
 ```javascript

@@ -83,7 +83,7 @@ path /posts {
 }
 
 // All individual Posts are writable by anyone.
-path /posts/$id is Post {
+path /posts/{id} is Post {
   write() = true;
 }
 
@@ -97,11 +97,11 @@ type Post {
 
 This database allows for a collection of _Posts_ to be stored at the `/posts` path. Each one
 must have a unique ID key. Note that a path expression (after the `path` keyword) can contain a
-_wildcard_ component. This matches any string, and the value of the match is available to be
+_captured_ component. This matches any string, and the value of the match is available to be
 used in expressions, if desired.
 
-For example, writing data at `/posts/123` will match the `path /posts/$id` statement with `$id`
-being equal to (the string) '123'.
+For example, writing data at `/posts/123` will match the `path /posts/{id}` statement with the
+captured variable `id` being equal to (the string) '123'.
 
 The Post type allows for exactly two string properties in each post (message and
 from). It also ensures that no message is longer than 140 characters.
