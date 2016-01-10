@@ -190,8 +190,11 @@ export function ensureObjectPath(obj: Object, parts: string[]): Object {
   return obj;
 }
 
-// Remove all empty, '{}',  children - returns true iff obj is empty.
+// Remove all empty, '{}',  children and undefined - returns true iff obj is empty.
 export function pruneEmptyChildren(obj: Object): boolean {
+  if (obj === undefined) {
+    return true;
+  }
   if (obj.constructor !== Object) {
     return false;
   }
@@ -207,6 +210,22 @@ export function pruneEmptyChildren(obj: Object): boolean {
     }
   }
   return !hasChildren;
+}
+
+export function deletePropName(obj: Object, name: string) {
+  if (obj.constructor !== Object) {
+    return;
+  }
+  for (var prop in obj) {
+    if (!obj.hasOwnProperty(prop)) {
+      continue;
+    }
+    if (prop === name) {
+      delete obj[prop];
+    } else {
+      deletePropName(obj[prop], name);
+    }
+  }
 }
 
 export function formatColumns(indent: number, lines: string[][]): string[] {

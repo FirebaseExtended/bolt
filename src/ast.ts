@@ -17,6 +17,11 @@
  */
 /// <reference path="typings/node.d.ts" />
 
+var errors = {
+  typeMismatch: "Unexpected type: ",
+  duplicatePathPart: "A path component name is duplicated: ",
+};
+
 import util = require('./util');
 import logger = require('./logger');
 
@@ -62,13 +67,16 @@ export interface ExpCall extends Exp {
   args: Exp[];
 }
 
-export type BuiltinFunction = (args: Exp[], params: { [name: string]: Exp; }) => Exp;
+export interface Params { [name: string]: Exp; };
+
+export type BuiltinFunction = (args: Exp[], params: Params) => Exp;
 
 export interface ExpBuiltin extends Exp {
   fn: BuiltinFunction;
 }
 
 export type ExpType = ExpSimpleType | ExpUnionType | ExpGenericType;
+export interface TypeParams { [name: string]: ExpType; };
 
 // Simple Type (reference)
 export interface ExpSimpleType extends Exp {
@@ -91,15 +99,98 @@ export interface Method {
   body: Exp;
 }
 
+export class PathPart {
+  label: string;
+  variable: string;
+
+  // "label", undefined - static path part
+  // "$label", X - variable path part
+  // X, !undefined - variable path part
+  constructor(label: string, variable?: string) {
+    if (label[0] === '$' && variable === undefined) {
+      variable = label;
+    }
+    if (variable && label[0] !== '$') {
+      label = '$' + label;
+    }
+    this.label = label;
+    this.variable = variable;
+  }
+}
+
+export class PathTemplate {
+  parts: PathPart[];
+
+  constructor(parts = <(string | PathPart)[]> []) {
+    this.parts = <PathPart[]> parts.map((part) => {
+      if (util.isType(part, 'string')) {
+        return new PathPart(<string> part);
+      } else {
+        return <PathPart> part;
+      }
+    });
+  }
+
+  copy() {
+    let result = new PathTemplate();
+    result.push(this);
+    return result;
+  }
+
+  getLabels(): string[] {
+    return this.parts.map((part) => part.label);
+  }
+
+  // Mapping from variables to JSON labels
+  getScope(): { [variable: string]: string } {
+    let result = <{ [variable: string]: string }> {};
+    this.parts.forEach((part) => {
+      if (part.variable) {
+        if (result[part.variable]) {
+          throw new Error(errors.duplicatePathPart + part.variable);
+        }
+        result[part.variable] = part.label;
+      }
+    });
+    return result;
+  }
+
+  push(temp: PathTemplate) {
+    util.extendArray(this.parts, temp.parts);
+  }
+
+  pop(temp: PathTemplate) {
+    temp.parts.forEach((part) => {
+      this.parts.pop();
+    });
+  }
+
+  length(): number {
+    return this.parts.length;
+  }
+
+  getPart(i: number): PathPart {
+    if (i > this.parts.length || i < -this.parts.length) {
+      let l = this.parts.length;
+      throw new Error("Path reference out of bounds: " + i +
+                      " [" + -l + " .. " + l + "]");
+    }
+    if (i < 0) {
+      return this.parts[this.parts.length + i];
+    }
+    return this.parts[i];
+  }
+}
+
 export interface Path {
-  parts: string[];
+  template: PathTemplate;
   isType: ExpType;
   methods: { [name: string]: Method };
 };
 
 export interface Schema {
   derivedFrom: ExpType;
-  properties: { [prop: string]: ExpType };
+  properties: TypeParams;
   methods: { [name: string]: Method };
 
   // Generic parameters - if a Generic schema
@@ -129,10 +220,6 @@ export var and = opGen('&&');
 export var or = opGen('||');
 export var ternary = opGen('?:', 3);
 export var value = opGen('value', 1);
-
-var errors = {
-  typeMismatch: "Unexpected type: ",
-};
 
 export function variable(name): ExpVariable {
   return { type: 'var', valueType: 'Any', name: name };
@@ -449,10 +536,10 @@ export class Symbols {
     return <Method> this.register('functions', name, method(params, body));
   }
 
-  registerPath(parts: string[], isType: ExpType | void, methods: { [name: string]: Method; } = {}): Path {
+  registerPath(template: PathTemplate, isType: ExpType | void, methods: { [name: string]: Method; } = {}): Path {
     isType = isType || typeType('Any');
     var p: Path = {
-      parts: parts,
+      template: template.copy(),
       isType: <ExpType> isType,
       methods: methods
     };
@@ -462,9 +549,9 @@ export class Symbols {
 
   registerSchema(name: string,
                  derivedFrom?: ExpType,
-                 properties: { [prop: string]: ExpType } = {},
-                 methods: { [name: string]: Method } = {},
-                 params: string[] = []): Schema {
+                 properties = <TypeParams> {},
+                 methods = <{ [name: string]: Method }> {},
+                 params = <string[]> []): Schema {
     derivedFrom = derivedFrom || typeType(Object.keys(properties).length > 0 ? 'Object' : 'Any');
 
     var s: Schema = {

@@ -44,21 +44,7 @@
 
   var symbols = new ast.Symbols();
 
-  var rootPath = [];
-
-  function pushPath(path) {
-    util.extendArray(rootPath, path);
-  }
-
-  function popPath(path) {
-    path.forEach(function(part) {
-      rootPath.pop();
-    });
-  }
-
-  function currentPath() {
-    return util.copyArray(rootPath);
-  }
+  var currentPath = new ast.PathTemplate();
 
   function ensureLowerCase(s, m) {
     if (s instanceof Array) {
@@ -104,11 +90,11 @@ Function "function definition" = ("function" __)? name:Identifier params:Paramet
   symbols.registerFunction(ensureLowerCase(name, "Function names"), params, body);
 }
 
-Path "path statement" = ("path" __)? path:(path:PathExpression { pushPath(path); return path; })
+Path "path statement" = ("path" __)? path:(path:PathExpression { currentPath.push(path); return path; })
   isType:(__ "is" __ id:TypeExpression { return id; })? _
   methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } ) _ {
-    symbols.registerPath(currentPath(), isType, methods);
-    popPath(path);
+    symbols.registerPath(currentPath, isType, methods);
+    currentPath.pop(path);
   }
 
 // Parse trailing slash and empty parts but emit error message.
@@ -125,16 +111,17 @@ PathExpression "path" =  parts:("/" part:PathKey? { return part; })+ {
     return part;
   });
   if (hasError) {
-    error((parts[parts.length - 1] === '' ? "Paths may not end in a slash (/) character"
+    error((parts[parts.length - 1] === ''
+           ? "Paths may not end in a slash (/) character"
            : "Paths may not contain an empty part") + ": /" + parts.join('/'));
   }
-  return parts;
+  return new ast.PathTemplate(parts);
 }
 
 PathKey = CaptureKey / LiteralPathKey
 
 CaptureKey = "{" _ id:Identifier _ ("=" _ "*" _ )? "}" {
-  return id;
+  return new ast.PathPart(id, id);
 }
 
 LiteralPathKey = chars: [^ /;]+ {
@@ -143,7 +130,7 @@ LiteralPathKey = chars: [^ /;]+ {
     warn("Use of " + result + " to capture a path segment is deprecated; " +
          "use {" + result + "} or {" + result.slice(1) + "}, instead.");
   }
-  return result;
+  return new ast.PathPart(result);
 }
 
 PathsAndMethods = all:(Path / Method)* _ {

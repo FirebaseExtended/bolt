@@ -187,42 +187,48 @@ suite("Rules Parser Tests", function() {
   suite("Paths", function() {
     var tests = [
       { data: "path / {}",
-        expect: [{ parts: [], isType: ast.typeType('Any'), methods: {} }] },
+        expect: [{ template: new ast.PathTemplate(),
+                   isType: ast.typeType('Any'),
+                   methods: {} }] },
       { data: "path /x {}",
-        expect: [{ parts: ['x'], isType: ast.typeType('Any'), methods: {} }] },
+        expect: [{ template: new ast.PathTemplate(['x']),
+                   isType: ast.typeType('Any'),
+                   methods: {} }] },
       { data: "path /p/{$q} { write() { return true;  }}",
         expect: [{ isType: ast.typeType('Any'),
-                   parts: ['p', '$q'],
+                   template: new ast.PathTemplate(['p', '$q']),
                    methods: {write: {params: [], body: ast.boolean(true)}}}] },
       { data: "path /p/{q} { write() { return true;  }}",
         expect: [{ isType: ast.typeType('Any'),
-                   parts: ['p', 'q'],
+                   template: new ast.PathTemplate(['p', new ast.PathPart('$q', 'q')]),
                    methods: {write: {params: [], body: ast.boolean(true)}}}] },
       { data: "path /x/y { read() = true; }",
         expect: [{ isType: ast.typeType('Any'),
-                   parts: ['x', 'y'],
+                   template: new ast.PathTemplate(['x', 'y']),
                    methods: {read: {params: [], body: ast.boolean(true)}}}] },
       { data: "path /x { read() = true; /y { write() = true; }}",
         expect: [{ isType: ast.typeType('Any'),
-                   parts: ['x'],
+                   template: new ast.PathTemplate(['x']),
                    methods: {read: {params: [], body: ast.boolean(true)}}},
                  { isType: ast.typeType('Any'),
-                   parts: ['x', 'y'],
+                   template: new ast.PathTemplate(['x', 'y']),
                    methods: {write: {params: [], body: ast.boolean(true)}}}] },
 
       { data: "path /x { read() = true; /y { write() = true; path /{$id} { validate() = false; }}}",
         expect: [{ isType: ast.typeType('Any'),
-                   parts: ['x'],
+                   template: new ast.PathTemplate(['x']),
                    methods: {read: {params: [], body: ast.boolean(true)}}},
                  { isType: ast.typeType('Any'),
-                   parts: ['x', 'y'],
+                   template: new ast.PathTemplate(['x', 'y']),
                    methods: {write: {params: [], body: ast.boolean(true)}}},
                  { isType: ast.typeType('Any'),
-                   parts: ['x', 'y', '$id'],
+                   template: new ast.PathTemplate(['x', 'y', '$id']),
                    methods: {validate: {params: [], body: ast.boolean(false)}}},
                 ] },
       { data: "path /hyphen-key {}",
-        expect: [ { parts: ['hyphen-key'], isType: ast.typeType('Any'), methods: {} }] },
+        expect: [ { template: new ast.PathTemplate(['hyphen-key']),
+                    isType: ast.typeType('Any'),
+                    methods: {} }] },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -399,7 +405,7 @@ suite("Rules Parser Tests", function() {
 
     helper.dataDrivenTest(tests, function(data, expect) {
       var result = parse(data);
-      assert.deepEqual(result.paths[0].parts, ['p', 'c']);
+      assert.deepEqual(result.paths[0].template, new ast.PathTemplate(['p', 'c']));
     });
   });
 
@@ -491,7 +497,7 @@ function sortPaths(paths: ast.Path[]): ast.Path[] {
   }
 
   paths.sort((a, b) => {
-    return cmpStr(a.parts.join('~'), b.parts.join('~'));
+    return cmpStr(a.template.getLabels().join('~'), b.template.getLabels().join('~'));
   });
 
   return paths;
