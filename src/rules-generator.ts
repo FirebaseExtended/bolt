@@ -525,10 +525,14 @@ export class Generator {
                          '.read': 'data',
                          '.write': 'newData' };
 
-    mapValidator(validator, function(value: ast.Exp[], prop: string, path: ast.PathTemplate) {
+    mapValidator(validator, function(value: ast.Exp[],
+                                     prop: string,
+                                     scope: ast.Params,
+                                     path: ast.PathTemplate) {
       if (prop in methodThisIs) {
         let result = this.getExpressionText(ast.andArray(collapseHasChildren(value)),
                                             methodThisIs[prop],
+                                            scope,
                                             path);
         if (prop === '.validate' && result === 'true' ||
             (prop === '.read' || prop === '.write') && result === 'false') {
@@ -540,14 +544,17 @@ export class Generator {
     }.bind(this));
   }
 
-  getExpressionText(exp: ast.Exp, thisIs: string, path: ast.PathTemplate): string {
+  getExpressionText(exp: ast.Exp, thisIs: string, scope: ast.Params, path: ast.PathTemplate): string {
     if (!('type' in exp)) {
       throw new Error(errors.application + "Not an expression: " + util.prettyJSON(exp));
     }
     // First evaluate w/o binding of this to specific location.
     this.allowUndefinedFunctions = true;
-    exp = this.partialEval(exp, { 'this': ast.cast(ast.call(ast.variable('@getThis')),
-                                                   'Snapshot') });
+    scope = <ast.Params> util.extend({},
+                                     scope,
+                                     { 'this': ast.cast(ast.call(ast.variable('@getThis')),
+                                                        'Snapshot') });
+    exp = this.partialEval(exp, scope);
     // Now re-evaluate the flattened expression.
     this.allowUndefinedFunctions = false;
     this.thisIs = thisIs;
@@ -874,17 +881,25 @@ export function extendValidator(target: Validator, src: Validator): Validator {
 export function mapValidator(v: Validator,
                              fn: (val: ValidatorValue,
                                   prop: string,
+                                  scope: ast.Params,
                                   path: ast.PathTemplate) => ValidatorValue,
+                             scope?: ast.Params,
                              path?: ast.PathTemplate) {
+  if (!scope) {
+    scope = <ast.Params> {};
+  }
   if (!path) {
     path = new ast.PathTemplate();
+  }
+  if ('$$scope' in v) {
+    scope = <ast.Params> v['$$scope'];
   }
   for (var prop in v) {
     if (!v.hasOwnProperty(prop)) {
       continue;
     }
     if (prop[0] === '.') {
-      v[prop] = fn(v[prop], prop, path);
+      v[prop] = fn(v[prop], prop, scope, path);
       if (v[prop] === undefined) {
         delete v[prop];
       }
@@ -893,7 +908,7 @@ export function mapValidator(v: Validator,
     } else {
       let child = new ast.PathTemplate([prop]);
       path.push(child);
-      mapValidator(<Validator> v[prop], fn, path);
+      mapValidator(<Validator> v[prop], fn, scope, path);
       path.pop(child);
     }
   }

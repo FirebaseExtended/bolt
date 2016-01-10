@@ -142,14 +142,14 @@ export class PathTemplate {
   }
 
   // Mapping from variables to JSON labels
-  getScope(): { [variable: string]: string } {
-    let result = <{ [variable: string]: string }> {};
+  getScope(): Params {
+    let result = <Params> {};
     this.parts.forEach((part) => {
       if (part.variable) {
         if (result[part.variable]) {
           throw new Error(errors.duplicatePathPart + part.variable);
         }
-        result[part.variable] = part.label;
+        result[part.variable] = literal(part.label);
       }
     });
     return result;
