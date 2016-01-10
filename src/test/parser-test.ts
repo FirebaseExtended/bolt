@@ -463,6 +463,20 @@ suite("Rules Parser Tests", function() {
       assert.fail(undefined, undefined, "No exception thrown.");
     });
   });
+
+  suite("Deprecation errors.", function() {
+    var tests = [
+      { data: "path /x/$y is String;",
+        expect: /path segment is deprecated/ },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      logger.reset();
+      logger.silent();
+      parse(data);
+      assert.match(logger.getLastMessage(), expect);
+    });
+  });
 });
 
 function sortPaths(paths: ast.Path[]): ast.Path[] {
