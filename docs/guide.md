@@ -106,7 +106,7 @@ captured variable `id` being equal to (the string) '123'.
 The Post type allows for exactly two string properties in each post (message and
 from). It also ensures that no message is longer than 140 characters.
 
-Bolt type statements can contain a `validate()` method (defined as `validate() { <expression>`,
+Bolt type statements can contain a `validate()` method (defined as `validate() { <expression> }`,
 where the expression evaluates to `true` if the data is valid (can be saved to the
 database). When the expression evaluates to `false`, the attempt to write the data will return
 an error to the Firebase client and the database will be unmodified.
