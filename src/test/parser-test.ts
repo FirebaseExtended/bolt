@@ -390,22 +390,25 @@ suite("Rules Parser Tests", function() {
 
   suite("Path variations", function() {
     var tests = [
-      "path /p/c {}",
-      "/p/c {}",
-      "/p/c;",
-      "path /p/c is String {}",
-      "path /p/c is String;",
-      "/p/c is String {}",
-      "/p/c is String;",
-      "/p/c { validate() { return true; } }",
-      "/p/c { validate() { return true } }",
-      "/p/c { validate() { true } }",
-      "/p/c { validate() = true; }",
+      "path /p/{c} {}",
+      "/p/{c} {}",
+      "/p/{c};",
+      "path /p/{c} is String {}",
+      "path /p/{c} is String;",
+      "/p/{c} is String {}",
+      "/p/{c} is String;",
+      "/p/{c=*} is String;",
+      "/p/{c = *} is String;",
+      "/p/{c} { validate() { return true; } }",
+      "/p/{c} { validate() { return true } }",
+      "/p/{c} { validate() { true } }",
+      "/p/{c} { validate() = true; }",
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
       var result = parse(data);
-      assert.deepEqual(result.paths[0].template, new ast.PathTemplate(['p', 'c']));
+      assert.deepEqual(result.paths[0].template,
+                       new ast.PathTemplate(['p', new ast.PathPart('$c', 'c')]));
     });
   });
 
