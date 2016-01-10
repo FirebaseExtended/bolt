@@ -202,11 +202,11 @@ suite("Rules Parser Tests", function() {
         expect: [{ isType: ast.typeType('Any'),
                    template: new ast.PathTemplate(['p', new ast.PathPart('$q', 'q')]),
                    methods: {write: {params: [], body: ast.boolean(true)}}}] },
-      { data: "path /x/y { read() = true; }",
+      { data: "path /x/y { read() { true } }",
         expect: [{ isType: ast.typeType('Any'),
                    template: new ast.PathTemplate(['x', 'y']),
                    methods: {read: {params: [], body: ast.boolean(true)}}}] },
-      { data: "path /x { read() = true; /y { write() = true; }}",
+      { data: "path /x { read() { true } /y { write() { true } }}",
         expect: [{ isType: ast.typeType('Any'),
                    template: new ast.PathTemplate(['x']),
                    methods: {read: {params: [], body: ast.boolean(true)}}},
@@ -214,7 +214,7 @@ suite("Rules Parser Tests", function() {
                    template: new ast.PathTemplate(['x', 'y']),
                    methods: {write: {params: [], body: ast.boolean(true)}}}] },
 
-      { data: "path /x { read() = true; /y { write() = true; path /{$id} { validate() = false; }}}",
+      { data: "path /x { read() { true } /y { write() { true } path /{$id} { validate() { false } }}}",
         expect: [{ isType: ast.typeType('Any'),
                    template: new ast.PathTemplate(['x']),
                    methods: {read: {params: [], body: ast.boolean(true)}}},
@@ -362,7 +362,6 @@ suite("Rules Parser Tests", function() {
       "function f(x) { return x + 1 }",
       "function f(x) { x + 1; }",
       "function f(x) { x + 1 }",
-      "f(x) = x + 1;",
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -378,7 +377,6 @@ suite("Rules Parser Tests", function() {
       "validate() { return this  }",
       "validate() { this; }",
       "validate() { this }",
-      "validate() = this;",
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -402,7 +400,7 @@ suite("Rules Parser Tests", function() {
       "/p/{c} { validate() { return true; } }",
       "/p/{c} { validate() { return true } }",
       "/p/{c} { validate() { true } }",
-      "/p/{c} { validate() = true; }",
+      "/p/{c} { validate() { true; } }",
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -461,8 +459,6 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      logger.reset();
-      logger.silent();
       try {
         parse(data);
       } catch (e) {
@@ -473,15 +469,15 @@ suite("Rules Parser Tests", function() {
     });
   });
 
-  suite("Deprecation errors.", function() {
+  suite("Deprecation warnings.", function() {
     var tests = [
       { data: "path /x/$y is String;",
         expect: /path segment is deprecated/ },
+      { data: "f(x) = x + 1;",
+        expect: /fn\(x\) = exp; format is deprecated/ },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      logger.reset();
-      logger.silent();
       parse(data);
       assert.match(logger.getLastMessage(), expect);
     });

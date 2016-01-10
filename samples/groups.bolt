@@ -5,7 +5,7 @@
 path /groups/{gid} is Group;
 
 type Group {
-  validate() = members != null;
+  validate() { members != null }
 
   members: Map<TenKeys, User>
 }
@@ -16,5 +16,5 @@ type User {
 }
 
 type TenKeys extends String {
-  validate() = this.length == 1 && this >= '0' && this <= '9';
+  validate() { this.length == 1 && this >= '0' && this <= '9' }
 }

@@ -1,5 +1,5 @@
 // Equivalent to the default (most-permissive) Firebase rule.
 path / {
-  read() = true;
-  write() = true;
+  read() { true }
+  write() { true }
 }

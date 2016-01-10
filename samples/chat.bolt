@@ -3,49 +3,50 @@
  */
 path /rooms is Map<RoomID, RoomInfo>;
 path /posts/{roomid} {
-  validate() = getRoomInfo(roomid) != null;
+  validate() { getRoomInfo(roomid) != null }
 }
 
 path /posts/{roomid}/{postid} is Timestamped<Post> {
-  write() = isMember(getRoomInfo(roomid));
+  write() { isMember(getRoomInfo(roomid)) }
 }
 
 type RoomInfo {
-  read() = isMember(this) || isUser(this.creator);
-  write() = isInitial(this) || isUser(this.creator);
+  read() { isMember(this) || isUser(this.creator) }
+  write() { isInitial(this) || isUser(this.creator) }
 
   name: NameString,
   creator: UserID,
   members: Member[],
 }
 
-getRoomInfo(id) = prior(root).rooms[id];
+getRoomInfo(id) { prior(root).rooms[id] }
 
-isMember(roomInfo) = roomInfo.members[currentUser()] != null &&
-  !roomInfo.members[currentUser()].isBanned;
+isMember(roomInfo) {
+  roomInfo.members[currentUser()] != null && !roomInfo.members[currentUser()].isBanned
+}
 
 type Post {
   // Allow create (but not modify/delete).
-  write() = isInitial(this);
+  write() { isInitial(this) }
 
   from: UserID,
   message: MessageString,
 }
 
 type MessageString extends String {
-  validate() = this.length > 0 && this.length <= 140;
+  validate() { this.length > 0 && this.length <= 140 }
 }
 
 type Member {
   // Anyone can add themselves to a Room with their own nickname.
-  write() = isInitial(this) && isUser(key());
+  write() { isInitial(this) && isUser(key()) }
 
   nickname: NameString,
   isBanned: Boolean,
 }
 
 type NameString {
-  validate() = this.length > 0 && this.length <= 32;
+  validate() { this.length > 0 && this.length <= 32 }
 }
 
 type Timestamped<T> extends T {
@@ -54,28 +55,28 @@ type Timestamped<T> extends T {
 }
 
 type Created extends Number {
-  validate() = initial(this, now);
+  validate() { initial(this, now) }
 }
 
 type Modified extends Number {
-  validate() = this == now;
+  validate() { this == now }
 }
 
 type PushID extends String {
-  validate() = this.length == 20;
+  validate() { this.length == 20 }
 }
 
 type RoomID extends String {
-  validate() = this.length >= 1 && this.length <= 32;
+  validate() { this.length >= 1 && this.length <= 32 }
 }
 
 type UserID extends String {
   // Only a user can create content with thier userid.
-  validate() = isUser(this);
+  validate() { isUser(this) }
 }
 
-isUser(uid) = auth != null && uid == currentUser();
-currentUser() = auth.uid;
+isUser(uid) { auth != null && uid == currentUser() }
+currentUser() { auth.uid }
 
-initial(value, init) = value == (isInitial(value) ? init : prior(value));
-isInitial(value) = prior(value) == null;
+initial(value, init) { value == (isInitial(value) ? init : prior(value)) }
+isInitial(value) { prior(value) == null }
