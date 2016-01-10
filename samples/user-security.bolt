@@ -16,22 +16,22 @@
 path /room_names {
   read() = auth != null;
 
-  /$room_id is String;
+  /{room_id} is String;
 }
 
-path /members/$room_id {
+path /members/{room_id} {
   read() = this[auth.uid] != null;
 
-  /$user_id is Nickname {
-    write() = isCurrentUser($user_id);
+  /{user_id} is Nickname {
+    write() = isCurrentUser(user_id);
   }
 }
 
-path /messages/$room_id {
-  read() = root.room_names[$room_id] != null;
+path /messages/{room_id} {
+  read() = root.room_names[room_id] != null;
 
-  /$message_id is Message {
-    write() = root.members[$room_id][auth.uid] != null;
+  /{message_id} is Message {
+    write() = root.members[room_id][auth.uid] != null;
   }
 }
 

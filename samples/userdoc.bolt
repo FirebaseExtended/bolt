@@ -26,24 +26,24 @@ type Permission {
   docid: Docid
 }
 
-path /documents/$ownerid {
-  read()  { return isCurrentUser($ownerid); }
-  write() { return isCurrentUser($ownerid); }
+path /documents/{ownerid} {
+  read()  { return isCurrentUser(ownerid); }
+  write() { return isCurrentUser(ownerid); }
 
-  /$docid is Document {
-    read()  { return hasPermission($ownerid, $docid, 'read'); }
-    write() { return hasPermission($ownerid, $docid, 'write'); }
+  /{docid} is Document {
+    read()  { return hasPermission(ownerid, docid, 'read'); }
+    write() { return hasPermission(ownerid, docid, 'write'); }
   }
 }
 
 // Allow reading the list of all a user's own metadata.
-path /metadata/$ownerid {
-  read()  { return isCurrentUser($ownerid); }
-  write() { return isCurrentUser($ownerid); }
+path /metadata/{ownerid} {
+  read()  { return isCurrentUser(ownerid); }
+  write() { return isCurrentUser(ownerid); }
 
-  /$docid is Metadata {
-    read()  { return hasPermission($ownerid, $docid, 'read'); }
-    write() { return hasPermission($ownerid, $docid, 'write'); }
+  /{docid} is Metadata {
+    read()  { return hasPermission(ownerid, docid, 'read'); }
+    write() { return hasPermission(ownerid, docid, 'write'); }
   }
 }
 
@@ -51,12 +51,12 @@ path /permissions {
   read()  { return isLoggedIn(); }
   index() { return ['owner', 'grantee', 'docid']; }
 
-  /$key is Permission {
+  /{key} is Permission {
     write() {
       return this == null && isCurrentUser(prior(this.owner)) ||
         this != null &&
         // Limit structure of the key format to "grantee|owner|docid"
-        $key == fullId(this.grantee, this.owner, this.docid) &&
+        key == fullId(this.grantee, this.owner, this.docid) &&
         isCurrentUser(this.owner) &&
         docIsOwnedBy(this.docid, currentUser());
     }
