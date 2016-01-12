@@ -6,7 +6,7 @@
  * will fail).
  */
 path /products is Map<String, Serialized<Product>> {
-  read() = true;
+  read() { true }
 }
 
 type Product {
@@ -19,5 +19,5 @@ type Serialized<T> extends T {
 }
 
 type Counter extends Number {
-  validate() = (prior(this) == null && this == 1) || this == prior(this) + 1;
+  validate() { (prior(this) == null && this == 1) || this == prior(this) + 1 }
 }

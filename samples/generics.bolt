@@ -1,5 +1,5 @@
 path / is App {
-  read() = true;
+  read() { true }
 }
 
 type App {
@@ -13,16 +13,16 @@ type User {
 }
 
 type Product {
-  validate() = key() == this.id;
+  validate() { key() == this.id }
 
   id: ProductID,
   cost: Number
 }
 
 type ProductID extends String {
-  validate() = this.length <= 20;
+  validate() { this.length <= 20 }
 }
 
 type PushID extends String {
-  validate() = this.length == 20;
+  validate() { this.length == 20 }
 }

@@ -208,7 +208,10 @@ Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
 }
 
 FunctionBody = "{" _ ("return" _)? exp:Expression _ ";"? _ "}" _ { return exp; }
-  / "=" _ exp:Expression _ ";" _ { return exp; }
+  / "=" _ exp:Expression _ ";" _ {
+    warn("Use of fn(x) = exp; format is deprecated; use fn(x) { exp }, instead.")
+    return exp;
+  }
 
 ParameterList = "(" list:IdentifierList ")" _ { return ensureLowerCase(list, "Function arguments"); }
 

@@ -1,6 +1,6 @@
 path /  {
-  read() = true;
-  write() = true;
+  read() { true }
+  write() { true }
 }
 
 path /ss is SocialSecurity;
@@ -13,40 +13,40 @@ path /date is ISODate;
 path /slug is Slug;
 
 type SocialSecurity extends String {
-  validate() = this.test(/^\d\d\d-\d\d-\d\d\d\d$/);
+  validate() { this.test(/^\d\d\d-\d\d-\d\d\d\d$/) }
 }
 
 // Only an integer string
 type IntegerString extends String {
-  validate() = this.test(/^-?\d+$/);
+  validate() { this.test(/^-?\d+$/) }
 }
 
 // A floating point number (or integer).
 type FloatString extends String {
-  validate() = this.test(/^-?(\d+\.?\d*|\.\d+)$/);
+  validate() { this.test(/^-?(\d+\.?\d*|\.\d+)$/) }
 }
 
 // An integral number (no fractional part)
 type Integer extends Number {
-  validate() = (this + '').test(/^-?\d+$/);
+  validate() { (this + '').test(/^-?\d+$/) }
 }
 
 // Only letters
 type Alpha extends String {
-  validate() = this.test(/^[a-z]+$/i);
+  validate() { this.test(/^[a-z]+$/i) }
 }
 
 // YYYY is 20th or 21st century
 type Year extends String {
-  validate() = this.test(/^(19|20)\d\d$/);
+  validate() { this.test(/^(19|20)\d\d$/) }
 }
 
 // YYYY-MM-DD in 20th or 21st century
 // Note: Does not validate day-of-month is valid.
 type ISODate extends String {
-  validate() = this.test(/^(19|20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/);
+  validate() { this.test(/^(19|20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/) }
 }
 
 type Slug extends String {
-  validate() = this.test(/^([a-z0-9]+-)+[a-z0-9]+$/);
+  validate() { this.test(/^([a-z0-9]+-)+[a-z0-9]+$/) }
 }

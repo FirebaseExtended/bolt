@@ -285,7 +285,7 @@ suite("Rules Generator Tests", function() {
         expect: {'.validate': "newData.hasChildren()",
                  x: {'$key1': {'.validate': "newData.isNumber()"}},
                  '$other': {'.validate': "false"}} },
-      { data: "type SmallString extends String { validate() = this.length < 32; } " +
+      { data: "type SmallString extends String { validate() { this.length < 32 } } " +
               "type T {x: Map<SmallString, Number>}",
         expect: {'.validate': "newData.hasChildren()",
                  x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"}},
@@ -300,12 +300,12 @@ suite("Rules Generator Tests", function() {
                  'second': {'.validate': "newData.isNumber()"},
                  '$other': {'.validate': "false"}} },
 
-      { data: "type X { a: Number, validate() = this.a == key(); } type T extends X[];",
+      { data: "type X { a: Number, validate() { this.a == key() } } type T extends X[];",
         expect: {'$key1': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == $key1",
                            'a': {'.validate': "newData.isNumber()"},
                            '$other': {'.validate': "false"}}
                 } },
-      { data: "type X { a: Number, validate() = this.a == key(); } type T { x: X }",
+      { data: "type X { a: Number, validate() { this.a == key() } } type T { x: X }",
         expect: {'x': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == 'x'",
                        'a': {'.validate': "newData.isNumber()"},
                        '$other': {'.validate': "false"}},
@@ -313,8 +313,8 @@ suite("Rules Generator Tests", function() {
                  '.validate': "newData.hasChildren(['x'])"
                 } },
 
-      { data: "type T extends String { validate() = root == 'new' && prior(root) == 'old';}" +
-              "path /t/x is Any { read() = root == 'old';}",
+      { data: "type T extends String { validate() { root == 'new' && prior(root) == 'old' } }" +
+              "path /t/x is Any { read() { root == 'old' } }",
         expect: {'.validate': "newData.isString() && newData.parent().val() == 'new' && root.val() == 'old'",
                  'x': {'.read': "root.val() == 'old'"}
                 } },

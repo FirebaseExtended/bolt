@@ -16,19 +16,19 @@
 path /users/{userid} {
   // Inbox
   /inbox/{msg} is Message {
-    read() = isCurrentUser(userid);
-    write() = isNew(this) || isCurrentUser(userid);
+    read() { isCurrentUser(userid) }
+    write() { isNew(this) || isCurrentUser(userid) }
   }
 
   // Outbox
   /outbox/{msg} is Message {
-    read() = isCurrentUser(userid);
-    write() = isCurrentUser(userid);
+    read() { isCurrentUser(userid) }
+    write() { isCurrentUser(userid) }
   }
 }
 
 type Message {
-  validate() = isNew(this) && isCurrentUser(this.from);
+  validate() { isNew(this) && isCurrentUser(this.from) }
 
   from: UserID,
   to: UserID,
@@ -37,6 +37,6 @@ type Message {
 
 type UserID extends String;
 
-isNew(ref) = prior(ref) == null;
+isNew(ref) { prior(ref) == null }
 
-isCurrentUser(userid) = auth != null && auth.uid == userid;
+isCurrentUser(userid) { auth != null && auth.uid == userid }

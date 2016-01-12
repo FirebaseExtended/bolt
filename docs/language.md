@@ -33,7 +33,7 @@ type MyType [extends BaseType] {
   property2: Type,
   ...
 
-  validate() = <validation expression>;
+  validate() { <validation expression> }
   }
 }
 ```
@@ -67,11 +67,11 @@ Any of the built-in scalar types can be _extended_ by adding a validation expres
 
 ```javascript
 type ShortString extends String {
-  validate() = this.length < 32;
+  validate() { this.length < 32 }
 }
 
 type Percentage extends Number {
-  validate() = this >=0 && this <= 100;
+  validate() { this >=0 && this <= 100 }
 }
 ```
 
@@ -103,7 +103,7 @@ type Model {
 }
 
 type ProductID extends String {
-  validate() = this.length <= 20;
+  validate() { this.length <= 20 }
 }
 ```
 
@@ -145,11 +145,11 @@ A path statement provides access and validation rules for data stored at a given
 
 ```javascript
 path /path/to/data [is Type] {
-  read() = <true-iff-reading-this-path-is-allowed>;
+  read() { <true-iff-reading-this-path-is-allowed> }
 
-  write() = <true-iff-writing-this-path-is-allowed>;
+  write() { <true-iff-writing-this-path-is-allowed> }
 
-  validate() = <additional-validation-rules>;
+  validate() { <additional-validation-rules> }
 }
 ```
 
@@ -174,10 +174,10 @@ an expression as a variable parameter:
 ```javascript
 path /users/{uid} is User {
   // Anyone can read a User's information.
-  read() = true;
+  read() { true }
 
   // Only an authenticated user can write their information.
-  write() = auth != null && auth.uid == uid;
+  write() { auth != null && auth.uid == uid }
 }
 ```
 
@@ -237,7 +237,7 @@ and one of its properties:
 path /products is Product[];
 
 type Product {
-  validate() = this.id == key();
+  validate() { this.id == key() }
 
   id: String,
   name: String
@@ -258,7 +258,7 @@ function isUser(uid) {
 
 function isUser(uid) { auth != null && auth.uid == uid }
 
-isUser(uid) = auth != null && auth.uid == uid;
+isUser(uid) { auth != null && auth.uid == uid }
 ```
 
 Similarly, methods in path and type statements can use the abbreviated functional form (all
@@ -266,8 +266,8 @@ these are equivalent):
 
 ```javascript
 write() { return this.user == auth.uid; }
+write() { this.user == auth.uid; }
 write() { this.user == auth.uid }
-write() = this.user == auth.uid;
 ```
 
 # Expressions
@@ -295,10 +295,10 @@ not identical in Bolt.  This section demonstrates how equivalent behavior is ach
 
 API | Bolt Equivalent
 ----| ---------------
-".read" : "exp" | read() { return exp; }
-".write" : "exp" | write() { return exp; }
-".validate": "exp" | validate() { return exp; }
-".indexOn": [ "prop", ...] | index() { return [ "prop", ... ] }
+".read" : "exp" | read() { exp }
+".write" : "exp" | write() { exp }
+".validate": "exp" | validate() { exp }
+".indexOn": [ "prop", ...] | index() { [ "prop", ... ] }
 
 ## Variables
 

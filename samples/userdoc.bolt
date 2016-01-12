@@ -64,13 +64,13 @@ path /permissions {
   }
 }
 
-isLoggedIn() = auth != null;
-isCurrentUser(userid) = currentUser() == userid;
-currentUser() = auth.uid;
-fullId(userid, ownerid, docid) = userid + '|' + ownerid + '|' + docid;
-hasPermission(ownerid, docid, p) = root.permissions[fullId(currentUser(), ownerid, docid)][p];
-docIsOwnedBy(docid, userid) = root.documents[userid][docid] != null;
-userExists(userid) = root.users[userid] != null;
+isLoggedIn() { auth != null }
+isCurrentUser(userid) { currentUser() == userid }
+currentUser() { auth.uid }
+fullId(userid, ownerid, docid) { userid + '|' + ownerid + '|' + docid }
+hasPermission(ownerid, docid, p) { root.permissions[fullId(currentUser(), ownerid, docid)][p] }
+docIsOwnedBy(docid, userid) { root.documents[userid][docid] != null }
+userExists(userid) { root.users[userid] != null }
 
 // TODO: Use .match instead - needs specific translator for string->regexp in language.
-isISODate(date) = beginsWith(date, '2015-');
+isISODate(date) { beginsWith(date, '2015-') }

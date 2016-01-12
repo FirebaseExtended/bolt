@@ -8,4 +8,6 @@ type Test {
 }
 
 type AliasString extends ShortString;
-type ShortString extends String { validate() = this.length >= 0 && this.length <= 16; }
+type ShortString extends String {
+  validate() { this.length >= 0 && this.length <= 16 }
+}
