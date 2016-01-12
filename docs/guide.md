@@ -21,9 +21,10 @@ JSON.
 
 ## Default Firebase Permissions
 
-By default, Firebase has a permissive security model; everyone can read and write all data.
-This makes it easy to test your code, but is unsafe for production apps since anyone can read
-and overwrite all your data. In Bolt, these default permissions can be written as:
+When you first create a Firebase app, you get a default rule set that allows everyone to read
+and write all data. This makes it easy to test your code, but is unsafe for production apps
+since anyone can read and overwrite any data saved by your app. In Bolt, these default
+permissions can be written as:
 
 [all_access.bolt](../samples/all_access.bolt)
 ```javascript
@@ -49,6 +50,23 @@ Use the Bolt compiler to convert this to Firebase JSON-formatted rules:
   }
 }
 ```
+
+In general, Firebase `read` and `write` expresses grant acceess to data based on the authentication
+state of the user, while `validate` expressions enforce data types and the schema of data
+you allow to be saved in the database.
+
+It is important to keep in mind that, unless specified by a read or write expression, no permission
+will be granted to your database; a read/write rule will grant access to the data stored
+at a path location (and **ALL** its children).  To determine if a location is readable (writable) - you can
+look to see if **ANY** of the read (write) expressions at that location or higher evaluate to `true` (i.e.
+the effect is a boolean **OR** of all the parent read (write) expressions).
+
+Validatation rules are treated differently - all applicable validation rules at the written
+location (and higher) must evaluate to `true` in order for the write to be permitted (i.e., the
+effect is a boolean **AND** of all the parent validate expressions).
+
+For a more complete description of the way rules are evaluated, see the [Firebase Security and
+Rules Quickstart](https://www.firebase.com/docs/security/quickstart.html).
 
 ## How to Use Bolt in Your Application
 
