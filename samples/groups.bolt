@@ -2,7 +2,7 @@
 // to no more than 10 items.  It is also required to have at least one
 // member.
 
-path /groups/$gid is Group;
+path /groups/{gid} is Group;
 
 type Group {
   validate() = members != null;

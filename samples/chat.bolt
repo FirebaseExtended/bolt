@@ -2,12 +2,12 @@
  * Chat room application model.
  */
 path /rooms is Map<RoomID, RoomInfo>;
-path /posts/$roomid {
-  validate() = getRoomInfo($roomid) != null;
+path /posts/{roomid} {
+  validate() = getRoomInfo(roomid) != null;
 }
 
-path /posts/$roomid/$postid is Timestamped<Post> {
-  write() = isMember(getRoomInfo($roomid));
+path /posts/{roomid}/{postid} is Timestamped<Post> {
+  write() = isMember(getRoomInfo(roomid));
 }
 
 type RoomInfo {

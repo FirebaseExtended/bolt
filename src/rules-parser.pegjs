@@ -21,8 +21,16 @@
 
   var ast = require('./ast');
   var util = require('./util');
+  var logger = require('./logger');
+  var error = logger.error;
+  var warn = logger.warn;
 
-  var errorCount = 0;
+  logger.setContext(function() {
+    return {
+      line: line(),
+      column: column()
+    };
+  });
 
   // Return a left-associative binary structure
   // consisting of head (exp), and tail (op, exp)*.
@@ -35,26 +43,8 @@
   }
 
   var symbols = new ast.Symbols();
-  symbols.setLoggers({
-    error: error,
-    warn: warn
-  });
 
-  var rootPath = [];
-
-  function pushPath(path) {
-    util.extendArray(rootPath, path);
-  }
-
-  function popPath(path) {
-    path.forEach(function(part) {
-      rootPath.pop();
-    });
-  }
-
-  function currentPath() {
-    return util.copyArray(rootPath);
-  }
+  var currentPath = new ast.PathTemplate();
 
   function ensureLowerCase(s, m) {
     if (s instanceof Array) {
@@ -83,30 +73,11 @@
     }
     return s;
   }
-
-  var lastError = undefined;
-
-  function error(s) {
-    errorCount += 1;
-    lastError = errorString({line: line(), column: column()}, s);
-    console.error(lastError);
-  }
-
-  function warn(s) {
-    console.warn(errorString({line: line(), column: column()}, s));
-  }
-
-  function errorString(loc, s) {
-    return 'bolt:' + loc.line + ':' + loc.column + ': ' + s;
-  }
 }
 
 start = _ Statements _ {
-  if (errorCount === 1) {
-    throw(new Error(lastError));
-  }
-  if (errorCount != 0) {
-    throw(new Error("Fatal errors: " + errorCount));
+  if (logger.hasErrors()) {
+    throw(new Error(logger.errorSummary()));
   }
   return symbols;
 }
@@ -119,11 +90,11 @@ Function "function definition" = ("function" __)? name:Identifier params:Paramet
   symbols.registerFunction(ensureLowerCase(name, "Function names"), params, body);
 }
 
-Path "path statement" = ("path" __)? path:(path:PathExpression { pushPath(path); return path; })
+Path "path statement" = ("path" __)? path:(path:PathExpression { currentPath.push(path); return path; })
   isType:(__ "is" __ id:TypeExpression { return id; })? _
   methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } ) _ {
-    symbols.registerPath(currentPath(), isType, methods);
-    popPath(path);
+    symbols.registerPath(currentPath, isType, methods);
+    currentPath.pop(path);
   }
 
 // Parse trailing slash and empty parts but emit error message.
@@ -140,13 +111,27 @@ PathExpression "path" =  parts:("/" part:PathKey? { return part; })+ {
     return part;
   });
   if (hasError) {
-    error((parts[parts.length - 1] === '' ? "Paths may not end in a slash (/) character"
+    error((parts[parts.length - 1] === ''
+           ? "Paths may not end in a slash (/) character"
            : "Paths may not contain an empty part") + ": /" + parts.join('/'));
   }
-  return parts;
+  return new ast.PathTemplate(parts);
 }
 
-PathKey = chars: [^ /;]+ { return chars.join(''); }
+PathKey = CaptureKey / LiteralPathKey
+
+CaptureKey = "{" _ id:Identifier _ ("=" _ "*" _ )? "}" {
+  return new ast.PathPart(id, id);
+}
+
+LiteralPathKey = chars: [^ /;]+ {
+  var result = chars.join('');
+  if (chars[0] === '$') {
+    warn("Use of " + result + " to capture a path segment is deprecated; " +
+         "use {" + result + "} or {" + result.slice(1) + "}, instead.");
+  }
+  return new ast.PathPart(result);
+}
 
 PathsAndMethods = all:(Path / Method)* _ {
   var result = {};

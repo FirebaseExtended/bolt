@@ -5,14 +5,14 @@
 // This example ensures that a user and his secret (string)
 // are only updated when the other one exists.
 
-path /secret/$uid is String {
-  read() = isUser($uid);
-  validate() = root.users[$uid] != null;
+path /secret/{uid} is String {
+  read() = isUser(uid);
+  validate() = root.users[uid] != null;
 }
 
-path /users/$uid is User {
+path /users/{uid} is User {
   read() = true;
-  validate() = root.secret[$uid] != null;
+  validate() = root.secret[uid] != null;
 }
 
 type User {

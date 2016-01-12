@@ -168,27 +168,27 @@ database to determine these permissions.
 The `validate` expression can be used to check for additional constraints
 (beyond the Type `validate` rules) required to store a value at the given path,
 and especially perform constraints that are path-dependent.  Path
-statements can include wildcard parts whose values can then be used within
+templates can include _captured_ parts whose values can then be used within
 an expression as a variable parameter:
 
 ```javascript
-path /users/$uid is User {
+path /users/{uid} is User {
   // Anyone can read a User's information.
   read() = true;
 
   // Only an authenticated user can write their information.
-  write() = auth != null && auth.uid == $uid;
+  write() = auth != null && auth.uid == uid;
 }
 ```
 
 If a path needs no expressions, the following abbreviated form (without a body)
 can be used:
 
-    path /users/$uid is User;
+    path /users/{uid} is User;
 
 and the `path` keyword can also be omitted.
 
-    /users/$uid is User;
+    /users/{uid} is User;
 
 ## String methods
 
@@ -305,7 +305,7 @@ API | Bolt Equivalent
 API | Bolt Equivalent
 ----| ---------------
 auth | auth
-$location | $location (in path statement)
+$location | {location} (in path statement)
 now | now
 data | prior(this)
 newData | this (in validate() and write() rules)

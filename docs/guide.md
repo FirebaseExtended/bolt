@@ -101,7 +101,7 @@ path /posts {
 }
 
 // All individual Posts are writable by anyone.
-path /posts/$id is Post {
+path /posts/{id} is Post {
   write() = true;
 }
 
@@ -115,11 +115,11 @@ type Post {
 
 This database allows for a collection of _Posts_ to be stored at the `/posts` path. Each one
 must have a unique ID key. Note that a path expression (after the `path` keyword) can contain a
-_wildcard_ component. This matches any string, and the value of the match is available to be
+_captured_ component. This matches any string, and the value of the match is available to be
 used in expressions, if desired.
 
-For example, writing data at `/posts/123` will match the `path /posts/$id` statement with `$id`
-being equal to (the string) '123'.
+For example, writing data at `/posts/123` will match the `path /posts/{id}` statement with the
+captured variable `id` being equal to (the string) '123'.
 
 The Post type allows for exactly two string properties in each post (message and
 from). It also ensures that no message is longer than 140 characters.
@@ -206,8 +206,8 @@ suppose we have several places where we use a _NameString_ - and we require that
 string of no more than 32 characters:
 
 ```javascript
-path /users/$id is User;
-path /rooms/$id is Room;
+path /users/{id} is User;
+path /rooms/{id} is Room;
 
 type User {
   name: NameString,
@@ -272,9 +272,9 @@ Bolt also allows you to organize common expressions as top-level functions in a 
 definitions look just like _type_ and _path_ methods, except they can also accept parameters.
 
 ```javascript
-path /users/$userid is User {
+path /users/{userid} is User {
   read() = true;
-  write() = isCurrentUser($userid);
+  write() = isCurrentUser(userid);
 }
 
 type User {
@@ -322,7 +322,7 @@ a time is written, it exactly matches the (trusted) server time (independent of 
 the client device).
 
 ```javascript
-path /posts/$id is Post;
+path /posts/{id} is Post;
 
 type Post {
   // Make sure that the only value allowed to be written is now.
@@ -339,7 +339,7 @@ Each time the Post is written, modified must be set to the current time (using
 A handy way to express this is to use a user-defined type for the CurrentTimestamp:
 
 ```javascript
-path /posts/$id is Post {
+path /posts/{id} is Post {
   read() = true;
   write() = true;
 }
@@ -358,7 +358,7 @@ Similarly, if you want to have a `created` property, it should match the current
 when first written, and never change thereafter:
 
 ```javascript
-path /posts/$id is Post {
+path /posts/{id} is Post {
   read() = true;
   write() = true;
 }
@@ -418,7 +418,7 @@ to define the Timestamp example above is:
 
 ```javascript
 // Note the use of Timestamped version of a Post type.
-path /posts/$id is Timestamped<Post> {
+path /posts/{id} is Timestamped<Post> {
   read() = true;
   write() = true;
 }
@@ -489,12 +489,12 @@ getRoomName(id) = prior(root.room_names[id]);
 //
 // Room Members
 //
-path /members/$room_id {
-  read() = isRoomMember($room_id);
+path /members/{room_id} {
+  read() = isRoomMember(room_id);
 }
 
-path /members/$room_id/$user_id is NameString {
-  write() = isCurrentUser($user_id);
+path /members/{room_id}/{user_id} is NameString {
+  write() = isCurrentUser(user_id);
 }
 
 isRoomMember(room_id) = isSignedIn() && prior(root.members[room_id][auth.uid]) != null;
@@ -502,13 +502,13 @@ isRoomMember(room_id) = isSignedIn() && prior(root.members[room_id][auth.uid]) !
 //
 // Messages
 //
-path /messages/$room_id {
-  read() = isRoomMember($room_id);
-  validate() = getRoomName($room_id) != null;
+path /messages/{room_id} {
+  read() = isRoomMember(room_id);
+  validate() = getRoomName(room_id) != null;
 }
 
-path /messages/$room_id/$message_id is Message {
-  write() = createOnly(this) && isRoomMember($room_id);
+path /messages/{room_id}/{message_id} is Message {
+  write() = createOnly(this) && isRoomMember(room_id);
 }
 
 type Message {

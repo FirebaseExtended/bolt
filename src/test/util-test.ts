@@ -34,10 +34,25 @@ suite("Util", function() {
       [ {a: new T()}, {a: new T()} ],
       [ {a: {a: {a: {}}}}, {} ],
       [ {a: {a: {a: {}, b: 1}}}, {a: {a: {b: 1}}} ],
+      [ {a: 1, b: undefined}, {a: 1} ],
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
       util.pruneEmptyChildren(data);
+      assert.deepEqual(data, expect);
+    });
+  });
+
+  suite("pruneEmptyChildren", function() {
+    var tests = [
+      [ {}, {} ],
+      [ {a: 1}, {a: 1} ],
+      [ {a: 1, dm: 2}, {a: 1} ],
+      [ {a: 1, b: {dm: 2, c: 3}}, {a: 1, b: {c: 3}} ],
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      util.deletePropName(data, 'dm');
       assert.deepEqual(data, expect);
     });
   });

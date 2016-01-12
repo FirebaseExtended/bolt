@@ -13,17 +13,17 @@
 // Functionally similar rules to the corresponding rules defined in the Blaze Compiler:
 // https://github.com/firebase/blaze_compiler/blob/master/examples/mail_example.yaml
 
-path /users/$userid {
+path /users/{userid} {
   // Inbox
-  /inbox/$msg is Message {
-    read() = isCurrentUser($userid);
-    write() = isNew(this) || isCurrentUser($userid);
+  /inbox/{msg} is Message {
+    read() = isCurrentUser(userid);
+    write() = isNew(this) || isCurrentUser(userid);
   }
 
   // Outbox
-  /outbox/$msg is Message {
-    read() = isCurrentUser($userid);
-    write() = isCurrentUser($userid);
+  /outbox/{msg} is Message {
+    read() = isCurrentUser(userid);
+    write() = isCurrentUser(userid);
   }
 }
 
