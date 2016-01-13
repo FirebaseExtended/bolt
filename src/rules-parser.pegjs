@@ -96,7 +96,7 @@ Function "function definition" = func:FunctionStart body:FunctionBody? {
     return;
   }
   if (body === null) {
-    error("Function " + func.name + " missing function body.");
+    error("Function " + func.name + " missing or invalid function body.");
     return;
   }
   symbols.registerFunction(ensureLowerCase(func.name, "Function names"), func.params, body);
@@ -170,12 +170,16 @@ LiteralPathKey = chars: [^ /;]+ {
   return new ast.PathPart(result);
 }
 
-PathsAndMethods = all:(Path / Method)* _ {
+PathsAndMethods = all:(Path / Method / AnyBlock)* _ {
   var result = {};
   for (var i = 0; i < all.length; i++) {
     var method = all[i];
     // Skip embedded path statements.
     if (method === undefined) {
+      continue;
+    }
+    if (typeof method == 'string') {
+      error("Invalid path or method: '" + method + "'.");
       continue;
     }
     if (method.name in result) {
@@ -187,19 +191,27 @@ PathsAndMethods = all:(Path / Method)* _ {
 }
 
 Schema "type statement" =
-  "type" __ type:Identifier
+  "type" __ type:Identifier?
   params:("<" list:IdentifierList ">" { return ensureUpperCase(list, "Type names"); })?
   ext:(__ "extends" __ type:TypeExpression  _ { return type; })?
   body:(_ "{" _ all:PropertiesAndMethods "}" { return all; }
-        / _ ";" { return {properties: {}, methods: {}}; } ) {
+        / _ ";" { return {properties: {}, methods: {}}; } )? {
     if (params === null) {
       params = [];
+    }
+    if (type === null) {
+      error("Missing type name.");
+      return;
+    }
+    if (body === null) {
+      error("Missing or invalid type statement body.");
+      return;
     }
     symbols.registerSchema(ensureUpperCase(type, "Type names"),
                            ext, body.properties, body.methods, params);
 }
 
-PropertiesAndMethods = all:(Property / Method)* _ {
+PropertiesAndMethods = all:(Property / Method / AnyBlock)* _ {
   var result = {
      properties: {},
      methods: {}
@@ -207,6 +219,10 @@ PropertiesAndMethods = all:(Property / Method)* _ {
 
   function addPart(part) {
     // TODO: Make sure methods and properties don't shadow each other.
+    if (typeof part === 'string') {
+      error("Invalid property or method: '" + part + "'.");
+      return;
+    }
     if ('type' in part) {
       if (result.properties[part.name]) {
         error("Duplicate property name: " + part.name);
@@ -234,9 +250,12 @@ Property = name:(Identifier / String) _ ":" _ type:TypeExpression _ PropSep {
   };
 }
 
-PropSep = ("," / ";")? _
+PropSep = sep:("," / ";")? _ { return sep; }
 
-Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
+Method "method" = name:Identifier params:ParameterList _ body:FunctionBody sep:PropSep {
+  if (sep !== null) {
+    warn("Extra separator (" + sep + ") not needed.");
+  }
   return {
     name:  ensureLowerCase(name, "Method names"),
     params: params,
@@ -245,7 +264,7 @@ Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
 }
 
 FunctionBody = "{" _ ("return" __)? exp:Expression _ ";"? _ "}" _ { return exp; }
-  / "=" _ exp:Expression _ ";"? _ {
+  / "=" _ exp:Expression ";"? _ {
     warn("Use of fn(x) = exp; format is deprecated; use fn(x) { exp }, instead.")
     return exp;
   }
@@ -405,6 +424,7 @@ EqualityExpression
     }
 
 EqualityOperator = ("===" / "==") { return "=="; }
+                 / "=" { error("Equality operator should be written as ==, not =.");  return "=="; }
                  / ("!==" / "!=") { return "!="; }
 
 LogicalANDExpression
@@ -585,5 +605,6 @@ MultiLineComment
 SingleLineComment
   = "//" (!NewLine .)*;
 
+AnyBlock = chars:(![;,}] char_:. { return char_; })+ [;,}] _ { return chars.join(''); }
 
 NewLine = [\n\r]

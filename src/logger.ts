@@ -45,7 +45,12 @@ export function setContext(fn: () => ErrorContext) {
 }
 
 export function error(s: string) {
-  lastMessage = errorString(s);
+  let err = errorString(s);
+  // De-dup identical messages
+  if (err  === lastMessage) {
+    return;
+  }
+  lastMessage = err;
   lastError = lastMessage;
   if (!silenceOutput) {
     console.error(lastError);
@@ -54,7 +59,12 @@ export function error(s: string) {
 }
 
 export function warn(s: string) {
-  lastMessage = errorString(s);
+  let err = errorString(s);
+  // De-dup identical messages
+  if (err === lastMessage) {
+    return;
+  }
+  lastMessage = err;
   if (!silenceOutput) {
     console.warn(lastMessage);
   }

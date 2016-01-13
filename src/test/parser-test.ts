@@ -465,8 +465,14 @@ suite("Rules Parser Tests", function() {
         expect: /expected.*function/i },
       { data: "foo(x)",
         expect: /missing.*body/i },
-      { data: "path /x { foo(x) }",
-        expect: /missing.*body/i },
+      { data: "path /x { foo(x); }",
+        expect: /invalid path or method/i },
+      { data: "foo(x) { x = 'a' }",
+        expect: /equality/i },
+      { data: "type X { bad-prop: String; }",
+        expect: /invalid property or method/i },
+      { data: "type { foo: String;}",
+        expect: /missing type name/i },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -477,6 +483,18 @@ suite("Rules Parser Tests", function() {
         return;
       }
       assert.fail(undefined, undefined, "No exception thrown.");
+    });
+  });
+
+  suite("Syntax warnings.", function() {
+    var tests = [
+      { data: "path /x { read() { true }; }",
+        expect: /extra separator/i },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      parse(data);
+      assert.match(logger.getLastMessage(), expect);
     });
   });
 
