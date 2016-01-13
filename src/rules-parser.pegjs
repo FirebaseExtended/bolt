@@ -90,15 +90,36 @@ Function "function definition" = ("function" __)? name:Identifier params:Paramet
   symbols.registerFunction(ensureLowerCase(name, "Function names"), params, body);
 }
 
-Path "path statement" = ("path" __)? path:(path:PathExpression { currentPath.push(path); return path; })
-  isType:(__ "is" __ id:TypeExpression { return id; })? _
-  methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } ) _ {
+Path "path statement" = path:PathStart isType:(__ "is" __ id:TypeExpression { return id; })? _
+  methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } )? _ {
+    if (path === null) {
+      return;
+    }
+    if (methods === null) {
+      error("Missing body of path statement.");
+      return;
+    }
     symbols.registerPath(currentPath, isType, methods);
     currentPath.pop(path);
   }
 
+// Break out for better error handling.
+PathStart = "path" __ path:PathTemplate?
+  {
+    if (path === null) {
+      error("Missing Path Template in path statement.");
+      return path;
+    }
+    currentPath.push(path);
+    return path;
+  }
+  / path:PathTemplate
+  {
+    currentPath.push(path); return path;
+  }
+
 // Parse trailing slash and empty parts but emit error message.
-PathExpression "path" =  parts:("/" part:PathKey? { return part; })+ {
+PathTemplate "path template" =  parts:("/" part:PathKey? { return part; })+ {
   var hasError = false;
   if (parts.length === 1 && parts[0] === null) {
     parts = [];
@@ -113,7 +134,7 @@ PathExpression "path" =  parts:("/" part:PathKey? { return part; })+ {
   if (hasError) {
     error((parts[parts.length - 1] === ''
            ? "Paths may not end in a slash (/) character"
-           : "Paths may not contain an empty part") + ": /" + parts.join('/'));
+           : "Paths may not contain an empty part") + ": /" + parts.map(function(part) { return part.label; }).join('/'));
   }
   return new ast.PathTemplate(parts);
 }

@@ -28,7 +28,6 @@ import bolt = require('../bolt');
 import helper = require('./test-helper');
 
 // TODO: Test duplicated function, and schema definitions.
-// TODO: Test other parser errors - appropriate messages (exceptions).
 
 suite("Rules Parser Tests", function() {
   test("Empty input", function() {
@@ -456,6 +455,10 @@ suite("Rules Parser Tests", function() {
         expect: /./ },
       { data: "path /x { validate() { return this.test(/a/g); } }",
         expect: /unsupported regexp modifier/i },
+      { data: "path {}",
+        expect: /missing path template/i },
+      { data: "path / }",
+        expect: /missing body of path/i },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
