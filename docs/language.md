@@ -50,14 +50,19 @@ Types can extend other types by using the `extends` clause. If not given,
 which extend an Object, can add additional properties to the Object, in addition to
 a `validate` expression.
 
+Property names in type statements should be valid Identifiers (see below).  If you need
+to use any other character in a property name, you can enclose them in quotes (note
+that Firebase allows any character in a path *except* for `.`, `$`, `#`, `[`, `[`, `/`,
+or control characters).
+
 Built-in base types are also similar to JavaScript types:
 
-    String            - Stings
+    String            - Character strings
     Number            - Integer or floating point
-    Boolean           - Values true or false
+    Boolean           - Values `true` or `false`
     Object            - A structured object containing named properties.
     Any               - Every non-null value is of type Any.
-    Null              - Value null (same as absence of a value, or deleted)
+    Null              - Value `null` (same as absence of a value, or deleted)
     Map<Key, Value>   - A generic type - maps string valued keys to corresponding
                         values (similar to an Object type).
     Type[]            - An "array-like" type (actually same as Map<String, Type>
@@ -270,12 +275,20 @@ write() { this.user == auth.uid; }
 write() { this.user == auth.uid }
 ```
 
+# Identifiers
+
+Identifiers in expressions, property names, and path captured parts, must begin with one of
+alphabetic, _ or $ characters and can contain any alphabetic, numeric, _ or $.
+
 # Expressions
 
 Rule expressions are a subset of JavaScript expressions, and include:
 
   - Unary operators: - (minus), ! (boolean negation)
   - Binary operators: +, -, *, /, %
+  - String constants can be expressed using single or double quotes and can
+    include Hex escape characters (\xXX), Unicode escape characters (\uXXXX)
+    or special escape characters \b, \f, \n, \r, or \t.
 
 # Global variables
 
