@@ -86,9 +86,25 @@ Statements = rules:(Statement _)*
 
 Statement = f:Function / p:Path / s:Schema
 
-Function "function definition" = ("function" __)? name:Identifier params:ParameterList _ body:FunctionBody {
-  symbols.registerFunction(ensureLowerCase(name, "Function names"), params, body);
+Function "function definition" = func:FunctionStart body:FunctionBody? {
+  if (func.name === null) {
+    error("Missing function name.");
+    return;
+  }
+  if (func.params === null) {
+    error("Function " + func.name + " missing parameters.");
+    return;
+  }
+  if (body === null) {
+    error("Function " + func.name + " missing function body.");
+    return;
+  }
+  symbols.registerFunction(ensureLowerCase(func.name, "Function names"), func.params, body);
 }
+
+// For better error handling.
+FunctionStart = "function" __ name:Identifier? _ params:ParameterList? _ { return {name: name, params: params}; }
+  / name:Identifier _ params:ParameterList _ {return {name: name, params: params}; }
 
 Path "path statement" = path:PathStart isType:(__ "is" __ id:TypeExpression { return id; })? _
   methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } )? _ {
@@ -228,8 +244,8 @@ Method "method" = name:Identifier params:ParameterList _ body:FunctionBody {
   };
 }
 
-FunctionBody = "{" _ ("return" _)? exp:Expression _ ";"? _ "}" _ { return exp; }
-  / "=" _ exp:Expression _ ";" _ {
+FunctionBody = "{" _ ("return" __)? exp:Expression _ ";"? _ "}" _ { return exp; }
+  / "=" _ exp:Expression _ ";"? _ {
     warn("Use of fn(x) = exp; format is deprecated; use fn(x) { exp }, instead.")
     return exp;
   }

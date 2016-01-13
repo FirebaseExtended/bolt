@@ -459,6 +459,14 @@ suite("Rules Parser Tests", function() {
         expect: /missing path template/i },
       { data: "path / }",
         expect: /missing body of path/i },
+      { data: "function foo { 7 }",
+        expect: /missing parameters/i },
+      { data: "foo { 7 }",
+        expect: /expected.*function/i },
+      { data: "foo(x)",
+        expect: /missing.*body/i },
+      { data: "path /x { foo(x) }",
+        expect: /missing.*body/i },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -477,6 +485,8 @@ suite("Rules Parser Tests", function() {
       { data: "path /x/$y is String;",
         expect: /path segment is deprecated/ },
       { data: "f(x) = x + 1;",
+        expect: /fn\(x\) = exp; format is deprecated/ },
+      { data: "f(x) = x + 1",
         expect: /fn\(x\) = exp; format is deprecated/ },
     ];
 
