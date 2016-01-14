@@ -1,0 +1,1 @@
+fixed - Parse errors are more granular - reporting the source of the error line rather than just failing a whole type or path statement.

@@ -28,7 +28,6 @@ import bolt = require('../bolt');
 import helper = require('./test-helper');
 
 // TODO: Test duplicated function, and schema definitions.
-// TODO: Test other parser errors - appropriate messages (exceptions).
 
 suite("Rules Parser Tests", function() {
   test("Empty input", function() {
@@ -456,6 +455,24 @@ suite("Rules Parser Tests", function() {
         expect: /./ },
       { data: "path /x { validate() { return this.test(/a/g); } }",
         expect: /unsupported regexp modifier/i },
+      { data: "path {}",
+        expect: /missing path template/i },
+      { data: "path / }",
+        expect: /missing body of path/i },
+      { data: "function foo { 7 }",
+        expect: /missing parameters/i },
+      { data: "foo { 7 }",
+        expect: /expected.*function/i },
+      { data: "foo(x)",
+        expect: /missing.*body/i },
+      { data: "path /x { foo(x); }",
+        expect: /invalid path or method/i },
+      { data: "foo(x) { x = 'a' }",
+        expect: /equality/i },
+      { data: "type X { bad-prop: String; }",
+        expect: /invalid property or method/i },
+      { data: "type { foo: String;}",
+        expect: /missing type name/i },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -469,11 +486,25 @@ suite("Rules Parser Tests", function() {
     });
   });
 
+  suite("Syntax warnings.", function() {
+    var tests = [
+      { data: "path /x { read() { true }; }",
+        expect: /extra separator/i },
+    ];
+
+    helper.dataDrivenTest(tests, function(data, expect) {
+      parse(data);
+      assert.match(logger.getLastMessage(), expect);
+    });
+  });
+
   suite("Deprecation warnings.", function() {
     var tests = [
       { data: "path /x/$y is String;",
         expect: /path segment is deprecated/ },
       { data: "f(x) = x + 1;",
+        expect: /fn\(x\) = exp; format is deprecated/ },
+      { data: "f(x) = x + 1",
         expect: /fn\(x\) = exp; format is deprecated/ },
     ];
 
