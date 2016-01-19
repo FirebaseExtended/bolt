@@ -61,14 +61,6 @@ var TEST_SETS = [
 // Ignore ts-compile errors while watching (but not in normal builds).
 var watching = false;
 
-var TS_SETTINGS = {
-  sortOutput: true,
-  declarationFiles: true,
-  noExternalResolve: false,
-  noEmitOnError: true,
-  module: 'commonjs'
-};
-
 gulp.task('clean', function(cb) {
   del([LIB_DIR, DIST_DIR, TMP_DIR], cb);
 });
@@ -89,8 +81,7 @@ gulp.task('tslint', function() {
 gulp.task('lint', ['eslint', 'tslint']);
 
 gulp.task('ts-compile', ['build-peg'], function() {
-  var tsProject = ts.createProject(TS_SETTINGS);
-
+  var tsProject = ts.createProject('tsconfig.json');
   return gulp.src('src/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsProject))
@@ -105,8 +96,7 @@ gulp.task('ts-compile', ['build-peg'], function() {
 });
 
 gulp.task('ts-compile-test', ['ts-compile'], function() {
-  var tsTestProject = ts.createProject(TS_SETTINGS);
-
+  var tsTestProject = ts.createProject('tsconfig.json');
   return gulp.src('src/test/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsTestProject))
