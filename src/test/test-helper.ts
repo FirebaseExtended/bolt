@@ -67,6 +67,9 @@ export function dataDrivenTest(tests, testIt, formatter?) {
       logger.reset();
       logger.silent();
     });
+    teardown(() => {
+      logger.reset();
+    });
     test(label, testIt.bind(undefined, data, expect, tests[i]));
   }
 }

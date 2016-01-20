@@ -17,6 +17,8 @@
 import util = require('./util');
 import ast = require('./ast');
 import logger = require('./logger');
+import parseUtil = require('./parse-util');
+let parseExpression = parseUtil.parseExpression;
 
 var errors = {
   badIndex: "The index function must return a String or an array of Strings.",
@@ -29,6 +31,7 @@ var errors = {
   noSuchType: "No type definition for: ",
   badSchemaMethod: "Unsupported method name in type statement: ",
   badPathMethod: "Unsupported method name in path statement: ",
+  badWriteAlias: "Cannot have both a write() method and a write-aliasing method: ",
   coercion: "Cannot convert value: ",
   undefinedFunction: "Undefined function: ",
   application: "Bolt application error: ",
@@ -74,6 +77,12 @@ var valueMethods = ['length', 'includes', 'startsWith', 'beginsWith', 'endsWith'
 // TODO: Make sure users don't call internal methods...make private to impl.
 var snapshotMethods = ['parent', 'child', 'hasChildren', 'val', 'isString', 'isNumber',
                        'isBoolean'].concat(valueMethods);
+
+var writeAliases = <{ [method: string]: ast.Exp }> {
+  'create': parseExpression('prior(this) == null'),
+  'update': parseExpression('prior(this) != null && this != null'),
+  'delete': parseExpression('prior(this) != null && this == null')
+};
 
 // Symbols contains:
 //   functions: {}
@@ -146,11 +155,21 @@ export class Generator {
   }
 
   validateMethods(m: string, methods: { [name: string]: ast.Method }, allowed: string[]) {
+    if (util.arrayIncludes(allowed, 'write')) {
+      allowed = allowed.concat(Object.keys(writeAliases));
+    }
     for (var method in methods) {
       if (!util.arrayIncludes(allowed, method)) {
         logger.warn(m + util.quoteString(method) +
                     " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
       }
+    }
+    if ('write' in methods) {
+      Object.keys(writeAliases).forEach((alias) => {
+        if (alias in methods) {
+          this.fatal(errors.badWriteAlias + alias);
+        }
+      });
     }
   }
 
@@ -447,13 +466,7 @@ export class Generator {
                       <Validator> {'.validate': ast.boolean(false)});
     }
 
-    ['validate', 'read', 'write'].forEach(function(method) {
-      if (schema.methods[method]) {
-        var methodValidator = <Validator> {};
-        methodValidator['.' + method] = [schema.methods[method].body];
-        extendValidator(validator, methodValidator);
-      }
-    });
+    this.extendValidationMethods(validator, schema.methods);
 
     return validator;
   }
@@ -472,13 +485,7 @@ export class Generator {
     extendValidator(location, this.ensureValidator(path.isType));
     location['$$scope'] = path.template.getScope();
 
-    ['validate', 'read', 'write'].forEach(function(method) {
-      if (path.methods[method]) {
-        var validator = <Validator> {};
-        validator['.' + method] = [path.methods[method].body];
-        extendValidator(location, validator);
-      }
-    });
+    this.extendValidationMethods(location, path.methods);
 
     // Write indices
     if (path.methods['index']) {
@@ -504,6 +511,26 @@ export class Generator {
       // TODO: Error check not over-writing index rules.
       location['.indexOn'] = indices;
     }
+  }
+
+  extendValidationMethods(validator: Validator, methods: { [method: string]: ast.Method }) {
+    let writeMethods = [];
+    ['create', 'update', 'delete'].forEach((method) => {
+      if (method in methods) {
+        writeMethods.push(ast.andArray([writeAliases[method], methods[method].body]));
+      }
+    });
+    if (writeMethods.length !== 0) {
+      extendValidator(validator, <Validator> { '.write': ast.orArray(writeMethods) });
+    }
+
+    ['validate', 'read', 'write'].forEach((method) => {
+      if (method in methods) {
+        var methodValidator = <Validator> {};
+        methodValidator['.' + method] = methods[method].body;
+        extendValidator(validator, methodValidator);
+      }
+    });
   }
 
   // Return union validator (||) over each schema
