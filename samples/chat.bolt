@@ -12,7 +12,10 @@ path /posts/{roomid}/{postid} is Timestamped<Post> {
 
 type RoomInfo {
   read() { isMember(this) || isUser(this.creator) }
-  write() { isInitial(this) || isUser(this.creator) }
+
+  create() { true }
+  update() { isUser(prior(this).creator) }
+  delete() { isUser(prior(this).creator) }
 
   name: NameString,
   creator: UserID,
@@ -27,7 +30,7 @@ isMember(roomInfo) {
 
 type Post {
   // Allow create (but not modify/delete).
-  write() { isInitial(this) }
+  create() { true }
 
   from: UserID,
   message: MessageString,
@@ -39,7 +42,7 @@ type MessageString extends String {
 
 type Member {
   // Anyone can add themselves to a Room with their own nickname.
-  write() { isInitial(this) && isUser(key()) }
+  create() { isUser(key()) }
 
   nickname: NameString,
   isBanned: Boolean,

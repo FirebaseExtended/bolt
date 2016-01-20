@@ -39,8 +39,14 @@ rulesSuite("Chat", function(test) {
     makeMikesRoom(rules)
       .succeeds("Create empty room.")
 
+      .as('fred')
       .write(null)
-      .fails("Owner can delete room.");
+      .fails("Non-owner cannot delete room.")
+
+      .as('mike')
+      .write(null)
+      .succeeds("Owner can delete room.")
+    ;
   });
 
   test("Forge Creator of Room.", function(rules) {

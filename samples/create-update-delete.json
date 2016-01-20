@@ -1,19 +1,23 @@
 {
   "rules": {
-    "create": {
-      ".write": "data.val() == null"
-    },
-    "update": {
-      ".write": "data.val() != null && newData.val() != null"
-    },
-    "delete": {
-      ".write": "data.val() != null && newData.val() == null"
-    },
-    "create-or-update": {
-      ".write": "data.val() == null || data.val() != null && newData.val() != null"
-    },
-    "admin-create": {
-      ".write": "data.val() == null && auth.admin || data.val() != null && newData.val() == null && auth.admin || data.val() != null && newData.val() != null"
+    "docs": {
+      "$uid": {
+        "create": {
+          ".write": "data.val() == null"
+        },
+        "update": {
+          ".write": "data.val() != null && newData.val() != null"
+        },
+        "delete": {
+          ".write": "data.val() != null && newData.val() == null"
+        },
+        "create-or-update": {
+          ".write": "data.val() == null || data.val() != null && newData.val() != null"
+        },
+        "owner-create-delete": {
+          ".write": "data.val() == null && $uid == auth.uid || data.val() != null && newData.val() != null || data.val() != null && newData.val() == null && $uid == auth.uid"
+        }
+      }
     }
   }
 }
