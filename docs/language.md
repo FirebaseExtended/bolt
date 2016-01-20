@@ -198,7 +198,7 @@ and the `path` keyword can also be omitted.
 ## Write Aliases
 
 A common pattern is to have distinct rules for allowing writes to a location that represent,
-new object creation (create), modification of existing data (update), or deleting data (data).
+new object creation (create), modification of existing data (update), or deleting data (delete).
 Bolt allows you to use these methods in lieu of the write() method in any path or type
 statement.
 
