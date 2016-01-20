@@ -429,7 +429,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access", "userdoc", "mail", "children"];
+    var files = ["all_access", "userdoc", "mail", "children", "service"];
 
     helper.dataDrivenTest(files, function(data) {
       var filename = 'samples/' + data + '.' + bolt.FILE_EXTENSION;

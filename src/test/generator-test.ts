@@ -75,7 +75,8 @@ suite("Rules Generator Tests", function() {
                  "chat",
                  "serialized",
                  "map-scalar",
-                 "regexp"
+                 "regexp",
+                 "service"
                 ];
 
     helper.dataDrivenTest(files, function(filename) {

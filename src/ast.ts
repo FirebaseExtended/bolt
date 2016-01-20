@@ -94,6 +94,10 @@ export interface ExpGenericType extends Exp {
   params: ExpType[];
 }
 
+export interface Service {
+    name: string;
+};
+
 export interface Method {
   params: string[];
   body: Exp;

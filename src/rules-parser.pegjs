@@ -84,7 +84,14 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function / p:Path / s:Schema
+
+
+// Todo: eventually only a Service will be a top level statement
+Statement = f:Function / p:Path / s:Schema / srv:Service
+
+Service = 'service' _ ServiceName _ '{' _ rules:(ServiceStatement _)* _ '}'
+ServiceStatement = f:Function / p:Path / s:Schema 
+ServiceName = name: (Identifier ('.' Identifier)*)
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
   if (func.name === null) {

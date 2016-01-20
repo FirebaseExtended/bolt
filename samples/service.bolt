@@ -1,0 +1,20 @@
+
+path / {
+  read() { false }
+  write() { true }
+  dasdasdas
+}
+
+service flubber {
+  path / {
+    read() { true }
+    write() { true }
+  }
+}
+
+service gcs.googleapis.com {
+  path / {
+    read() { false }
+    write() { false }
+  }
+}
