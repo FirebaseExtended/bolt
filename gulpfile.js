@@ -157,7 +157,7 @@ gulp.task('browserify-bolt', ['ts-compile'], function() {
 gulp.task('test', ['lint', 'build'], function() {
   mkdirp(TMP_DIR);
   return gulp.src(CI_TESTS.map(testFileSource))
-    .pipe(mocha({ui: 'tdd'}));
+    .pipe(mocha({ui: 'tdd', require: ['source-map-support/register']}));
 });
 
 gulp.task('default', ['test']);
