@@ -5,5 +5,5 @@ set -e
 
 cd $PROJ_DIR
 if gulp clean lint build; then
-    mocha lib/test --ui --require source-map-support/register tdd "$@"
+    mocha lib/test --ui tdd --require "source-map-support/register" "$@"
 fi
