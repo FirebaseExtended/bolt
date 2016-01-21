@@ -96,6 +96,7 @@ export interface ExpGenericType extends Exp {
 
 export interface Service {
     name: string;
+    symbols: Symbols;
 };
 
 export interface Method {
@@ -516,6 +517,7 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: Path[];
   schema: { [name: string]: Schema };
+  services: Service[];
 
   constructor() {
     this.functions = {};
