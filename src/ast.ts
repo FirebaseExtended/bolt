@@ -94,11 +94,6 @@ export interface ExpGenericType extends Exp {
   params: ExpType[];
 }
 
-export interface Service {
-    name: string;
-    symbols: Symbols;
-};
-
 export interface Method {
   params: string[];
   body: Exp;
@@ -537,7 +532,6 @@ export class Symbols {
     }
     return this.parentScope;
   }
-
 
   register(type: string, name: string, object: any) {
     if (!this[type]) {

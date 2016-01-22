@@ -1,10 +1,13 @@
+// Tests that other services can be included and they have an isolated scope
 
+function y(x) { return x + 2; }
 path / {
   read() { false }
   write() { true }
 }
 
 service flubber {
+  function y(x) { return x + 2; } // shadow top level function 'y'
   path / {
     read() { true }
     write() { true }

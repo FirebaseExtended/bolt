@@ -173,13 +173,14 @@ gulp.task('default', ['test']);
 // Don't depend on 'build' in case current state is failing to compile - need to edit file
 // to kick off first watch build.
 gulp.task('watch', function() {
+  console.log("Save a source file to kick off the watch");
   watching = true;
-  gulp.watch(['src/*', 'src/test/*'], ['default']);
+  gulp.watch(['src/*', 'src/test/*', "samples/*"], ['default']);
 });
 
 gulp.task('watch-build', function() {
   watching = true;
-  gulp.watch(['src/*', 'src/test/*'], ['build', 'lint']);
+  gulp.watch(['src/*', 'src/test/*', "samples/*"], ['build', 'lint']);
 });
 
 function browserifyToDist(entry, opts) {

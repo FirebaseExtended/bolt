@@ -1,3 +1,5 @@
 {
-  "rules": {}
+  "rules": {
+      ".write": "true"
+  }
 }
