@@ -35,13 +35,25 @@ var assert = chai.assert;
 suite("Rules Generator Tests", function() {
   suite("Basic Samples", function() {
     var tests = [
-      { data: "path / {read() { return true; } write() { return true; }}",
+      { data: "path / {read() { true } write() { true }}",
         expect: { rules: {".read": "true", ".write": "true"} }
       },
-      { data: "path / {read() { return true; }}",
+      { data: "path / { write() { true }}",
+        expect: { rules: {".write": "true"} }
+      },
+      { data: "path / { create() { true }}",
+        expect: { rules: {".write": "data.val() == null"} }
+      },
+      { data: "path / { update() { true }}",
+        expect: { rules: {".write": "data.val() != null && newData.val() != null"} }
+      },
+      { data: "path / { delete() { true }}",
+        expect: { rules: {".write": "data.val() != null && newData.val() == null"} }
+      },
+      { data: "path / {read() { true }}",
         expect: { rules: {".read": "true"} }
       },
-      { data: "path / { read() { return false; }}",
+      { data: "path / { read() { false }}",
         expect: { rules: {} }
       },
       { data: "path / {index() { return ['a', 'b']; }}",
@@ -67,6 +79,7 @@ suite("Rules Generator Tests", function() {
                  "mail",
                  "type-extension",
                  "children",
+                 "create-update-delete",
                  "functional",
                  "user-security",
                  "generics",
@@ -384,7 +397,7 @@ suite("Rules Generator Tests", function() {
         expect: /undefined.*function/i },
       { data: "path /x is NoSuchType {}",
         expect: /No type.*NoSuchType/ },
-      { data: "path /x { unsupported() { return true; } }",
+      { data: "path /x { unsupported() { true } }",
         warn: /unsupported method/i },
 
       { data: "path /x { validate() { return this.test(123); } }",
@@ -410,6 +423,12 @@ suite("Rules Generator Tests", function() {
         expect: /No type.*generic/ },
       { data: "path / is Map<Object, Number>;",
         expect: /must derive from String/ },
+      { data: "path / { write() { true } create() { true } }",
+        expect: /write-aliasing.*create/i },
+      { data: "path / { write() { true } update() { true } }",
+        expect: /write-aliasing.*update/i },
+      { data: "path / { write() { true } delete() { true } }",
+        expect: /write-aliasing.*delete/i },
     ];
 
     helper.dataDrivenTest(tests, function(data, expect, t) {

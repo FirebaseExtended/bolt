@@ -531,7 +531,10 @@ export class Symbols {
   }
 
   popScope(): Symbols {
-    if (this.parentScope == null) {throw Error("Symbol table popped with no parent");} // should never happen
+    if (this.parentScope == null) {
+      // should never happen
+      throw Error("Symbol table popped with no parent");
+    }
     return this.parentScope;
   }
 

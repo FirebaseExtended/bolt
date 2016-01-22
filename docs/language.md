@@ -195,6 +195,23 @@ and the `path` keyword can also be omitted.
 
     /users/{uid} is User;
 
+## Write Aliases
+
+A common pattern is to have distinct rules for allowing writes to a location that represent,
+new object creation (create), modification of existing data (update), or deleting data (delete).
+Bolt allows you to use these methods in lieu of the write() method in any path or type
+statement.
+
+Alias            | Write Equivalent
+-----------------| ----------------
+create() { exp } | write() { prior(this) == null && exp }
+update() { exp } | write() { prior(this) != null && this != null && exp }
+delete() { exp } | write() { prior(this) != null && this == null && exp }
+
+If you use any of create(), update(), or delete(), you may not use a write() method in your
+path or type statement.
+
+
 ## String methods
 
 The following methods can be used on string (static valued or strings stored
