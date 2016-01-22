@@ -15,7 +15,6 @@
  */
 'use strict';
 
-
 var argv = require('yargs').argv;
 var path = require('path');
 var gulp = require('gulp');
