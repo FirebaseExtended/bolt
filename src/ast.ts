@@ -517,13 +517,24 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: Path[];
   schema: { [name: string]: Schema };
-  services: Service[];
+  parentScope: Symbols;
 
-  constructor() {
+  constructor(parentScope?: Symbols) {
     this.functions = {};
     this.paths = [];
     this.schema = {};
+    this.parentScope = parentScope;
   }
+
+  pushScope(): Symbols {
+    return new Symbols(this);
+  }
+
+  popScope(): Symbols {
+    if (this.parentScope == null) {throw Error("Symbol table popped with no parent");} // should never happen
+    return this.parentScope;
+  }
+
 
   register(type: string, name: string, object: any) {
     if (!this[type]) {

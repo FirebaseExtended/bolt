@@ -100,7 +100,7 @@ export class Generator {
     this.keyIndex = 0;
 
     console.log("symbols:\n", JSON.stringify(symbols));
-    
+
     // TODO: globals should be part of this.symbols (nested scopes)
     this.globals = {
       "root": ast.call(ast.variable('@root')),
