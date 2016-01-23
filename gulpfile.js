@@ -82,7 +82,7 @@ gulp.task('lint', ['eslint', 'tslint']);
 
 gulp.task('ts-compile', ['build-peg'], function() {
   var tsProject = ts.createProject('tsconfig.json');
-  return gulp.src('src/*.ts')
+  return gulp.src('src/**/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsProject))
     .on('error', function(error) {
@@ -95,22 +95,7 @@ gulp.task('ts-compile', ['build-peg'], function() {
     .pipe(gulp.dest(LIB_DIR));
 });
 
-gulp.task('ts-compile-test', ['ts-compile'], function() {
-  var tsTestProject = ts.createProject('tsconfig.json');
-  return gulp.src('src/test/*.ts')
-    .pipe(sourcemaps.init())
-    .pipe(ts(tsTestProject))
-    .on('error', function(error) {
-      // The compile task should be a hard failure and not continue dependent tasks.
-      if (!watching) {
-        process.exit(1);
-      }
-    })
-    .pipe(sourcemaps.write())
-    .pipe(gulp.dest(TEST_DIR));
-});
-
-gulp.task('build', ['ts-compile', 'ts-compile-test', 'browserify-bolt']);
+gulp.task('build', ['ts-compile', 'browserify-bolt']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
