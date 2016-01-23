@@ -119,8 +119,8 @@ export class Generator {
   // Return Firebase compatible Rules JSON for a the given symbols definitions.
   generateRules(): Validator {
     this.errorCount = 0;
-    var paths = this.symbols.paths;
-    var schema = this.symbols.schema;
+    var paths = this.symbols.allPaths();
+    var schema = this.symbols.schema; // TODO
     var name;
 
     paths.forEach((path) => {
@@ -243,7 +243,7 @@ export class Generator {
 
     // First validate the key (omit terminal String type validation).
     while (keyType.name !== 'String') {
-      let schema = this.symbols.schema[keyType.name];
+      let schema = this.symbols.resolveSchema(keyType.name);
       if (schema.methods['validate']) {
         let exp = this.partialEval(schema.methods['validate'].body, {'this': ast.literal(index)});
         extendValidator(<Validator> validator[index], <Validator> {'.validate': [exp]});
@@ -303,7 +303,7 @@ export class Generator {
   }
 
   createValidatorFromGeneric(schemaName: string, params: ast.ExpType[]): Validator {
-    var schema = this.symbols.schema[schemaName];
+    var schema = this.symbols.resolveSchema(schemaName);
 
     if (!schema || !this.isGeneric(schema)) {
       throw new Error(errors.noSuchType + schemaName + " (generic)");
@@ -393,7 +393,7 @@ export class Generator {
   }
 
   createValidatorFromSchemaName(schemaName: string): Validator {
-    var schema = this.symbols.schema[schemaName];
+    var schema = this.symbols.resolveSchema(schemaName);
 
     if (!schema) {
       throw new Error(errors.noSuchType + schemaName);
@@ -755,7 +755,7 @@ export class Generator {
       // Can't expand function - but just expand the arguments.
       if (!this.allowUndefinedFunctions) {
         var funcName = ast.getMethodName(expCall);
-        if (funcName !== '' && !(funcName in this.symbols.schema['String'].methods ||
+        if (funcName !== '' && !(funcName in this.symbols.resolveSchema('String').methods ||
               util.arrayIncludes(snapshotMethods, funcName))) {
           this.fatal(errors.undefinedFunction + ast.decodeExpression(expCall.ref));
         }
@@ -845,7 +845,7 @@ export class Generator {
     // Function call.
     if (ref.type === 'var') {
       let refVar = <ast.ExpVariable> ref;
-      var fn = this.symbols.functions[refVar.name];
+      var fn = this.symbols.resolveFunction(refVar.name);
       if (!fn) {
         return undefined;
       }
@@ -857,10 +857,10 @@ export class Generator {
       let refRef = <ast.ExpReference> ref;
       // TODO: Require static type validation before calling String methods.
       if ((<ast.ExpOp> refRef.base).op !== 'value' &&
-          <string> (<ast.ExpValue> refRef.accessor).value in this.symbols.schema['String'].methods) {
+          <string> (<ast.ExpValue> refRef.accessor).value in this.symbols.resolveSchema('String').methods) {
         let methodName = <string> (<ast.ExpValue> refRef.accessor).value;
         return { self: refRef.base,
-                 fn: this.symbols.schema['String'].methods[methodName],
+                 fn: this.symbols.resolveSchema('String').methods[methodName],
                  methodName: 'String.' + methodName
                };
       }

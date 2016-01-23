@@ -231,7 +231,7 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      assert.deepEqual(sortPaths(parse(data).paths), sortPaths(expect));
+      assert.deepEqual(sortPaths(parse(data).allPaths()), sortPaths(expect));
     });
   });
 
