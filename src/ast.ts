@@ -512,14 +512,30 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: Path[];
   schema: { [name: string]: Schema };
+  parentScope: Symbols;
+  childrenScopes: Symbols[] = [];
 
-  constructor() {
+  constructor(parentScope?: Symbols) {
     this.functions = {};
     this.paths = [];
     this.schema = {};
+    this.parentScope = parentScope;
+    if (parentScope) {parentScope.childrenScopes.push(this); }
   }
 
-  register(type: string, name: string, object: any) {
+  pushScope(): Symbols {
+    return new Symbols(this);
+  }
+
+  popScope(): Symbols {
+    if (this.parentScope == null) {
+      // should never happen
+      throw Error("Symbol table popped with no parent");
+    }
+    return this.parentScope;
+  }
+
+  register(type: string, name: string, object: Object) {
     if (!this[type]) {
       throw new Error("Invalid registration type: " + type);
     }
@@ -563,6 +579,24 @@ export class Symbols {
     return <Schema> this.register('schema', name, s);
   }
 
+  resolve(name: string): Object {
+      var currentScope: Symbols = this;
+      while (currentScope != null) {
+          if (currentScope.schema[name]) {return currentScope.schema[name]; }
+          if (currentScope.functions[name]) {return currentScope.functions[name]; }
+          currentScope = currentScope.parentScope;
+      }
+      return null;
+  }
+
+  resolveSchema(name: string): Schema {
+      return <Schema> this.resolve(name);
+  }
+
+  resolveFunction(name: string): Method {
+      return <Method> this.resolve(name);
+  }
+
   isDerivedFrom(type: ExpType, ancestor: string): boolean {
     if (ancestor === 'Any') {
       return true;
@@ -578,7 +612,7 @@ export class Symbols {
       if (simpleType.name === 'Any') {
         return false;
       }
-      let schema = this.schema[simpleType.name];
+      let schema = this.resolveSchema(simpleType.name);
       if (!schema) {
         return false;
       }
@@ -592,6 +626,13 @@ export class Symbols {
     default:
       throw new Error("Unknown type: " + type.type);
       }
+  }
+
+  allPaths(): Path[] {
+      return this.childrenScopes.reduce(
+          (pathsSoFar: Path[], childScope: Symbols) =>
+              pathsSoFar.concat(childScope.allPaths()), // concat children's paths 
+          this.paths); /* initialise list of paths with this's paths */
   }
 }
 

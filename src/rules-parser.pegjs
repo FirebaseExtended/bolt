@@ -84,7 +84,23 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function / p:Path / s:Schema
+// A special '{' that pushes a new scope in the symbol table
+StartScopeCurly = '{'
+{
+  symbols = symbols.pushScope();
+}
+// A special '}' that pops the current scope on the symbol table.
+EndScopeCurly = '}'
+{
+  symbols = symbols.popScope();
+}
+
+// Todo: eventually only a Service will be a top level statement
+Statement = f:Function / p:Path / s:Schema / srv:Service
+
+Service = 'service' _ ServiceName _ StartScopeCurly _ rules:(ServiceStatement _)* _ EndScopeCurly
+ServiceStatement = f:Function / p:Path / s:Schema 
+ServiceName = name: (Identifier ('.' Identifier)*)
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
   if (func.name === null) {
@@ -107,7 +123,7 @@ FunctionStart = "function" __ name:Identifier? _ params:ParameterList? _ { retur
   / name:Identifier _ params:ParameterList _ {return {name: name, params: params}; }
 
 Path "path statement" = path:PathStart isType:(__ "is" __ id:TypeExpression { return id; })? _
-  methods:("{" _ all:PathsAndMethods "}" { return all; } / ";" { return {}; } )? _ {
+  methods:(StartScopeCurly _ all:PathsAndMethods EndScopeCurly { return all; } / ";" { return {}; } )? _ {
     if (path === null) {
       return;
     }

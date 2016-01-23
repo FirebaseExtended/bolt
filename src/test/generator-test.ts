@@ -89,6 +89,7 @@ suite("Rules Generator Tests", function() {
                  "serialized",
                  "map-scalar",
                  "regexp",
+                 "service"
                 ];
 
     helper.dataDrivenTest(files, function(filename) {

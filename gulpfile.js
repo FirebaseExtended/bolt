@@ -15,6 +15,7 @@
  */
 'use strict';
 
+var argv = require('yargs').argv;
 var path = require('path');
 var gulp = require('gulp');
 var source = require('vinyl-source-stream');
@@ -61,14 +62,6 @@ var TEST_SETS = [
 // Ignore ts-compile errors while watching (but not in normal builds).
 var watching = false;
 
-var TS_SETTINGS = {
-  sortOutput: true,
-  declarationFiles: true,
-  noExternalResolve: false,
-  noEmitOnError: true,
-  module: 'commonjs'
-};
-
 gulp.task('clean', function(cb) {
   del([LIB_DIR, DIST_DIR, TMP_DIR], cb);
 });
@@ -89,9 +82,8 @@ gulp.task('tslint', function() {
 gulp.task('lint', ['eslint', 'tslint']);
 
 gulp.task('ts-compile', ['build-peg'], function() {
-  var tsProject = ts.createProject(TS_SETTINGS);
-
-  return gulp.src('src/*.ts')
+  var tsProject = ts.createProject('tsconfig.json');
+  return gulp.src('src/**/*.ts')
     .pipe(sourcemaps.init())
     .pipe(ts(tsProject))
     .on('error', function(error) {
@@ -104,23 +96,7 @@ gulp.task('ts-compile', ['build-peg'], function() {
     .pipe(gulp.dest(LIB_DIR));
 });
 
-gulp.task('ts-compile-test', ['ts-compile'], function() {
-  var tsTestProject = ts.createProject(TS_SETTINGS);
-
-  return gulp.src('src/test/*.ts')
-    .pipe(sourcemaps.init())
-    .pipe(ts(tsTestProject))
-    .on('error', function(error) {
-      // The compile task should be a hard failure and not continue dependent tasks.
-      if (!watching) {
-        process.exit(1);
-      }
-    })
-    .pipe(sourcemaps.write())
-    .pipe(gulp.dest(TEST_DIR));
-});
-
-gulp.task('build', ['ts-compile', 'ts-compile-test', 'browserify-bolt']);
+gulp.task('build', ['ts-compile', 'browserify-bolt']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')
@@ -156,8 +132,15 @@ gulp.task('browserify-bolt', ['ts-compile'], function() {
 // Runs the Mocha test suite
 gulp.task('test', ['lint', 'build'], function() {
   mkdirp(TMP_DIR);
+  var mochaOptions = {
+    ui: 'tdd',
+    require: ['source-map-support/register']
+  };
+  if (argv.grep) {
+    mochaOptions['grep'] = argv.grep;
+  }
   return gulp.src(CI_TESTS.map(testFileSource))
-    .pipe(mocha({ui: 'tdd', require: ['source-map-support/register']}));
+    .pipe(mocha(mochaOptions));
 });
 
 gulp.task('default', ['test']);
@@ -165,13 +148,14 @@ gulp.task('default', ['test']);
 // Don't depend on 'build' in case current state is failing to compile - need to edit file
 // to kick off first watch build.
 gulp.task('watch', function() {
+  console.log("Save a source file to kick off the watch");
   watching = true;
-  gulp.watch(['src/*', 'src/test/*'], ['default']);
+  gulp.watch(['src/*', 'src/test/*', "samples/*"], ['default']);
 });
 
 gulp.task('watch-build', function() {
   watching = true;
-  gulp.watch(['src/*', 'src/test/*'], ['build', 'lint']);
+  gulp.watch(['src/*', 'src/test/*', "samples/*"], ['build', 'lint']);
 });
 
 function browserifyToDist(entry, opts) {

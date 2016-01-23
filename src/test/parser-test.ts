@@ -231,7 +231,7 @@ suite("Rules Parser Tests", function() {
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
-      assert.deepEqual(sortPaths(parse(data).paths), sortPaths(expect));
+      assert.deepEqual(sortPaths(parse(data).allPaths()), sortPaths(expect));
     });
   });
 
@@ -429,7 +429,8 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access", "userdoc", "mail", "children", "create-update-delete"];
+
+    var files = ["all_access", "userdoc", "mail", "children", "create-update-delete", "service"];
 
     helper.dataDrivenTest(files, function(data) {
       var filename = 'samples/' + data + '.' + bolt.FILE_EXTENSION;

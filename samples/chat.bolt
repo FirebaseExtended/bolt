@@ -3,6 +3,8 @@
  */
 path /rooms is Map<RoomID, RoomInfo>;
 path /posts/{roomid} {
+  //comment
+  /*comment*/
   validate() { getRoomInfo(roomid) != null }
 }
 
