@@ -10,7 +10,7 @@
   "files": [
     "src/ast.ts",
     "src/bolt.ts",
-	"src/firebase-rest.ts",
+    "src/firebase-rest.ts",
     "src/logger.ts",
     "src/rules-generator.ts",
     "src/simulator.ts",
