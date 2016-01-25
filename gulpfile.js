@@ -15,6 +15,7 @@
  */
 'use strict';
 
+var argv = require('yargs').argv;
 var path = require('path');
 var gulp = require('gulp');
 var source = require('vinyl-source-stream');
@@ -156,8 +157,15 @@ gulp.task('browserify-bolt', ['ts-compile'], function() {
 // Runs the Mocha test suite
 gulp.task('test', ['lint', 'build'], function() {
   mkdirp(TMP_DIR);
+  var mochaOptions = {
+    ui: 'tdd',
+    require: ['source-map-support/register']
+  };
+  if (argv.grep) {
+    mochaOptions['grep'] = argv.grep;
+  }
   return gulp.src(CI_TESTS.map(testFileSource))
-    .pipe(mocha({ui: 'tdd', require: ['source-map-support/register']}));
+    .pipe(mocha(mochaOptions));
 });
 
 gulp.task('default', ['test']);
