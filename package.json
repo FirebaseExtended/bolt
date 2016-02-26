@@ -65,14 +65,15 @@
     "source-map-support": "^0.4.0",
     "tslint": "^2.5.0-beta",
     "typescript": "^1.6.2",
+    "typings": "^0.6.8",
     "vinyl-source-stream": "^1.1.0",
-    "yargs": "^3.32.0"
+    "yargs": "^3.32.0",
+    "mocha": "^2.2.5",
   },
   "dependencies": {
     "chai": "^3.2.0",
     "firebase-token-generator": "^2.0.0",
     "minimist": "^1.2.0",
-    "mocha": "^2.2.5",
     "node-uuid": "^1.4.3",
     "promise": "^7.0.4"
   }

@@ -2,30 +2,15 @@
   "compilerOptions": {
     "outDir": "lib",
     "module": "commonjs",
-    "removeComments": true,
+    "noImplicitAny": true,
     "preserveConstEnums": true,
     "inlineSourceMap": true,
     "noEmitOnError": true
   },
-  "files": [
-    "src/ast.ts",
-    "src/bolt.ts",
-    "src/firebase-rest.ts",
-    "src/logger.ts",
-    "src/rules-generator.ts",
-    "src/simulator.ts",
-    "src/util.ts",
-    "src/test/ast-test.ts",
-    "src/test/cli-test.ts",
-    "src/test/firebase-rest-test.ts",
-    "src/test/generator-test.ts",
-    "src/test/mail-test.ts",
-    "src/test/regexp-test.ts",
-    "src/test/util-test.ts",
-    "src/test/chat-test.ts",
-    "src/test/create-update-delete-test.ts",
-    "src/test/firebase-rules-test.ts",
-    "src/test/parser-test.ts",
-    "src/test/test-helper.ts"
+  "exclude": [
+    "lib",
+    "node_modules",
+    "typings/browser",
+    "typings/browser.d.ts"
   ]
 }

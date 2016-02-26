@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-/// <reference path="typings/es6-promise.d.ts" />
-
-import Promise = require('promise');
 import fs = require('fs');
 import util = require('./util');
 
-export var readFile = <(string) => Promise<ReadFileResult>> util.maybePromise(readFileSync);
+export var readFile = <(path: string) => Promise<ReadFileResult>> util.maybePromise(readFileSync);
 export var readJSONFile = <(path: string, fnFallback? : () => Promise<ReadFileResult>) => Promise<ReadFileResult>>
   util.maybePromise(readJSONFileSync);
 export var writeFile = util.maybePromise(writeFileSync);
@@ -31,7 +27,7 @@ export interface ReadFileResult {
   url: string;
 }
 
-function readJSONFileSync(path: string, fnFallback?: () => any) {
+function readJSONFileSync(path: string, fnFallback?: () => any): Promise<any> {
   return readFileSync(path)
     .then(function(response: ReadFileResult) {
       return JSON.parse(response.content);
@@ -44,20 +40,20 @@ function readJSONFileSync(path: string, fnFallback?: () => any) {
     });
 }
 
-function writeJSONFileSync(path, data) {
+function writeJSONFileSync(path: string, data: any): Promise<ReadFileResult> {
   return writeFileSync(path, util.prettyJSON(data));
 }
 
-function readFileSync(path) {
+function readFileSync(path: string): Promise<ReadFileResult> {
   return request('GET', path) || readFS(path);
 }
 
-function writeFileSync(path, data) {
+function writeFileSync(path: string, data: any): Promise<ReadFileResult> {
   return request('PUT', path, data) || writeFS(path, data);
 }
 
-function request(method: string, url: string, data?): Promise<ReadFileResult> {
-  if (!global.XMLHttpRequest) {
+function request(method: string, url: string, data?: any): Promise<ReadFileResult> {
+  if (!(<any> global).XMLHttpRequest) {
     return undefined;
   }
 
@@ -98,7 +94,7 @@ function readFS(path: string): Promise<ReadFileResult> {
   });
 }
 
-function writeFS(path, data): Promise<ReadFileResult> {
+function writeFS(path: string, data: any): Promise<ReadFileResult> {
   return new Promise(function(resolve, reject) {
     fs.writeFile(path, data, {encoding: 'utf8'}, function(error) {
       if (error) {

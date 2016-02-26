@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="../typings/es6-promise.d.ts" />
-
-import Promise = require('promise');
 import rest = require('../firebase-rest');
 var secrets = require('../../auth-secrets');
 import chai = require('chai');
@@ -55,7 +51,7 @@ suite("Firebase REST Tests", function() {
       { location: 'object', value: {this: 1, that: 'other'} },
       { location: 'TIMESTAMP', value: rest.TIMESTAMP },
     ];
-    var results = [];
+    var results = <Promise<string>[]>[];
     for (var i = 0; i < tests.length; i++) {
       var t = tests[i];
       results.push(client.put(TEST_LOCATION + '/types/' + t.location, t.value));

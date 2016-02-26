@@ -6,3 +6,6 @@ cd $PROJ_DIR
 
 npm install
 ensure-secret.py auth-secrets.js
+
+# Show outdated modules
+npm outdated

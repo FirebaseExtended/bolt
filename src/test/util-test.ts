@@ -21,8 +21,8 @@ var util = require('../util');
 
 suite("Util", function() {
   suite("pruneEmptyChildren", function() {
-    function T() {
-      this.x = 'dummy';
+    class T {
+      public x = 'dummy';
     }
 
     var tests = [
@@ -37,7 +37,7 @@ suite("Util", function() {
       [ {a: 1, b: undefined}, {a: 1} ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: any, expect: any) {
       util.pruneEmptyChildren(data);
       assert.deepEqual(data, expect);
     });
@@ -51,7 +51,7 @@ suite("Util", function() {
       [ {a: 1, b: {dm: 2, c: 3}}, {a: 1, b: {c: 3}} ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: any, expect: any) {
       util.deletePropName(data, 'dm');
       assert.deepEqual(data, expect);
     });

@@ -74,7 +74,7 @@ suite("Abstract Syntax Tree (AST)", function() {
                  or: or(or(or(a, b), c), d)} },
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: ast.Exp[], expect: any) {
       assert.deepEqual(ast.andArray(data), expect.and, 'AND');
       assert.deepEqual(ast.orArray(data), expect.or, 'OR');
     }, helper.expFormat);
@@ -103,7 +103,7 @@ suite("Abstract Syntax Tree (AST)", function() {
         expect: [a, b, c, d] },
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: ast.Exp, expect: ast.Exp[]) {
       var result = ast.flatten('&&', data);
       assert.deepEqual(result, expect);
     }, helper.expFormat);
@@ -126,7 +126,7 @@ suite("Abstract Syntax Tree (AST)", function() {
       ['hi', false],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: ast.Exp, expect: boolean) {
       var result = ast.isIdentifierStringExp(data);
       assert.equal(result, expect);
     }, helper.expFormat);
@@ -212,7 +212,7 @@ suite("Abstract Syntax Tree (AST)", function() {
       [ "(this + ' ').test(/\d+/)" ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: string, expect: string) {
       // Decode to self by default
       expect = expect || data;
       var result = parse('function f() {return ' + data + ';}');
