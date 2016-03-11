@@ -80,7 +80,7 @@ for your application:
    tool.  If you have _firebase-bolt_ installed on your computer, you can set the `rules` property
    in your [firebase.json](https://www.firebase.com/docs/hosting/guide/full-config.html) file
    to the name of your Bolt file.  When you issue the `firebase deploy` command, it will
-   read and compile your Bolf file and upload the compiled JSON to your Firebase application.
+   read and compile your Bolt file and upload the compiled JSON to your Firebase application.
 
 ## Data Validation
 
