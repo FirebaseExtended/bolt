@@ -35,6 +35,20 @@ suite("Rules Parser Tests", function() {
     assert.ok(result instanceof ast.Symbols);
   });
 
+  suite("Imports", function(){
+    var tests = [
+      { data: "import {'somefile'}",
+        expect: { filename: ast.string('somefile')  }
+      }
+    ];
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      console.log("******!!");
+      console.log(result);
+      assert.equal(result.imports[0].filename, expect.filename.value);
+    });
+  });
+
   suite("Function Samples", function() {
     var tests = [
       { data: "function f() { return true; }",

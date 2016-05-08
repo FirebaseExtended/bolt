@@ -84,7 +84,12 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function / p:Path / s:Schema
+Statement = f:Function / p:Path / s:Schema / i:Import
+
+Import "import definition" = body:"import {'" _ value:Identifier _"'}" {
+
+  symbols.registerImport(value);
+}
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
   if (func.name === null) {

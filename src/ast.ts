@@ -99,6 +99,9 @@ export interface Method {
   body: Exp;
 }
 
+export interface Import {
+  filename: string;
+}
 export class PathPart {
   label: string;
   variable: string;
@@ -512,11 +515,13 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: Path[];
   schema: { [name: string]: Schema };
+  imports: Import[] ;
 
   constructor() {
     this.functions = {};
     this.paths = [];
     this.schema = {};
+    this.imports = [];
   }
 
   register(type: string, name: string, object: any) {
@@ -534,6 +539,17 @@ export class Symbols {
 
   registerFunction(name: string, params: string[], body: Exp): Method {
     return <Method> this.register('functions', name, method(params, body));
+  }
+
+  registerImport(data: string): Import {
+    // type, name, data
+    console.log('********* imports called');
+    console.log(data);
+    var i: Import = {
+      filename : data
+    };
+    this.imports.push(i);
+    return i;
   }
 
   registerPath(template: PathTemplate, isType: ExpType | void, methods: { [name: string]: Method; } = {}): Path {
