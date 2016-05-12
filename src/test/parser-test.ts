@@ -37,11 +37,21 @@ suite("Rules Parser Tests", function() {
 
   suite("Imports", function(){
     var tests = [
-      { data: "import {'somefile'}",
-        expect: { filename: ast.string('somefile')  }
+      { data: "import {'foo'}",
+        expect: { filename: ast.string('foo')  }
+      },
+      { data: "import {'foo/bar'}",
+        expect: {filename: ast.string('foo/bar') }
+      },
+      { data: "import {'../../foo/bar'}",
+        expect: {filename: ast.string('../../foo/bar') }
+      },
+      { data: "import {'./foo/bar'}",
+        expect: {filename: ast.string('./foo/bar') }
       }
     ];
     helper.dataDrivenTest(tests, function(data, expect) {
+      console.log("******!!");
       var result = parse(data);
       console.log("******!!");
       console.log(result);

@@ -20,8 +20,6 @@ import generator = require('./rules-generator');
 import simulator = require('./simulator');
 import astReal = require('./ast');
 import util = require('./util');
-import fileIO = require('./file-io');
-
 export var FILE_EXTENSION = 'bolt';
 export var parse = util.maybePromise(parser.parse);
 export var generate = util.maybePromise(generateSync);
@@ -35,8 +33,6 @@ export var rulesSuite = simulator.rulesSuite;
 function generateSync(symbols: string | astReal.Symbols): generator.Validator {
   if (typeof symbols === 'string') {
     symbols = parser.parse(symbols);
-    
-
   }
   var gen = new generator.Generator(<astReal.Symbols> symbols);
   return gen.generateRules();

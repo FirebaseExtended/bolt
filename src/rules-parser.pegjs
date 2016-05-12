@@ -86,9 +86,12 @@ Statements = rules:(Statement _)*
 
 Statement = f:Function / p:Path / s:Schema / i:Import
 
-Import "import definition" = body:"import {'" _ value:Identifier _"'}" {
+Import "import definition" = body:"import {'" _ value:FilePath _"'}" {
+  symbols.registerImport(value.join(""));
+}
 
-  symbols.registerImport(value);
+FilePath "file path" = value:(Identifier / "/" / ".." / "." )+  {
+  return value;
 }
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
