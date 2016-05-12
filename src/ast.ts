@@ -101,6 +101,8 @@ export interface Method {
 
 export interface Import {
   filename: string;
+  alias: string;
+  scope: boolean;
 }
 export class PathPart {
   label: string;
@@ -541,12 +543,21 @@ export class Symbols {
     return <Method> this.register('functions', name, method(params, body));
   }
 
-  registerImport(data: string): Import {
+  registerImport(alias: string, data: string, scope: string): Import {
     // type, name, data
-    console.log('********* imports called');
-    console.log(data);
+    var theScope = false;
+    if (scope) {
+      theScope = true;
+    }
+    var theAlias = "";
+    if (alias) {
+      theAlias = alias;
+    }
+
     var i: Import = {
-      filename : data
+      filename : data,
+      alias: theAlias,
+      scope: !theScope
     };
     this.imports.push(i);
     return i;
