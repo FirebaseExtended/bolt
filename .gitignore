@@ -2,7 +2,6 @@
 .idea
 bower_components/
 node_modules/
-lib/
 dist/
 tmp/
 npm-debug.log
