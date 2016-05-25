@@ -64,6 +64,13 @@ suite("Rules Parser Tests", function() {
           alias: ast.string('lol'),
           scope: ast.boolean(false)
         }
+      },
+      { data: "import {'./foo-bar'} as lol",
+        expect: {
+          filename: ast.string('./foo-bar'),
+          alias: ast.string('lol'),
+          scope: ast.boolean(false)
+        }
       }
     ];
     helper.dataDrivenTest(tests, function(data, expect) {

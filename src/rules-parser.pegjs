@@ -89,7 +89,7 @@ AliasName "aliasname definition" = " as " _ name:Identifier{
   return name;
 }
 Import "import definition" = body:"import {'"_ scope:("./" / "../")? _  value:FilePath _"'}"  alias:(AliasName)? {
-  var rebuildValue = value.join("");
+  var rebuildValue = value;
   if(scope){
     rebuildValue = scope + rebuildValue;
   }
@@ -101,8 +101,8 @@ Import "import definition" = body:"import {'"_ scope:("./" / "../")? _  value:Fi
 
 }
 
-FilePath "file path" = value:(Identifier / "/" / ".." / "." )+  {
-  return value;
+FilePath "file path" = start:[a-zA-Z\.] rest:([a-zA-Z_\.\\\/0-9\- ])+  {
+  return start + rest.join("");
 }
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
