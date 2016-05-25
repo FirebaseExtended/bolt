@@ -74,10 +74,7 @@ suite("Rules Parser Tests", function() {
       }
     ];
     helper.dataDrivenTest(tests, function(data, expect) {
-      console.log("******!!");
       var result = parse(data);
-      console.log("******!!");
-      console.log(result);
       assert.deepEqual(result.imports[0].filename, expect.filename.value);
       assert.deepEqual(result.imports[0].alias, expect.alias.value);
       assert.deepEqual(result.imports[0].scope, expect.scope.value);
