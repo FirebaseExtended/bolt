@@ -651,7 +651,7 @@ export class Generator {
       // TODO: Unbound variable access should be an error.
       return params[exp2.name] || self.globals[exp2.name] || exp2;
     }
-    
+
     // Convert ref[prop] => ref.child(prop)
     function snapshotChild(ref: ast.ExpReference): ast.Exp {
       return ast.cast(ast.call(ast.reference(ref.base, ast.string('child')),
