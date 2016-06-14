@@ -2,8 +2,8 @@
 .idea
 bower_components/
 node_modules/
-lib/
 dist/
+lib/
 tmp/
 npm-debug.log
 auth-secrets.js

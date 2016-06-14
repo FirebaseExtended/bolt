@@ -99,6 +99,11 @@ export interface Method {
   body: Exp;
 }
 
+export interface Import {
+  filename: string;
+  alias: string;
+  scope: boolean;
+}
 export class PathPart {
   label: string;
   variable: string;
@@ -512,11 +517,13 @@ export class Symbols {
   functions: { [name: string]: Method };
   paths: Path[];
   schema: { [name: string]: Schema };
+  imports: Import[] ;
 
   constructor() {
     this.functions = {};
     this.paths = [];
     this.schema = {};
+    this.imports = [];
   }
 
   register(type: string, name: string, object: any) {
@@ -534,6 +541,26 @@ export class Symbols {
 
   registerFunction(name: string, params: string[], body: Exp): Method {
     return <Method> this.register('functions', name, method(params, body));
+  }
+
+  registerImport(alias: string, data: string, scope: string): Import {
+    // type, name, data
+    var theScope = false;
+    if (scope) {
+      theScope = true;
+    }
+    var theAlias = "";
+    if (alias) {
+      theAlias = alias;
+    }
+
+    var i: Import = {
+      filename : data,
+      alias: theAlias,
+      scope: !theScope
+    };
+    this.imports.push(i);
+    return i;
   }
 
   registerPath(template: PathTemplate, isType: ExpType | void, methods: { [name: string]: Method; } = {}): Path {

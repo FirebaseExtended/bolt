@@ -35,6 +35,53 @@ suite("Rules Parser Tests", function() {
     assert.ok(result instanceof ast.Symbols);
   });
 
+  suite("Imports", function(){
+    var tests = [
+      { data: "import {'foo'}",
+        expect: {
+          filename: ast.string('foo') ,
+          alias: ast.string(''),
+          scope: ast.boolean(true)
+        }
+      },
+      { data: "import {'../../foo/bar'}",
+        expect: {
+          filename: ast.string('../../foo/bar'),
+          alias: ast.string(''),
+          scope: ast.boolean(false)
+        }
+      },
+      { data: "import {'./foo/bar'}",
+        expect: {
+          filename: ast.string('./foo/bar'),
+          alias: ast.string(''),
+          scope: ast.boolean(false)
+        }
+      },
+      { data: "import {'./foo/bar'} as lol",
+        expect: {
+          filename: ast.string('./foo/bar'),
+          alias: ast.string('lol'),
+          scope: ast.boolean(false)
+        }
+      },
+      { data: "import {'./foo-bar'} as lol",
+        expect: {
+          filename: ast.string('./foo-bar'),
+          alias: ast.string('lol'),
+          scope: ast.boolean(false)
+        }
+      }
+    ];
+    helper.dataDrivenTest(tests, function(data, expect) {
+      var result = parse(data);
+      assert.deepEqual(result.imports[0].filename, expect.filename.value);
+      assert.deepEqual(result.imports[0].alias, expect.alias.value);
+      assert.deepEqual(result.imports[0].scope, expect.scope.value);
+
+    });
+  });
+
   suite("Function Samples", function() {
     var tests = [
       { data: "function f() { return true; }",
