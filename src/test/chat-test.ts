@@ -22,7 +22,7 @@ var secrets = require('../../auth-secrets');
 rulesSuite("Chat", function(test) {
   var uid = test.uid;
 
-  test.database(secrets.APP, secrets.SECRET);
+  test.database(secrets);
   test.rules('samples/chat');
 
   function makeMikesRoom(rules) {
@@ -38,7 +38,6 @@ rulesSuite("Chat", function(test) {
   test("Create and Delete Room.", function(rules) {
     makeMikesRoom(rules)
       .succeeds("Create empty room.")
-
       .as('fred')
       .write(null)
       .fails("Non-owner cannot delete room.")

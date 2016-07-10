@@ -18,14 +18,15 @@
 /// <reference path="typings/node.d.ts" />
 /// <reference path="typings/es6-promise.d.ts" />
 /// <reference path="typings/node-uuid.d.ts" />
-
+/// <reference path="typings/firebase.d.ts" />
 import Promise = require('promise');
 import https = require('https');
 import http = require('http');
 import util = require('./util');
 import querystring = require('querystring');
 import uuid = require('node-uuid');
-var FirebaseTokenGenerator = require('firebase-token-generator');
+
+var firebase = require('firebase');
 
 var FIREBASE_HOST = 'firebaseio.com';
 var DEBUG_HEADER = 'x-firebase-auth-debug';
@@ -33,10 +34,9 @@ var DEBUG_HEADER = 'x-firebase-auth-debug';
 export var RULES_LOCATION =  '/.settings/rules';
 export var TIMESTAMP = {".sv": "timestamp"};
 
-export function Client(appName, authToken?, uid?) {
+export function Client(appName, secret) {
   this.appName = appName;
-  this.authToken = authToken;
-  this.uid = uid;
+  this.secret = secret;
 }
 
 util.methods(Client, {
@@ -68,9 +68,7 @@ util.methods(Client, {
       query.print = opt.print;
     }
 
-    if (this.authToken) {
-      query.auth = this.authToken;
-    }
+    query.auth = this.secret;
 
     if (Object.keys(query).length > 0) {
       options.path += '?' + querystring.stringify(query);
@@ -141,13 +139,18 @@ function request(options, content, debug): Promise<string> {
 }
 
 // opts { debug: Boolean, admin: Boolean }
-export function generateUidAuthToken(secret, opts) {
-  opts = util.extend({ debug: false, admin: false }, opts);
-
-  var tokenGenerator = new FirebaseTokenGenerator(secret);
+export function generateUidAuthToken(username) {
   var uid = uuid.v4();
-  var token = tokenGenerator.createToken({ uid: uid }, opts);
-  return { uid: uid, token: token };
+  //var cert = require('../serviceAccountCredentials.json');
+  var fbClient = firebase.initializeApp({
+      databaseURL: "https://maintestapp.firebaseio.com/",
+      serviceAccount: "./serviceAccountCredentials.json",
+      databaseAuthVariableOverride: {
+        uid: uid
+      }
+    }, uid);
+    fbClient.uid = uid;
+   return fbClient;
 }
 
 /**
