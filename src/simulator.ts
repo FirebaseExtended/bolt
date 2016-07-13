@@ -50,7 +50,7 @@ function RulesSuite(suiteName, fnSuite) {
 util.methods(RulesSuite, {
   setDebug: function(debug) {
     if (debug === undefined) {
-      debug = true;
+      debug = false;
     }
     this.debug = debug;
     return this;
@@ -111,7 +111,6 @@ util.methods(RulesSuite, {
   // Arg: [rulesJSON, true]
   onRulesReady: function(prereq) {
     this.rules = prereq[0];
-    console.log(rest.RULES_LOCATION);
     return this.adminClient.put(rest.RULES_LOCATION, this.rules);
   },
 
@@ -136,8 +135,6 @@ util.methods(RulesSuite, {
   },
 
   rules: function(rulesPath) {
-
-
     if (this.rulesPath) {
       throw new Error("Only expect a single call to the test.rules function.");
     }
@@ -155,22 +152,18 @@ util.methods(RulesSuite, {
   },
 
   uid: function(username) {
-    console.log('Returning UID: ' + username);
     return this.users[username].uid;
   },
 
   ensureUser: function(username) {
     if (!(username in this.users)) {
-        console.log('Creating User: ' + username);
         var clientInfo
         if(username === 'admin'){
             clientInfo = new rest.Client(secrets.appName, secrets.secret);
         } else {
-          clientInfo = rest.generateUidAuthToken(username);
+          clientInfo = rest.createFirebaseDbRefForUser(username);
         }
         this.users[username] = clientInfo;
-    } else{
-      console.log('User exists: ' + username);
     }
     return this.users[username];
   }
@@ -290,7 +283,6 @@ util.methods(RulesTest, {
       } else{
        tmp = this.client.database().ref(this.path).set(obj)
         .then(() => {
-          console.log('!!!!!!!! Write Success');
           this.status = true;
         })
         .catch((error) => {
@@ -299,7 +291,6 @@ util.methods(RulesTest, {
         });
       }
         return tmp;
-
     });
 
     return this;
@@ -308,18 +299,15 @@ util.methods(RulesTest, {
   push: function(obj) {
     this.queue('write', arguments, () => {
       let path = this.path;
-      if (path.slice(-1)[0] !== '/') {
-        path += '/';
-      }
-      path += rest.generatePushID();
-      return this.client.put(path, obj)
-        .then(() => {
-          this.status = true;
-        })
-        .catch((error) => {
-          this.status = false;
-          this.lastError = error;
-        });
+
+      return this.client.database().ref(this.path).push(obj)
+       .then(() => {
+         this.status = true;
+       })
+       .catch((error) => {
+         this.status = false;
+         this.lastError = error;
+       });
     });
     return this;
   },
