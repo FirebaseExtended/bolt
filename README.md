@@ -68,3 +68,15 @@ More extensive tests which include running against a sandboxed Firebase app:
 Run browser-based tests:
 
     $ browser-tests
+
+# Simulator (3.0 Upgrade)
+
+Create a file called "auth-secrets.json" in your project root directory.
+
+  $ { appName: mytestapp, secret: xxxxxxxxxx }
+
+  To get the above values go to the settings area (gear icon) of the main page, select project settings then select the database tab. The secret can be copied from there. This is used to give the simulator administration access to the whole firebase applications
+
+To run simulations you will need a service account credential.
+
+    To get the above go to the settings area (gear icon) of the main page, select permissions and you will be sent to the IAM administration page. On the left hand menu select the Service Accounts option. From the top menu select create service account and furnish a new set of credentials in JSON format. This can be saved to the root of your project and called serviceAccountCredentials.json.
