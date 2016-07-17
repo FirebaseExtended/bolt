@@ -84,7 +84,26 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function / p:Path / s:Schema
+Statement = f:Function / p:Path / s:Schema / i:Import
+AliasName "aliasname definition" = " as " _ name:Identifier{
+  return name;
+}
+Import "import definition" = body:"import {'"_ scope:("./" / "../")? _  value:FilePath _"'}"  alias:(AliasName)? {
+  var rebuildValue = value;
+  if(scope){
+    rebuildValue = scope + rebuildValue;
+  }
+  var an = "";
+  if(alias){
+    an = alias;
+  }
+  symbols.registerImport(alias, rebuildValue, scope);
+
+}
+
+FilePath "file path" = start:[a-zA-Z\.] rest:([a-zA-Z_\.\\\/0-9\- ])+  {
+  return start + rest.join("");
+}
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
   if (func.name === null) {

@@ -37,12 +37,15 @@
   "preferGlobal": true,
   "scripts": {
     "test": "gulp test",
+    "test-chat": "gulp build && mocha lib/test/chat-test --ui tdd",
     "travis": "gulp"
   },
   "devDependencies": {
     "browserify": "^11.0.1",
     "del": "^2.0.2",
     "eslint": "^1.1.0",
+    "firebase": "^3.2.0",
+    "firebase-tools": "^3.0.4",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.0.0",
     "gulp-mocha": "^2.1.3",

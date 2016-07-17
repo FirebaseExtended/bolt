@@ -31,7 +31,6 @@ import fileIO = require('./file-io');
 interface Window { bolt: any; }
 declare var window: Window;
 var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
-
 var MAX_TEST_MS = 60000;
 
 export function rulesSuite(suiteName, fnSuite) {
@@ -49,7 +48,7 @@ function RulesSuite(suiteName, fnSuite) {
 util.methods(RulesSuite, {
   setDebug: function(debug) {
     if (debug === undefined) {
-      debug = true;
+      debug = false;
     }
     this.debug = debug;
     return this;
@@ -70,11 +69,10 @@ util.methods(RulesSuite, {
           self.databaseReady = resolve;
         });
 
-        var rulesJSON = bolt.generate(util.getProp(fileIO.readFile(rulesPath),
-                                                   'content'));
+        var rulesJSON = bolt.generate(util.getProp(fileIO.readFile(rulesPath), 'content'));
 
-        self.ready = Promise.all([rulesJSON, database])
-          .then(self.onRulesReady.bind(self));
+        // JT - TODO: Not sure why I needed to disable this.
+        self.ready = Promise.all([rulesJSON, database]).then(self.onRulesReady.bind(self));
 
         // Execute initialization and get test definitions (in client code).
         self.fnSuite(self.getInterface());
@@ -142,33 +140,29 @@ util.methods(RulesSuite, {
     this.rulesPathResolve(util.ensureExtension(rulesPath, bolt.FILE_EXTENSION));
   },
 
-  database: function(appName, appSecret) {
+  database: function(appSecret) {
     if (this.adminClient) {
       throw new Error("Only expect a single call to the test.database function.");
     }
-    this.appName = appName;
     this.appSecret = appSecret;
-    this.adminClient = this.ensureUser('admin');
+    this.adminClient = new rest.Client(appSecret.appName, appSecret.secret); // using classic rest interface still
     this.databaseReady();
   },
 
   uid: function(username) {
-    return this.ensureUser(username).uid;
+    return this.users[username].uid;
   },
 
   ensureUser: function(username) {
     if (!(username in this.users)) {
-      if (username === 'anon') {
-        this.users[username] = new rest.Client(this.appName);
-      } else {
-        var tokenInfo;
-        tokenInfo = rest.generateUidAuthToken(this.appSecret,
-                                              { debug: true,
-                                                admin: username === 'admin' });
-        this.users[username] = new rest.Client(this.appName, tokenInfo.token, tokenInfo.uid);
-      }
+        var clientInfo;
+        if (username === 'admin') {
+          clientInfo = new rest.Client(this.appSecret.appName, this.appSecret.secret);
+        } else {
+          clientInfo = rest.createFirebaseDbRefForUser(username, this.appSecret.appName);
+        }
+        this.users[username] = clientInfo;
     }
-
     return this.users[username];
   }
 });
@@ -189,18 +183,16 @@ function RulesTest(testName, suite, fnTest) {
 
 util.methods(RulesTest, {
   run: function() {
-    this.debug(false);
+    this.debug(true);
+
     this.as('admin');
     this.at('/');
-    this.write(null);
+    this.write(null); // Clear out any existing data
     this.succeeds("initialization");
-
     this.at(undefined);
     this.as('anon');
-
     this.fnTest(this);
-
-    this.debug(false);
+//    this.debug(false);
 
     return this.executeQueue()
       .then(() => {
@@ -257,6 +249,7 @@ util.methods(RulesTest, {
     var client = this.suite.ensureUser(username);
     this.queue('as', arguments, () => {
       this.client = client;
+      this.username = username;
     });
     return this;
   },
@@ -268,9 +261,12 @@ util.methods(RulesTest, {
     return this;
   },
 
+  // TODO: Cleanup. There's got to be a better admin UI for doing this
   write: function(obj) {
     this.queue('write', arguments, () => {
-      return this.client.put(this.path, obj)
+      var tmp;
+      if (this.username === 'admin') {
+        tmp = this.client.put(this.path, obj)
         .then(() => {
           this.status = true;
         })
@@ -278,25 +274,32 @@ util.methods(RulesTest, {
           this.status = false;
           this.lastError = error;
         });
+      } else {
+       tmp = this.client.database().ref(this.path).set(obj)
+        .then(() => {
+          this.status = true;
+        })
+        .catch((error) => {
+          this.status = false;
+          this.lastError = error;
+        });
+      }
+        return tmp;
     });
+
     return this;
   },
 
   push: function(obj) {
     this.queue('write', arguments, () => {
-      let path = this.path;
-      if (path.slice(-1)[0] !== '/') {
-        path += '/';
-      }
-      path += rest.generatePushID();
-      return this.client.put(path, obj)
-        .then(() => {
-          this.status = true;
-        })
-        .catch((error) => {
-          this.status = false;
-          this.lastError = error;
-        });
+      return this.client.database().ref(this.path).push(obj)
+       .then(() => {
+         this.status = true;
+       })
+       .catch((error) => {
+         this.status = false;
+         this.lastError = error;
+       });
     });
     return this;
   },

@@ -20,7 +20,6 @@ import generator = require('./rules-generator');
 import simulator = require('./simulator');
 import astReal = require('./ast');
 import util = require('./util');
-
 export var FILE_EXTENSION = 'bolt';
 export var parse = util.maybePromise(parser.parse);
 export var generate = util.maybePromise(generateSync);
