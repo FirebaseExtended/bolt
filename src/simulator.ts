@@ -26,7 +26,6 @@ var assert = chai.assert;
 import rest = require('./firebase-rest');
 import util = require('./util');
 import fileIO = require('./file-io');
-import firebase = require('firebase');
 
 // Browserify bug: https://github.com/substack/node-browserify/issues/1150
 interface Window { bolt: any; }
@@ -264,10 +263,9 @@ util.methods(RulesTest, {
     });
     return this;
   },
-// TODO: Cleanup. There's got to be a better admin UI for doing this
-  write: function(obj) {
-    var self = this;
 
+  // TODO: Cleanup. There's got to be a better admin UI for doing this
+  write: function(obj) {
     this.queue('write', arguments, () => {
       var tmp;
       if(this.username === 'admin'){
@@ -295,11 +293,9 @@ util.methods(RulesTest, {
 
     return this;
   },
-// TODO: Re-write this over to the client api
+
   push: function(obj) {
     this.queue('write', arguments, () => {
-      let path = this.path;
-
       return this.client.database().ref(this.path).push(obj)
        .then(() => {
          this.status = true;
