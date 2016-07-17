@@ -146,7 +146,7 @@ export function createFirebaseDbRefForUser(username) {
   var fbClient ;
   if (username === 'anon') {
     fbClient = firebase.initializeApp( {
-      databaseURL: 'https://' + this.appName + '.firebaseio.com/"
+      databaseURL: 'https://' + this.appName + '.firebaseio.com/'
     }, uid);
   } else {
     fbClient = firebase.initializeApp( {
