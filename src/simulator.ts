@@ -146,7 +146,7 @@ util.methods(RulesSuite, {
       throw new Error("Only expect a single call to the test.database function.");
     }
     this.appSecret = appSecret;
-    this.adminClient = new rest.Client(secrets.appName,secrets.secret); // using classic rest interface still
+    this.adminClient = new rest.Client(secrets.appName, secrets.secret); // using classic rest interface still
     this.databaseReady();
   },
 
@@ -156,8 +156,8 @@ util.methods(RulesSuite, {
 
   ensureUser: function(username) {
     if (!(username in this.users)) {
-        var clientInfo
-        if(username === 'admin'){
+        var clientInfo;
+        if (username === 'admin') {
             clientInfo = new rest.Client(secrets.appName, secrets.secret);
         } else {
           clientInfo = rest.createFirebaseDbRefForUser(username);
@@ -268,7 +268,7 @@ util.methods(RulesTest, {
   write: function(obj) {
     this.queue('write', arguments, () => {
       var tmp;
-      if(this.username === 'admin'){
+      if (this.username === 'admin') {
         console.log(this);
         tmp = this.client.put(this.path, obj)
         .then(() => {
@@ -278,7 +278,7 @@ util.methods(RulesTest, {
           this.status = false;
           this.lastError = error;
         });
-      } else{
+      } else {
        tmp = this.client.database().ref(this.path).set(obj)
         .then(() => {
           this.status = true;

@@ -144,12 +144,11 @@ function request(options, content, debug): Promise<string> {
 export function createFirebaseDbRefForUser(username) {
   var uid = uuid.v4();
   var fbClient ;
-  if(username ==='anon'){
+  if (username ==='anon') {
     fbClient = firebase.initializeApp( {
       databaseURL: 'https://' + this.appName + '.firebaseio.com/"
     }, uid);
   } else {
-
     fbClient = firebase.initializeApp( {
         databaseURL: 'https://' + this.appName + '.firebaseio.com/',
         serviceAccount: "./serviceAccountCredentials.json",
