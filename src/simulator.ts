@@ -157,7 +157,7 @@ util.methods(RulesSuite, {
     if (!(username in this.users)) {
         var clientInfo;
         if (username === 'admin') {
-            clientInfo = new rest.Client(secrets.appName, secrets.secret);
+            clientInfo = new rest.Client(appSecret.appName, appSecret.secret);
         } else {
           clientInfo = rest.createFirebaseDbRefForUser(username);
         }
