@@ -145,7 +145,7 @@ util.methods(RulesSuite, {
       throw new Error("Only expect a single call to the test.database function.");
     }
     this.appSecret = appSecret;
-    this.adminClient = new rest.Client(secrets.appName, secrets.secret); // using classic rest interface still
+    this.adminClient = new rest.Client(appSecret.appName, appSecret.secret); // using classic rest interface still
     this.databaseReady();
   },
 
