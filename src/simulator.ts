@@ -31,7 +31,6 @@ import fileIO = require('./file-io');
 interface Window { bolt: any; }
 declare var window: Window;
 var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
-var secrets = require('../auth-secrets.json');
 var MAX_TEST_MS = 60000;
 
 export function rulesSuite(suiteName, fnSuite) {
