@@ -141,16 +141,16 @@ function request(options, content, debug): Promise<string> {
   });
 }
 
-export function createFirebaseDbRefForUser(username) {
+export function createFirebaseDbRefForUser(username, appName) {
   var uid = uuid.v4();
   var fbClient ;
   if (username === 'anon') {
     fbClient = firebase.initializeApp( {
-      databaseURL: 'https://' + this.appName + '.firebaseio.com/'
+      databaseURL: 'https://' + appName + '.firebaseio.com/'
     }, uid);
   } else {
     fbClient = firebase.initializeApp( {
-        databaseURL: 'https://' + this.appName + '.firebaseio.com/',
+        databaseURL: 'https://' + appName + '.firebaseio.com/',
         serviceAccount: "./serviceAccountCredentials.json",
         databaseAuthVariableOverride: {
           uid: uid

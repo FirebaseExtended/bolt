@@ -157,9 +157,9 @@ util.methods(RulesSuite, {
     if (!(username in this.users)) {
         var clientInfo;
         if (username === 'admin') {
-            clientInfo = new rest.Client(appSecret.appName, appSecret.secret);
+          clientInfo = new rest.Client(this.appSecret.appName, this.appSecret.secret);
         } else {
-          clientInfo = rest.createFirebaseDbRefForUser(username);
+          clientInfo = rest.createFirebaseDbRefForUser(username, this.appSecret.appName);
         }
         this.users[username] = clientInfo;
     }
@@ -184,7 +184,7 @@ function RulesTest(testName, suite, fnTest) {
 util.methods(RulesTest, {
   run: function() {
     this.debug(true);
-    // JT: This is not working properly below
+
     this.as('admin');
     this.at('/');
     this.write(null); // Clear out any existing data
@@ -192,7 +192,7 @@ util.methods(RulesTest, {
     this.at(undefined);
     this.as('anon');
     this.fnTest(this);
-    this.debug(false);
+//    this.debug(false);
 
     return this.executeQueue()
       .then(() => {
@@ -225,7 +225,6 @@ util.methods(RulesTest, {
 
     function next(prev, step) {
       return prev.then(function() {
-        console.log(step.label);
         self.log(step.label);
         return step.fn();
       });
@@ -248,7 +247,6 @@ util.methods(RulesTest, {
 
   as: function(username) {
     var client = this.suite.ensureUser(username);
-    console.log('##### Ensure User:' + username);
     this.queue('as', arguments, () => {
       this.client = client;
       this.username = username;
@@ -268,7 +266,6 @@ util.methods(RulesTest, {
     this.queue('write', arguments, () => {
       var tmp;
       if (this.username === 'admin') {
-        console.log(this);
         tmp = this.client.put(this.path, obj)
         .then(() => {
           this.status = true;
