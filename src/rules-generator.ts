@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import util = require('./util');
-import ast = require('./ast');
-import logger = require('./logger');
-import parseUtil = require('./parse-util');
-let parseExpression = parseUtil.parseExpression;
+import * as util from './util';
+import * as ast from './ast';
+import {warn, error} from './logger';
+let parser = require('./rules-parser');
+import {parseExpression} from './parse-util';
 
 var errors = {
   badIndex: "The index function must return a String or an array of Strings.",
@@ -82,6 +82,16 @@ var writeAliases = <{ [method: string]: ast.Exp }> {
   'update': parseExpression('prior(this) != null && this != null'),
   'delete': parseExpression('prior(this) != null && this == null')
 };
+
+// Usage:
+//   json = bolt.generate(bolt-text)
+export function generate(symbols: string | ast.Symbols): Validator {
+  if (typeof symbols === 'string') {
+    symbols = parser.parse(symbols);
+  }
+  var gen = new Generator(<ast.Symbols> symbols);
+  return gen.generateRules();
+}
 
 // Symbols contains:
 //   functions: {}
@@ -159,8 +169,8 @@ export class Generator {
     }
     for (var method in methods) {
       if (!util.arrayIncludes(allowed, method)) {
-        logger.warn(m + util.quoteString(method) +
-                    " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
+        warn(m + util.quoteString(method) +
+             " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
       }
     }
     if ('write' in methods) {
@@ -868,7 +878,7 @@ export class Generator {
   }
 
   fatal(s: string) {
-    logger.error(s);
+    error(s);
     this.errorCount += 1;
   }
 };

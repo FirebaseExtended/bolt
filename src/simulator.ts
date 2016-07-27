@@ -15,47 +15,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-/// <reference path="typings/chai.d.ts" />
-/// <reference path="typings/mocha.d.ts" />
-/// <reference path="typings/es6-promise.d.ts" />
+import {assert} from 'chai';
+import * as rest from './firebase-rest';
+import * as util from './util';
+import * as fileIO from './file-io';
+import * as bolt from './bolt';
 
-import Promise = require('promise');
-import chai = require('chai');
-var assert = chai.assert;
-import rest = require('./firebase-rest');
-import util = require('./util');
-import fileIO = require('./file-io');
-
-// Browserify bug: https://github.com/substack/node-browserify/issues/1150
-interface Window { bolt: any; }
-declare var window: Window;
-var bolt = (typeof window !== 'undefined' && window.bolt) || require('./bolt');
+// Promise
+let generate = util.lift(bolt.generate);
+let readFile = util.liftArgs(fileIO.readFile);
 
 var MAX_TEST_MS = 60000;
 
-export function rulesSuite(suiteName, fnSuite) {
+export type SuiteFunction = (fn: TestFunction) => void;
+export type TestFunction = {
+  (rules: RulesTest): void,
+  rules: (path: string) => void,
+  database: (appName: string, secret: string) => void,
+  uid: (username: string) => string
+};
+
+export function rulesSuite(suiteName: string, fnSuite: SuiteFunction) {
   new RulesSuite(suiteName, fnSuite).run();
 }
 
-function RulesSuite(suiteName, fnSuite) {
-  this.suiteName = suiteName;
-  this.fnSuite = fnSuite;
-  this.users = {};
-  this.tests = [];
-  this.debug = false;
-}
+class RulesSuite {
+  public  debug = false;
+  private users = <{[name: string]: rest.Client}>{};
+  private tests = <RulesTest[]>[];
+  private rulesPath: string;
+  private rulesPathResolve: (path: string) => void;
+  private databaseReady: () => void;
+  private ready: Promise<any>;
+  private adminClient: rest.Client;
+  private appName: string;
+  private appSecret: string;
 
-util.methods(RulesSuite, {
-  setDebug: function(debug) {
+  constructor(public suiteName: string, private fnSuite: SuiteFunction) {}
+
+  setDebug(debug) {
     if (debug === undefined) {
       debug = true;
     }
     this.debug = debug;
     return this;
-  },
+  }
 
-  run: function() {
+  run() {
     var self = this;
 
     // Run Mocha Test Suite - serialize with any other mocha test suites.
@@ -70,8 +76,7 @@ util.methods(RulesSuite, {
           self.databaseReady = resolve;
         });
 
-        var rulesJSON = bolt.generate(util.getProp(fileIO.readFile(rulesPath),
-                                                   'content'));
+        var rulesJSON = generate(util.getProp(readFile(rulesPath), 'content'));
 
         self.ready = Promise.all([rulesJSON, database])
           .then(self.onRulesReady.bind(self));
@@ -90,7 +95,7 @@ util.methods(RulesSuite, {
         return self.runTests();
       });
     });
-  },
+  }
 
   // Interface for test functions:
   //   test.rules(rulesPath)
@@ -98,23 +103,23 @@ util.methods(RulesSuite, {
   //   test.uid(username)
   //   test(testName, testFunction)
   //   test.TIMESTAMP
-  getInterface: function() {
+  getInterface() {
     var test = this.test.bind(this);
     test.rules = this.rules.bind(this);
     test.database = this.database.bind(this);
     test.uid = this.uid.bind(this);
     test.TIMESTAMP = rest.TIMESTAMP;
     return test;
-  },
+  }
 
   // Called when rules are generated and test database is known.
   // Arg: [rulesJSON, true]
-  onRulesReady: function(prereq) {
+  onRulesReady(prereq) {
     this.rules = prereq[0];
     return this.adminClient.put(rest.RULES_LOCATION, this.rules);
-  },
+  }
 
-  runTests: function() {
+  runTests() {
     var p = Promise.resolve(true);
 
     function next(prev, test) {
@@ -128,21 +133,21 @@ util.methods(RulesSuite, {
     }
 
     return p;
-  },
+  }
 
-  test: function(testName, fnTest) {
+  test(testName, fnTest): void {
     this.tests.push(new RulesTest(testName, this, fnTest));
-  },
+  }
 
-  rules: function(rulesPath) {
+  rules(rulesPath: string): void {
     if (this.rulesPath) {
       throw new Error("Only expect a single call to the test.rules function.");
     }
     this.rulesPath = rulesPath;
     this.rulesPathResolve(util.ensureExtension(rulesPath, bolt.FILE_EXTENSION));
-  },
+  }
 
-  database: function(appName, appSecret) {
+  database(appName, appSecret) {
     if (this.adminClient) {
       throw new Error("Only expect a single call to the test.database function.");
     }
@@ -150,13 +155,13 @@ util.methods(RulesSuite, {
     this.appSecret = appSecret;
     this.adminClient = this.ensureUser('admin');
     this.databaseReady();
-  },
+  }
 
-  uid: function(username) {
+  uid(username: string): string {
     return this.ensureUser(username).uid;
-  },
+  }
 
-  ensureUser: function(username) {
+  ensureUser(username): rest.Client {
     if (!(username in this.users)) {
       if (username === 'anon') {
         this.users[username] = new rest.Client(this.appName);
@@ -171,24 +176,21 @@ util.methods(RulesSuite, {
 
     return this.users[username];
   }
-});
-
-function RulesTest(testName, suite, fnTest) {
-  this.testName = testName;
-  this.suite = suite;
-  this.fnTest = fnTest;
-  this.status = undefined;
-  this.lastError = undefined;
-  this.steps = [];
-  this.failed = false;
-
-  // Current user and path (for read/write).
-  this.path = undefined;
-  this.auth = undefined;
 }
 
-util.methods(RulesTest, {
-  run: function() {
+class RulesTest {
+  private lastError: string;
+  private steps = <any[]>[];
+  private failed = false;
+  private path: string;
+  private client: rest.Client;
+  private status: boolean;
+
+  constructor(private testName: string,
+              private suite: RulesSuite,
+              private fnTest: TestFunction) {}
+
+  run() {
     this.debug(false);
     this.as('admin');
     this.at('/');
@@ -210,11 +212,11 @@ util.methods(RulesTest, {
         this.log("Failed: " + error);
         throw error;
       });
-  },
+  }
 
   // Queue a function to be called in sequence after previous step
   // in test is (successfully) completed.
-  queue: function(op, args, fn) {
+  queue(op, args, fn) {
     if (this.failed) {
       return;
     }
@@ -223,9 +225,9 @@ util.methods(RulesTest, {
     });
     var label = op + '(' + args.join(', ') + ')';
     this.steps.push({label: label, fn: fn});
-  },
+  }
 
-  executeQueue: function() {
+  executeQueue() {
     var self = this;
 
     this.log("Executing (" + this.steps.length + " steps)");
@@ -243,32 +245,32 @@ util.methods(RulesTest, {
     }
 
     return p;
-  },
+  }
 
-  debug: function(debug) {
+  debug(debug?: boolean): RulesTest {
     this.suite.setDebug(debug);
     this.queue('debug', arguments, () => {
       this.suite.setDebug(debug);
     });
     return this;
-  },
+  }
 
-  as: function(username) {
+  as(username: string): RulesTest {
     var client = this.suite.ensureUser(username);
     this.queue('as', arguments, () => {
       this.client = client;
     });
     return this;
-  },
+  }
 
-  at: function(opPath) {
+  at(opPath: string): RulesTest {
     this.queue('at', arguments, () => {
       this.path = opPath;
     });
     return this;
-  },
+  }
 
-  write: function(obj) {
+  write(obj: any): RulesTest {
     this.queue('write', arguments, () => {
       return this.client.put(this.path, obj)
         .then(() => {
@@ -280,9 +282,9 @@ util.methods(RulesTest, {
         });
     });
     return this;
-  },
+  }
 
-  push: function(obj) {
+  push(obj: any): RulesTest {
     this.queue('write', arguments, () => {
       let path = this.path;
       if (path.slice(-1)[0] !== '/') {
@@ -299,9 +301,9 @@ util.methods(RulesTest, {
         });
     });
     return this;
-  },
+  }
 
-  read: function() {
+  read(): RulesTest {
     this.queue('read', arguments, () => {
       return this.client.get(this.path)
         .then(() => {
@@ -313,9 +315,9 @@ util.methods(RulesTest, {
         });
     });
     return this;
-  },
+  }
 
-  succeeds: function(message) {
+  succeeds(message: string): RulesTest {
     this.queue('succeeds', arguments, () => {
       assert(this.status === true,
              this.messageFormat(message + " (should have succeed)\n" + this.lastError));
@@ -323,9 +325,9 @@ util.methods(RulesTest, {
       this.status = undefined;
     });
     return this;
-  },
+  }
 
-  fails: function(message) {
+  fails(message: string): RulesTest {
     this.queue('fails', arguments, () => {
       assert(this.status === false,
              this.messageFormat(message + " (should have failed)"));
@@ -333,19 +335,19 @@ util.methods(RulesTest, {
       this.status = undefined;
     });
     return this;
-  },
+  }
 
-  good: function(message) {
+  private good(message: string): void {
     this.log(message + " (Correct)");
-  },
+  }
 
-  log: function(message) {
+  private log(message: string): void {
     if (this.suite.debug) {
       console.log(this.messageFormat(message));
     }
-  },
+  }
 
-  messageFormat: function(message) {
+  messageFormat(message: string): string {
     return this.suite.suiteName + "." + this.testName + " " + message;
   }
-});
+}
