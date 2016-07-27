@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 let parser = require('./rules-parser');
-import generator = require('./rules-generator');
+import * as generator from './rules-generator';
 import * as astImport from './ast';
-export let ast = astImport;
 
 export let FILE_EXTENSION = 'bolt';
-export let parse = parser.parse;
 
+export let ast = astImport;
+export let parse = parser.parse;
 export let Generator = generator.Generator;
 export let decodeExpression = ast.decodeExpression;
-
-// Usage:
-//   json = bolt.generate(bolt-text)
-export function generate(symbols: string | astImport.Symbols): generator.Validator {
-  if (typeof symbols === 'string') {
-    symbols = parser.parse(symbols);
-  }
-  var gen = new generator.Generator(<astImport.Symbols> symbols);
-  return gen.generateRules();
-}
+export let generate = generator.generate;

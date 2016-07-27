@@ -1,5 +1,10 @@
 # Known issues and tasks.
 
+- Offline storage simulator (fake)
+  - Enable online an offline tests for rules simulator
+  - Make offline rest client fake
+- Remove use of util.methods (use TS class)
+
 # Language changes
 
 - Generate (Java) language stubs based on schema (cf bolt_compiler experiment).
@@ -13,6 +18,5 @@
 
 # Repo structure and OSS
 
-- Cleanup browserify rules - ugly (prefer glob-ing test files and running as a merged stream).
 - Setup code coverage (istanbul).
 - Remove browser-test and web-server bash scripts (replace in gulp).

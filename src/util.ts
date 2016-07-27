@@ -71,28 +71,26 @@ export function isThenable(obj: any): boolean {
 // Converts a synchronous function to one allowing Promises
 // as arguments and returning a Promise value.
 //
-//   fn(a, b, c, ...):v => fn(aP, bP, cP, ...): Pv
-//
-// If none of the arguments are Thenables, then the wrapped
-// function returns a synchronous value (not wrapped in a Promise).
-export function maybePromise<T>(fn: (...args: any[]) => T)
-: (...args: any[]) => T | Promise<T> {
-  return function(...args: any[]): T | Promise<T> {
-    var self = this;
-    if (!args.some(isThenable)) {
-      return fn.apply(self, args);
-    }
-
+//   fn(U, V, ...): T => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
+export function lift<T>(fn: (...args: any[]) => T)
+: (...args: any[]) => Promise<T> {
+  return function(...args: any[]): Promise<T> {
     return Promise.all(args)
-      .then(function(values) {
+      .then((values: any[]) => {
         return fn.apply(self, values);
       });
   };
 }
 
-export var getProp = maybePromise(function(obj, prop) {
-  return obj[prop];
-});
+// Converts an asynchronous function to one allowing Promises
+// as arguments.
+//
+//   fn(U, V, ...): Promise<T> => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
+export let liftArgs: <T>
+  (fn: (...args: any[]) => Promise<T>) =>
+  ((...args: any[]) => Promise<T>) = lift;
+
+export let getProp = lift((obj, prop) => obj[prop]);
 
 export function ensureExtension(fileName: string, extension: string): string {
   if (fileName.indexOf('.') === -1) {

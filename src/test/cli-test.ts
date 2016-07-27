@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import chai = require('chai');
-var assert = chai.assert;
-import helper = require('./test-helper');
+import {assert} from 'chai';
+import * as helper from './test-helper';
 import proc = require('child_process');
 import fs = require('fs');
-import Promise = require('promise');
 
 var TMP_DIR = 'tmp/';
 

@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-
 var parser = require('./rules-parser');
 import ast = require('./ast');
 

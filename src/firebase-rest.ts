@@ -38,7 +38,7 @@ export class Client {
 
   constructor(private appName: string,
               private authToken?: string,
-              private uid?: string) {}
+              public uid?: string) {}
 
   setDebug(debug?: boolean) {
     if (debug === undefined) {

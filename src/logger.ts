@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-
 let lastError: string;
 let lastMessage: string;
 let errorCount: number;

@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="../typings/mocha.d.ts" />
-/// <reference path="../typings/chai.d.ts" />
-
 import bolt = require('../bolt');
 var parse = bolt.parse;
 import generator = require('../rules-generator');

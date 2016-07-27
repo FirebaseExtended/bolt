@@ -13,22 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs = require('fs');
-import util = require('./util');
-
-export var readFile = <(path: string) => Promise<ReadFileResult>> util.maybePromise(readFileSync);
-export var readJSONFile = <(path: string, fnFallback? : () => Promise<ReadFileResult>) => Promise<ReadFileResult>>
-  util.maybePromise(readJSONFileSync);
-export var writeFile = util.maybePromise(writeFileSync);
-export var writeJSONFile = util.maybePromise(writeJSONFileSync);
+import * as fs from 'fs';
+import * as util from './util';
 
 export interface ReadFileResult {
   content: string;
   url: string;
 }
 
-function readJSONFileSync(path: string, fnFallback?: () => any): Promise<any> {
-  return readFileSync(path)
+export function readJSONFile(path: string, fnFallback?: () => any): Promise<any> {
+  return readFile(path)
     .then(function(response: ReadFileResult) {
       return JSON.parse(response.content);
     })
@@ -40,15 +34,15 @@ function readJSONFileSync(path: string, fnFallback?: () => any): Promise<any> {
     });
 }
 
-function writeJSONFileSync(path: string, data: any): Promise<ReadFileResult> {
-  return writeFileSync(path, util.prettyJSON(data));
+export function writeJSONFile(path: string, data: any): Promise<ReadFileResult> {
+  return writeFile(path, util.prettyJSON(data));
 }
 
-function readFileSync(path: string): Promise<ReadFileResult> {
+export function readFile(path: string): Promise<ReadFileResult> {
   return request('GET', path) || readFS(path);
 }
 
-function writeFileSync(path: string, data: any): Promise<ReadFileResult> {
+export function writeFile(path: string, data: any): Promise<ReadFileResult> {
   return request('PUT', path, data) || writeFS(path, data);
 }
 
@@ -58,7 +52,7 @@ function request(method: string, url: string, data?: any): Promise<ReadFileResul
   }
 
   return new Promise(function(resolve, reject) {
-    var req = new XMLHttpRequest();
+    let req = new XMLHttpRequest();
 
     req.open(method, '/' + url);
 
