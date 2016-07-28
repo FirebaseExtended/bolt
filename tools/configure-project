@@ -8,7 +8,7 @@ echo "Installing dependencies ..."
 npm install
 
 echo -e "\nSelect a Firebase application name where tests will be executed."
-echo "WARNING: The ALL DATA IN THIS DATABASE WILL BE REMOVED BY THESE TESTS."
+echo "WARNING: ALL DATA IN THIS DATABASE WILL BE REMOVED BY RUNNING TESTS."
 echo "         Please create an application specifically for testing."
 echo "         DO NOT use the name of your production database!!!"
 
