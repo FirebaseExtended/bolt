@@ -4,6 +4,13 @@
 set -e
 
 cd $PROJ_DIR
+
+if [[ ! -d "node_modules" || ! -f "auth-secrets.js" ]]; then
+    echo "Project not yet configured to run tests."
+    echo "Run: configure-project command."
+    exit 1
+fi
+
 if gulp clean lint build; then
     mocha lib/test --ui tdd --require "source-map-support/register" "$@"
 fi
