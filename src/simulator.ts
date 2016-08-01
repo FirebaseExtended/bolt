@@ -28,11 +28,16 @@ let readFile = util.liftArgs(fileIO.readFile);
 var MAX_TEST_MS = 60000;
 
 export type SuiteFunction = (fn: TestFunction) => void;
-export type TestFunction = {
-  (rules: RulesTest): void,
-  rules: (path: string) => void,
-  database: (appName: string, secret: string) => void,
-  uid: (username: string) => string
+
+// Interface for 'test' function passed back to rulesSuite callback.
+// test is a function as well as a namespace for some static methods
+// and constants.
+export interface TestFunction {
+  (name: string, fnTest: (rules: RulesTest) => void): void;
+  rules: (path: string) => void;
+  database: (appName: string, secret: string) => void;
+  uid: (username: string) => string;
+  TIMESTAMP: Object;
 };
 
 export function rulesSuite(suiteName: string, fnSuite: SuiteFunction) {
@@ -51,7 +56,8 @@ class RulesSuite {
   private appName: string;
   private appSecret: string;
 
-  constructor(public suiteName: string, private fnSuite: SuiteFunction) {}
+  constructor(public suiteName: string,
+              private fnSuite: SuiteFunction) {}
 
   setDebug(debug) {
     if (debug === undefined) {
@@ -97,12 +103,6 @@ class RulesSuite {
     });
   }
 
-  // Interface for test functions:
-  //   test.rules(rulesPath)
-  //   test.database(appName, appSecret)
-  //   test.uid(username)
-  //   test(testName, testFunction)
-  //   test.TIMESTAMP
   getInterface() {
     var test = this.test.bind(this);
     test.rules = this.rules.bind(this);
@@ -135,7 +135,7 @@ class RulesSuite {
     return p;
   }
 
-  test(testName, fnTest): void {
+  test(testName: string, fnTest: (rules: RulesTest) => void): void {
     this.tests.push(new RulesTest(testName, this, fnTest));
   }
 
@@ -188,7 +188,7 @@ class RulesTest {
 
   constructor(private testName: string,
               private suite: RulesSuite,
-              private fnTest: TestFunction) {}
+              private fnTest: (rules: RulesTest) => void) {}
 
   run() {
     this.debug(false);

@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import bolt = require('../bolt');
-var rulesSuite = bolt.rulesSuite;
+import {rulesSuite} from '../simulator';
 var secrets = require('../../auth-secrets');
 
 rulesSuite("RegExp", function(test) {

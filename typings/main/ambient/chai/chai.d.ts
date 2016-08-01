@@ -380,7 +380,9 @@ declare module Chai {
     }
 
     export interface Config {
-        includeStack: boolean;
+      includeStack: boolean;
+      // Patched typings to include missing property.
+      truncateThreshold: number;
     }
 
     export class AssertionError {
