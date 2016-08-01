@@ -661,6 +661,13 @@ export class Generator {
       return params[exp2.name] || self.globals[exp2.name] || exp2;
     }
 
+    // Convert ref[prop] => ref.child(prop)
+    function snapshotChild(ref: ast.ExpReference): ast.Exp {
+      return ast.cast(ast.call(ast.reference(ref.base, ast.string('child')),
+                               [ref.accessor]),
+                      'Snapshot');
+    }
+
     switch (exp.type) {
     case 'op':
       let expOp = <ast.ExpOp> ast.copyExp(exp);
@@ -686,13 +693,6 @@ export class Generator {
       return lookupVar(<ast.ExpVariable> exp);
 
     case 'ref':
-      // Convert ref[prop] => ref.child(prop)
-      function snapshotChild(ref: ast.ExpReference): ast.Exp {
-        return ast.cast(ast.call(ast.reference(ref.base, ast.string('child')),
-                                 [ref.accessor]),
-                        'Snapshot');
-      }
-
       let expRef = <ast.ExpReference> ast.copyExp(exp);
       expRef.base = subExpression(expRef.base);
 
