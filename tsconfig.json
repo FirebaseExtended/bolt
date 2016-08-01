@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "lib",
+    "rootDir": "src",
     "module": "commonjs",
     "noImplicitAny": false,
     "preserveConstEnums": true,
