@@ -77,7 +77,7 @@ export function lift<T>(fn: (...args: any[]) => T)
   return function(...args: any[]): Promise<T> {
     return Promise.all(args)
       .then((values: any[]) => {
-        return fn.apply(self, values);
+        return fn.apply(undefined, values);
       });
   };
 }
