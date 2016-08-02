@@ -21,7 +21,6 @@ import * as util from './util';
 import * as fileIO from './file-io';
 import * as bolt from './bolt';
 
-// Promise
 let generate = util.lift(bolt.generate);
 let readFile = util.liftArgs(fileIO.readFile);
 
