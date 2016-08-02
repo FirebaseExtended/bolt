@@ -143,7 +143,7 @@ suite("Rules Generator Tests", function() {
       var symbols = parse(data.f + " path /x { write() { return " + data.x + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      var json = gen.generateRules();
+      var json = <any> gen.generateRules();
       assert.equal(json['rules']['x']['.write'], expect);
     });
   });
@@ -182,7 +182,7 @@ suite("Rules Generator Tests", function() {
       var symbols = parse("path /x { write() { return " + data + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      var json = gen.generateRules();
+      var json = <any> gen.generateRules();
       assert.equal(json['rules']['x']['.write'], expect);
     });
   });
@@ -431,7 +431,7 @@ suite("Rules Generator Tests", function() {
       logger.silent();
       let symbols = parse(data);
       let gen = new bolt.Generator(symbols);
-      let lastError;
+      let lastError: string;
 
       try {
         gen.generateRules();
