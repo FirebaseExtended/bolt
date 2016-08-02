@@ -109,15 +109,15 @@ class RulesSuite {
   }
 
   // Called when rules are generated and test database is known.
-  onRulesReady(prereq: Object[]) {
+  onRulesReady(prereq: [Object, any]) {
     let rulesJSON = prereq[0];
     return this.adminClient.put(rest.RULES_LOCATION, rulesJSON);
   }
 
   runTests() {
-    var p = Promise.resolve(true);
+    var p = Promise.resolve();
 
-    function next(prev, test) {
+    function next(prev: Promise<any>, test: RulesTest): Promise<any> {
       return prev.then(function() {
         return test.run();
       });
@@ -142,7 +142,7 @@ class RulesSuite {
     this.rulesPathResolve(util.ensureExtension(rulesPath, bolt.FILE_EXTENSION));
   }
 
-  database(appName, appSecret) {
+  database(appName: string, appSecret: string) {
     if (this.adminClient) {
       throw new Error("Only expect a single call to the test.database function.");
     }
@@ -156,15 +156,15 @@ class RulesSuite {
     return this.ensureUser(username).uid;
   }
 
-  ensureUser(username): rest.Client {
+  ensureUser(username: string): rest.Client {
     if (!(username in this.users)) {
       if (username === 'anon') {
         this.users[username] = new rest.Client(this.appName);
       } else {
-        var tokenInfo;
-        tokenInfo = rest.generateUidAuthToken(this.appSecret,
-                                              { debug: true,
-                                                admin: username === 'admin' });
+        let tokenInfo = rest.generateUidAuthToken(
+          this.appSecret,
+          { debug: true,
+            admin: username === 'admin' });
         this.users[username] = new rest.Client(this.appName, tokenInfo.token, tokenInfo.uid);
       }
     }
@@ -173,9 +173,14 @@ class RulesSuite {
   }
 }
 
+interface Step {
+  label: string;
+  fn: () => Promise<any>;
+}
+
 class RulesTest {
   private lastError: string;
-  private steps = <any[]>[];
+  private steps: Step[] = [];
   private failed = false;
   private path: string;
   private client: rest.Client;
@@ -211,14 +216,14 @@ class RulesTest {
 
   // Queue a function to be called in sequence after previous step
   // in test is (successfully) completed.
-  queue(op, args, fn) {
+  queue(op: string, args: ArrayLike<any>, fn: () => Promise<any>) {
     if (this.failed) {
       return;
     }
-    args = util.copyArray(args).map(function(x) {
+    let argsT = util.copyArray(args).map(function(x) {
       return util.prettyJSON(x);
     });
-    var label = op + '(' + args.join(', ') + ')';
+    var label = op + '(' + argsT.join(', ') + ')';
     this.steps.push({label: label, fn: fn});
   }
 
@@ -228,7 +233,7 @@ class RulesTest {
     this.log("Executing (" + this.steps.length + " steps)");
     var p = Promise.resolve(true);
 
-    function next(prev, step) {
+    function next(prev: Promise<any>, step: Step): Promise<any> {
       return prev.then(function() {
         self.log(step.label);
         return step.fn();
@@ -246,6 +251,7 @@ class RulesTest {
     this.suite.setDebug(debug);
     this.queue('debug', arguments, () => {
       this.suite.setDebug(debug);
+      return Promise.resolve();
     });
     return this;
   }
@@ -254,6 +260,7 @@ class RulesTest {
     var client = this.suite.ensureUser(username);
     this.queue('as', arguments, () => {
       this.client = client;
+      return Promise.resolve();
     });
     return this;
   }
@@ -261,6 +268,7 @@ class RulesTest {
   at(opPath: string): RulesTest {
     this.queue('at', arguments, () => {
       this.path = opPath;
+      return Promise.resolve();
     });
     return this;
   }
@@ -318,6 +326,7 @@ class RulesTest {
              this.messageFormat(message + " (should have succeed)\n" + this.lastError));
       this.good(message);
       this.status = undefined;
+      return Promise.resolve();
     });
     return this;
   }
@@ -328,6 +337,7 @@ class RulesTest {
              this.messageFormat(message + " (should have failed)"));
       this.good(message);
       this.status = undefined;
+      return Promise.resolve();
     });
     return this;
   }

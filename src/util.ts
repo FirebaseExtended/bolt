@@ -34,7 +34,7 @@ export function extend(dest: Object, ...srcs: Object[]): Object {
   return dest;
 }
 
-export function copyArray(arg: any[]): any[] {
+export function copyArray(arg: ArrayLike<any>): any[] {
   return Array.prototype.slice.call(arg);
 }
 
