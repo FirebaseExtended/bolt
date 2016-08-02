@@ -1,7 +1,7 @@
 # Known issues and tasks.
 
 - Offline storage simulator (fake)
-  - Enable online an offline tests for rules simulator
+  - Enable online and offline tests for rules simulator
   - Make offline rest client fake
 
 # Language changes
