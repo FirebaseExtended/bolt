@@ -35,7 +35,11 @@ def main():
   except IOError:
     print("{0} does not exist.".format(args.file))
     app_name = raw_input("Firebase app: ")
-    webbrowser.open('https://{app}.{host}?page=Admin'.format(app=app_name, host=HOST))
+    secrets_url = 'https://console.firebase.google.com/project/{app}/settings/database'.format(app=app_name)
+    print("Copy app secret from %s ..." % secrets_url)
+    webbrowser.open(secrets_url)
+    print("(if using Firebase 2.0 database, find app secret at: https://{app}.{host}?page=Admin)"\
+          .format(app=app_name, host=HOST))
     secret = raw_input("Firebase Secret: ")
     data = {
       'APP': app_name,
