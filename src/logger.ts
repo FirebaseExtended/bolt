@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let lastError: string;
-let lastMessage: string;
+let lastError: string | undefined;
+let lastMessage: string | undefined;
 let errorCount: number;
 let silenceOutput: boolean;
 
@@ -68,7 +68,7 @@ export function warn(s: string) {
   }
 }
 
-export function getLastMessage(): string {
+export function getLastMessage(): string | undefined {
   return lastMessage;
 }
 
@@ -87,7 +87,7 @@ export function hasErrors(): boolean {
 
 export function errorSummary(): string {
   if (errorCount === 1) {
-    return lastError;
+    return <string> lastError;
   }
 
   if (errorCount !== 0) {

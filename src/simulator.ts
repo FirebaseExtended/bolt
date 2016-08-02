@@ -152,7 +152,7 @@ class RulesSuite {
     this.databaseReady();
   }
 
-  uid(username: string): string {
+  uid(username: string): string | undefined {
     return this.ensureUser(username).uid;
   }
 
@@ -182,9 +182,9 @@ export class RulesTest {
   private lastError: string;
   private steps: Step[] = [];
   private failed = false;
-  private path: string;
+  private path: string | undefined;
   private client: rest.Client;
-  private status: boolean;
+  private status: boolean | undefined;
 
   constructor(private testName: string,
               private suite: RulesSuite,
@@ -265,7 +265,7 @@ export class RulesTest {
     return this;
   }
 
-  at(opPath: string): RulesTest {
+  at(opPath: string | undefined): RulesTest {
     this.queue('at', arguments, () => {
       this.path = opPath;
       return Promise.resolve();
@@ -275,6 +275,9 @@ export class RulesTest {
 
   write(obj: any): RulesTest {
     this.queue('write', arguments, () => {
+      if (this.path === undefined) {
+        return Promise.reject(new Error("Use at() function to set path to write."));
+      }
       return this.client.put(this.path, obj)
         .then(() => {
           this.status = true;
@@ -289,6 +292,9 @@ export class RulesTest {
 
   push(obj: any): RulesTest {
     this.queue('write', arguments, () => {
+      if (this.path === undefined) {
+        return Promise.reject(new Error("Use at() function to set path to push."));
+      }
       let path = this.path;
       if (path.slice(-1)[0] !== '/') {
         path += '/';
@@ -308,6 +314,9 @@ export class RulesTest {
 
   read(): RulesTest {
     this.queue('read', arguments, () => {
+      if (this.path === undefined) {
+        return Promise.reject(new Error("Use at() function to set path to read."));
+      }
       return this.client.get(this.path)
         .then(() => {
           this.status = true;

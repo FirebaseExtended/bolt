@@ -314,12 +314,14 @@ export class Generator {
   createValidatorFromGeneric(schemaName: string, params: ast.ExpType[]): Validator {
     var schema = this.symbols.schema[schemaName];
 
-    if (!schema || !this.isGeneric(schema)) {
+    if (schema === undefined || !ast.Schema.isGeneric(schema)) {
       throw new Error(errors.noSuchType + schemaName + " (generic)");
     }
 
-    if (params.length !== schema.params.length) {
-      throw new Error(errors.invalidGeneric + " expected <" + schema.params.join(', ') + ">");
+    let schemaParams = <string[]> schema.params;
+
+    if (params.length !== schemaParams.length) {
+      throw new Error(errors.invalidGeneric + " expected <" + schemaParams.join(', ') + ">");
     }
 
     // Call custom validator, if given.
@@ -329,7 +331,7 @@ export class Generator {
 
     let bindings = <ast.TypeParams> {};
     for (let i = 0; i < params.length; i++) {
-      bindings[schema.params[i]] = params[i];
+      bindings[schemaParams[i]] = params[i];
     }
 
     // Expand generics and generate validator from schema.
@@ -408,15 +410,11 @@ export class Generator {
       throw new Error(errors.noSuchType + schemaName);
     }
 
-    if (this.isGeneric(schema)) {
+    if (ast.Schema.isGeneric(schema)) {
       throw new Error(errors.noSuchType + schemaName + " used as non-generic type.");
     }
 
     return this.createValidatorFromSchema(schema);
-  }
-
-  isGeneric(schema: ast.Schema) {
-    return schema.params.length > 0;
   }
 
   createValidatorFromSchema(schema: ast.Schema): Validator {
@@ -850,7 +848,7 @@ export class Generator {
     self?: ast.Exp,
     fn: ast.Method,
     methodName: string
-  } {
+  } | undefined {
     // Function call.
     if (ref.type === 'var') {
       let refVar = <ast.ExpVariable> ref;
@@ -918,7 +916,7 @@ export function mapValidator(v: Validator,
                              fn: (val: ValidatorValue,
                                   prop: string,
                                   scope: ast.Params,
-                                  path: ast.PathTemplate) => ValidatorValue,
+                                  path: ast.PathTemplate) => ValidatorValue | undefined,
                              scope?: ast.Params,
                              path?: ast.PathTemplate) {
   if (!scope) {
@@ -935,8 +933,10 @@ export function mapValidator(v: Validator,
       continue;
     }
     if (prop[0] === '.') {
-      v[prop] = fn(v[prop], prop, scope, path);
-      if (v[prop] === undefined) {
+      let value = fn(v[prop], prop, scope, path);
+      if (value !== undefined) {
+        v[prop] = value;
+      } else {
         delete v[prop];
       }
     } else if (!util.isType(v[prop], 'object')) {

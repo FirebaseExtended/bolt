@@ -79,7 +79,11 @@ gulp.task('tslint', function() {
 gulp.task('lint', ['eslint', 'tslint']);
 
 gulp.task('ts-compile', ['build-peg'], function() {
-  var tsProject = ts.createProject('tsconfig.json');
+  var tsProject = ts.createProject('tsconfig.json', {
+    // Use the repo-installed version of typescript instead of
+    // the version built into gulp-typescript.
+    typescript: require('typescript')
+  });
   return tsProject.src()
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
