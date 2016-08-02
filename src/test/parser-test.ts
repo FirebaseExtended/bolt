@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as chai from 'chai';
-let assert = chai.assert;
+import {assert} from 'chai';
 import * as fileIO from '../file-io';
 let readFile = fileIO.readFile;
 import * as logger from '../logger';

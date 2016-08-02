@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import chai = require('chai');
-var assert = chai.assert;
-import helper = require('./test-helper');
+import {assert} from 'chai';
+import * as helper from './test-helper';
 
-import bolt = require('../bolt');
-var parse = bolt.parse;
-import ast = require('../ast');
+import * as bolt from '../bolt';
+let parse = bolt.parse;
+import * as ast from '../ast';
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {

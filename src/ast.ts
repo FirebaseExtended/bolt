@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import * as util from './util';
+import * as logger from './logger';
+
 var errors = {
   typeMismatch: "Unexpected type: ",
   duplicatePathPart: "A path component name is duplicated: ",
 };
-
-import util = require('./util');
-import logger = require('./logger');
 
 export type Object = { [prop: string]: any };
 

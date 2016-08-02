@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import rest = require('../firebase-rest');
-var secrets = require('../../auth-secrets');
-import chai = require('chai');
-var assert = chai.assert;
+import * as rest from '../firebase-rest';
+let secrets = require('../../auth-secrets');
+import {assert} from 'chai';
 
-var TEST_LOCATION = '/rest-test';
+let TEST_LOCATION = '/rest-test';
 
 suite("Firebase REST Tests", function() {
   var client = new rest.Client(secrets.APP);

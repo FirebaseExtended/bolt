@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import chai = require('chai');
-var assert = chai.assert;
-import helper = require('./test-helper');
-
-var util = require('../util');
+import {assert} from 'chai';
+import * as helper from './test-helper';
+import * as util from '../util';
 
 suite("Util", function() {
   suite("pruneEmptyChildren", function() {

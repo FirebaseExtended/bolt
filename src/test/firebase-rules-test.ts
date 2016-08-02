@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 import {assert} from 'chai';
-import rest = require('../firebase-rest');
-var secrets = require('../../auth-secrets');
+import * as rest from '../firebase-rest';
+
+let secrets = require('../../auth-secrets');
 
 suite("Firebase Rules Tests", function() {
   var client = new rest.Client(secrets.APP, secrets.SECRET);

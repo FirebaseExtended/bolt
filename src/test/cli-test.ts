@@ -15,8 +15,8 @@
  */
 import {assert} from 'chai';
 import * as helper from './test-helper';
-import proc = require('child_process');
-import fs = require('fs');
+import * as proc from 'child_process';
+import * as fs from 'fs';
 
 var TMP_DIR = 'tmp/';
 

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var parser = require('./rules-parser');
-import ast = require('./ast');
+let parser = require('./rules-parser');
+import * as ast from './ast';
 
 export function parseExpression(expression: string): ast.Exp {
   var result = parser.parse('function f() {return ' + expression + ';}');

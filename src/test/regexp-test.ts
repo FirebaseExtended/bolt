@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import {rulesSuite} from '../simulator';
-var secrets = require('../../auth-secrets');
+let secrets = require('../../auth-secrets');
 
 rulesSuite("RegExp", function(test) {
   test.database(secrets.APP, secrets.SECRET);
