@@ -242,4 +242,15 @@ rulesSuite("RegExp", function(test) {
       .fails("No spaces allowed.")
     ;
   });
+
+  test("Domain", (rules) => {
+    rules
+      .at('/domain')
+      .write('google.com')
+      .succeeds("Simple domain.")
+
+      .write('google-com')
+      .fails("Not a domain.")
+    ;
+  });
 });

@@ -11,6 +11,7 @@ path /alpha is Alpha;
 path /year is Year;
 path /date is ISODate;
 path /slug is Slug;
+path /domain is Domain;
 
 type SocialSecurity extends String {
   validate() { this.test(/^\d\d\d-\d\d-\d\d\d\d$/) }
@@ -49,4 +50,8 @@ type ISODate extends String {
 
 type Slug extends String {
   validate() { this.test(/^([a-z0-9]+-)+[a-z0-9]+$/) }
+}
+
+type Domain extends String {
+  validate() { this.test(/^.+\.(com|org|edu)$/) }
 }
