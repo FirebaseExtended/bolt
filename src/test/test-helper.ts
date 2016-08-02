@@ -13,11 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
 
-import util = require('../util');
-import ast = require('../ast');
-import logger = require('../logger');
+import * as util from '../util';
+import * as ast from '../ast';
+import * as logger from '../logger';
+
+export interface ObjectSpec {
+  label?: string;
+  data: any;
+  expect?: any;
+};
+
+export type ArraySpec = [any, any];
+
+export type ValueSpec = any;
+
+export type Spec = ObjectSpec | ArraySpec | ValueSpec;
+
+export type TestFunction = (data: any, expect: any, spec: Spec) => void;
+
+export type FormatFunction = (data: any) => string;
 
 /*
  * Run data drive test with tests is one of these formats:
@@ -27,12 +42,10 @@ import logger = require('../logger');
  *
  * Calls testIt(data, expect) for each test.
  */
-export function dataDrivenTest(tests, testIt, formatter?) {
-  var data;
-  var expect;
+export function dataDrivenTest(tests: Spec[], testIt: TestFunction, formatter = format) {
+  var data: any;
+  var expect: any;
   var label: string;
-
-  formatter = formatter || format;
 
   for (var i = 0; i < tests.length; i++) {
     // Not Array or Object
@@ -74,7 +87,7 @@ export function dataDrivenTest(tests, testIt, formatter?) {
   }
 }
 
-function format(o) {
+function format(o: any): string {
   switch (util.typeOf(o)) {
   case 'regexp':
     return o.toString();
@@ -83,7 +96,7 @@ function format(o) {
   }
 }
 
-export function expFormat(x) {
+export function expFormat(x: any): string {
   if (util.isType(x, 'array')) {
     return '[' + x.map(expFormat).join(', ') + ']';
   }

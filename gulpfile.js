@@ -59,9 +59,6 @@ var TEST_SETS = [
     tests: BROWSER_TESTS }
 ];
 
-// Ignore ts-compile errors while watching (but not in normal builds).
-var watching = false;
-
 gulp.task('clean', function(cb) {
   del([LIB_DIR, DIST_DIR, TMP_DIR], cb);
 });
@@ -83,17 +80,11 @@ gulp.task('lint', ['eslint', 'tslint']);
 
 gulp.task('ts-compile', ['build-peg'], function() {
   var tsProject = ts.createProject('tsconfig.json');
-  return gulp.src('src/**/*.ts')
-    .pipe(sourcemaps.init())
-    .pipe(ts(tsProject))
-    .on('error', function(error) {
-      // The compile task should be a hard failure and not continue dependent tasks.
-      if (!watching) {
-        process.exit(1);
-      }
-    })
-    .pipe(sourcemaps.write())
-    .pipe(gulp.dest(LIB_DIR));
+  return tsProject.src()
+      .pipe(sourcemaps.init())
+      .pipe(ts(tsProject))
+      .pipe(sourcemaps.write())
+      .pipe(gulp.dest(LIB_DIR));
 });
 
 gulp.task('build', ['ts-compile', 'browserify-bolt']);
@@ -148,12 +139,10 @@ gulp.task('default', ['test']);
 // Don't depend on 'build' in case current state is failing to compile - need to edit file
 // to kick off first watch build.
 gulp.task('watch', function() {
-  watching = true;
   gulp.watch(['src/*', 'src/test/*'], ['default']);
 });
 
 gulp.task('watch-build', function() {
-  watching = true;
   gulp.watch(['src/*', 'src/test/*'], ['build', 'lint']);
 });
 

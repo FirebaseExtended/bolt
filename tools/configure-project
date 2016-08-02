@@ -13,3 +13,6 @@ echo "         Please create an application specifically for testing."
 echo "         DO NOT use the name of your production database!!!"
 
 ensure-secret.py auth-secrets.js
+
+# Show outdated modules
+npm outdated

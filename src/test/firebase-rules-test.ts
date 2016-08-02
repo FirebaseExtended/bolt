@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="../typings/mocha.d.ts" />
+import {assert} from 'chai';
+import * as rest from '../firebase-rest';
 
-import chai = require('chai');
-var assert = chai.assert;
-import rest = require('../firebase-rest');
-var secrets = require('../../auth-secrets');
+let secrets = require('../../auth-secrets');
 
 suite("Firebase Rules Tests", function() {
   var client = new rest.Client(secrets.APP, secrets.SECRET);
@@ -40,7 +37,7 @@ suite("Firebase Rules Tests", function() {
 
   test("Read Rules", function() {
     return client.get(rest.RULES_LOCATION)
-      .then(function(result) {
+      .then(function(result: any) {
         assert('rules' in result);
       });
   });

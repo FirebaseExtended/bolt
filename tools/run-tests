@@ -11,6 +11,7 @@ if [[ ! -d "node_modules" || ! -f "auth-secrets.js" ]]; then
     exit 1
 fi
 
-if gulp clean lint build; then
+gulp clean
+if gulp lint build; then
     mocha lib/test --ui tdd --require "source-map-support/register" "$@"
 fi

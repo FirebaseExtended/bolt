@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-
-import bolt = require('../bolt');
-var rulesSuite = bolt.rulesSuite;
+import {rulesSuite} from '../simulator';
 var secrets = require('../../auth-secrets');
 
 rulesSuite("Create, Update, and Delete", function(test) {

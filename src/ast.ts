@@ -15,15 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
+import * as util from './util';
+import * as logger from './logger';
 
 var errors = {
   typeMismatch: "Unexpected type: ",
   duplicatePathPart: "A path component name is duplicated: ",
 };
-
-import util = require('./util');
-import logger = require('./logger');
 
 export type Object = { [prop: string]: any };
 
@@ -221,11 +219,11 @@ export var or = opGen('||');
 export var ternary = opGen('?:', 3);
 export var value = opGen('value', 1);
 
-export function variable(name): ExpVariable {
+export function variable(name: string): ExpVariable {
   return { type: 'var', valueType: 'Any', name: name };
 }
 
-export function literal(name): ExpLiteral {
+export function literal(name: string): ExpLiteral {
   return { type: 'literal', valueType: 'Any', name: name };
 }
 
@@ -341,7 +339,7 @@ export function ensureValue(exp: Exp): Exp {
 }
 
 // ref.val()
-export function snapshotValue(exp): ExpCall {
+export function snapshotValue(exp: Exp): ExpCall {
   return call(reference(cast(exp, 'Any'), string('val')));
 }
 
@@ -387,8 +385,11 @@ export function regexp(pattern: string, modifiers = ""): RegExpValue {
   };
 }
 
-function cmpValues(v1: ExpValue, v2: ExpValue): boolean {
-  return v1.type === v2.type && v1.value === v2.value;
+function cmpValues(v1: Exp, v2: ExpValue): boolean {
+  if (v1.type !== v2.type) {
+    return false;
+  }
+  return (<ExpValue> v1).value === v2.value;
 }
 
 function isOp(opType: string, exp: Exp): boolean {
@@ -422,9 +423,9 @@ export var orArray = leftAssociateGen('||', boolean(false), boolean(true));
 //    (NOT (a && b) && (c && d))
 function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: ExpValue) {
   return function(a: Exp[]): Exp {
-    var i;
+    var i: number;
 
-    function reducer(result, current) {
+    function reducer(result: Exp, current: Exp) {
       if (result === undefined) {
         return current;
       }
@@ -432,12 +433,12 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
     }
 
     // First flatten all top-level op values to one flat array.
-    var flat = [];
+    var flat = <Exp[]>[];
     for (i = 0; i < a.length; i++) {
       flatten(opType, a[i], flat);
     }
 
-    var result = [];
+    var result = <Exp[]>[];
     for (i = 0; i < flat.length; i++) {
       // Remove identifyValues from array.
       if (cmpValues(flat[i], identityValue)) {
@@ -461,7 +462,7 @@ function leftAssociateGen(opType: string, identityValue: ExpValue, zeroValue: Ex
 
 // Flatten the top level tree of op into a single flat array of expressions.
 export function flatten(opType: string, exp: Exp, flat?: Exp[]): Exp[] {
-  var i;
+  var i: number;
 
   if (flat === undefined) {
     flat = [];
@@ -479,7 +480,7 @@ export function flatten(opType: string, exp: Exp, flat?: Exp[]): Exp[] {
   return flat;
 }
 
-export function op(opType, args): ExpOp {
+export function op(opType: string, args: Exp[]): ExpOp {
   return {
     type: 'op',     // This is (multi-argument) operator.
     valueType: 'Any',
@@ -519,21 +520,18 @@ export class Symbols {
     this.schema = {};
   }
 
-  register(type: string, name: string, object: any) {
-    if (!this[type]) {
-      throw new Error("Invalid registration type: " + type);
-    }
-
-    if (this[type][name]) {
-      logger.error("Duplicated " + type + " definition: " + name + ".");
+  register<T>(map: {[name: string]: T}, typeName: string, name: string, object: T): T {
+    if (map[name]) {
+      logger.error("Duplicated " + typeName + " definition: " + name + ".");
     } else {
-      this[type][name] = object;
+      map[name] = object;
     }
-    return this[type][name];
+    return map[name];
   }
 
   registerFunction(name: string, params: string[], body: Exp): Method {
-    return <Method> this.register('functions', name, method(params, body));
+    return this.register<Method>(this.functions, 'functions', name,
+                                 method(params, body));
   }
 
   registerPath(template: PathTemplate, isType: ExpType | void, methods: { [name: string]: Method; } = {}): Path {
@@ -551,7 +549,8 @@ export class Symbols {
                  derivedFrom?: ExpType,
                  properties = <TypeParams> {},
                  methods = <{ [name: string]: Method }> {},
-                 params = <string[]> []): Schema {
+                 params = <string[]> [])
+  : Schema {
     derivedFrom = derivedFrom || typeType(Object.keys(properties).length > 0 ? 'Object' : 'Any');
 
     var s: Schema = {
@@ -560,7 +559,7 @@ export class Symbols {
       methods: methods,
       params: params,
     };
-    return <Schema> this.register('schema', name, s);
+    return this.register<Schema>(this.schema, 'schema', name, s);
   }
 
   isDerivedFrom(type: ExpType, ancestor: string): boolean {
@@ -630,7 +629,7 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     outerPrecedence = 0;
   }
   var innerPrecedence = precedenceOf(exp);
-  var result;
+  var result: string;
   switch (exp.type) {
   case 'Boolean':
   case 'Number':

@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import chai = require('chai');
-var assert = chai.assert;
-import helper = require('./test-helper');
-
-var util = require('../util');
+import {assert} from 'chai';
+import * as helper from './test-helper';
+import * as util from '../util';
 
 suite("Util", function() {
   suite("pruneEmptyChildren", function() {
-    function T() {
-      this.x = 'dummy';
+    class T {
+      public x = 'dummy';
     }
 
     var tests = [
@@ -37,7 +35,7 @@ suite("Util", function() {
       [ {a: 1, b: undefined}, {a: 1} ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: any, expect: any) {
       util.pruneEmptyChildren(data);
       assert.deepEqual(data, expect);
     });
@@ -51,7 +49,7 @@ suite("Util", function() {
       [ {a: 1, b: {dm: 2, c: 3}}, {a: 1, b: {c: 3}} ],
     ];
 
-    helper.dataDrivenTest(tests, function(data, expect) {
+    helper.dataDrivenTest(tests, function(data: any, expect: any) {
       util.deletePropName(data, 'dm');
       assert.deepEqual(data, expect);
     });

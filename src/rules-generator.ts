@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-import util = require('./util');
-import ast = require('./ast');
-import logger = require('./logger');
-import parseUtil = require('./parse-util');
-let parseExpression = parseUtil.parseExpression;
+import * as util from './util';
+import * as ast from './ast';
+import {warn, error} from './logger';
+let parser = require('./rules-parser');
+import {parseExpression} from './parse-util';
 
 var errors = {
   badIndex: "The index function must return a String or an array of Strings.",
@@ -84,6 +83,16 @@ var writeAliases = <{ [method: string]: ast.Exp }> {
   'delete': parseExpression('prior(this) != null && this == null')
 };
 
+// Usage:
+//   json = bolt.generate(bolt-text)
+export function generate(symbols: string | ast.Symbols): Validator {
+  if (typeof symbols === 'string') {
+    symbols = parser.parse(symbols);
+  }
+  var gen = new Generator(<ast.Symbols> symbols);
+  return gen.generateRules();
+}
+
 // Symbols contains:
 //   functions: {}
 //   schema: {}
@@ -121,7 +130,7 @@ export class Generator {
     this.errorCount = 0;
     var paths = this.symbols.paths;
     var schema = this.symbols.schema;
-    var name;
+    var name: string;
 
     paths.forEach((path) => {
       this.validateMethods(errors.badPathMethod, path.methods,
@@ -160,8 +169,8 @@ export class Generator {
     }
     for (var method in methods) {
       if (!util.arrayIncludes(allowed, method)) {
-        logger.warn(m + util.quoteString(method) +
-                    " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
+        warn(m + util.quoteString(method) +
+             " (allowed: " + allowed.map(util.quoteString).join(', ') + ")");
       }
     }
     if ('write' in methods) {
@@ -177,7 +186,7 @@ export class Generator {
     var self = this;
     var thisVar = ast.variable('this');
 
-    function registerAsCall(name, methodName) {
+    function registerAsCall(name: string, methodName: string): void {
       self.symbols.registerSchema(name, ast.typeType('Any'), undefined, {
         validate: ast.method(['this'], ast.call(ast.reference(ast.cast(thisVar, 'Any'),
                                                               ast.string(methodName))))
@@ -406,7 +415,7 @@ export class Generator {
     return this.createValidatorFromSchema(schema);
   }
 
-  isGeneric(schema) {
+  isGeneric(schema: ast.Schema) {
     return schema.params.length > 0;
   }
 
@@ -426,7 +435,7 @@ export class Generator {
       extendValidator(validator, this.ensureValidator(schema.derivedFrom));
     }
 
-    let requiredProperties = [];
+    let requiredProperties = <string[]> [];
     let wildProperties = 0;
     Object.keys(schema.properties).forEach((propName) => {
       if (propName[0] === '$') {
@@ -478,9 +487,9 @@ export class Generator {
 
   // Update rules based on the given path expression.
   updateRules(path: ast.Path) {
-    var i;
+    var i: number;
     var location = <Validator> util.ensureObjectPath(this.rules, path.template.getLabels());
-    var exp;
+    var exp: ast.ExpValue;
 
     extendValidator(location, this.ensureValidator(path.isType));
     location['$$scope'] = path.template.getScope();
@@ -494,13 +503,13 @@ export class Generator {
         exp = ast.array([path.methods['index'].body]);
         break;
       case 'Array':
-        exp = path.methods['index'].body;
+        exp = <ast.ExpValue> path.methods['index'].body;
         break;
       default:
         this.fatal(errors.badIndex);
         return;
       }
-      var indices = [];
+      var indices = <string[]> [];
       for (i = 0; i < exp.value.length; i++) {
         if (exp.value[i].type !== 'String') {
           this.fatal(errors.badIndex + " (not " + exp.value[i].type + ")");
@@ -514,7 +523,7 @@ export class Generator {
   }
 
   extendValidationMethods(validator: Validator, methods: { [method: string]: ast.Method }) {
-    let writeMethods = [];
+    let writeMethods = <ast.Exp[]> [];
     ['create', 'update', 'delete'].forEach((method) => {
       if (method in methods) {
         writeMethods.push(ast.andArray([writeAliases[method], methods[method].body]));
@@ -548,9 +557,9 @@ export class Generator {
   }
 
   convertExpressions(validator: Validator) {
-    var methodThisIs = { '.validate': 'newData',
-                         '.read': 'data',
-                         '.write': 'newData' };
+    var methodThisIs = <{[prop: string]: string}> { '.validate': 'newData',
+                                                    '.read': 'data',
+                                                    '.write': 'newData' };
 
     mapValidator(validator, function(value: ast.Exp[],
                                      prop: string,
@@ -647,7 +656,7 @@ export class Generator {
       return ast.ensureBoolean(subExpression(exp2));
     }
 
-    function lookupVar(exp2) {
+    function lookupVar(exp2: ast.ExpVariable) {
       // TODO: Unbound variable access should be an error.
       return params[exp2.name] || self.globals[exp2.name] || exp2;
     }
@@ -681,7 +690,7 @@ export class Generator {
       return expOp;
 
     case 'var':
-      return lookupVar(exp);
+      return lookupVar(<ast.ExpVariable> exp);
 
     case 'ref':
       let expRef = <ast.ExpReference> ast.copyExp(exp);
@@ -869,7 +878,7 @@ export class Generator {
   }
 
   fatal(s: string) {
-    logger.error(s);
+    error(s);
     this.errorCount += 1;
   }
 };
@@ -888,7 +897,7 @@ export function extendValidator(target: Validator, src: Validator): Validator {
         target[prop] = [];
       }
       if (util.isType(src[prop], 'array')) {
-        util.extendArray(target[prop], src[prop]);
+        util.extendArray(<any[]> target[prop], <any[]> src[prop]);
       } else {
         (<ast.Exp[]> target[prop]).push(<ast.Exp> src[prop]);
       }
@@ -972,7 +981,7 @@ function collapseHasChildren(exps: ast.Exp[]): ast.Exp[] {
     }
     let args = (<ast.ExpValue> expCall.args[0]).value;
 
-    args.forEach(function(arg) {
+    args.forEach(function(arg: ast.ExpValue) {
       hasHasChildren = true;
       if (arg.type !== 'String') {
         throw new Error(errors.application + "Expect string argument to hasChildren(), not: " +

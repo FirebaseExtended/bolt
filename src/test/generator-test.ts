@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="../typings/mocha.d.ts" />
-/// <reference path="../typings/chai.d.ts" />
+import * as bolt from '../bolt';
+let parse = bolt.parse;
+import * as generator from '../rules-generator';
+import * as ast from '../ast';
+import * as fileio from '../file-io';
+import * as logger from '../logger';
+import * as helper from './test-helper';
 
-import bolt = require('../bolt');
-var parse = bolt.parse;
-import generator = require('../rules-generator');
-import ast = require('../ast');
-import fileio = require('../file-io');
-import logger = require('../logger');
-import helper = require('./test-helper');
-
-import chai = require('chai');
+import * as chai from 'chai';
 chai.config.truncateThreshold = 1000;
-var assert = chai.assert;
+let assert = chai.assert;
 
 // TODO: Test duplicated function, and schema definitions.
 // TODO: Test other parser errors - appropriate messages (exceptions).
@@ -147,7 +143,7 @@ suite("Rules Generator Tests", function() {
       var symbols = parse(data.f + " path /x { write() { return " + data.x + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      var json = gen.generateRules();
+      var json = <any> gen.generateRules();
       assert.equal(json['rules']['x']['.write'], expect);
     });
   });
@@ -186,7 +182,7 @@ suite("Rules Generator Tests", function() {
       var symbols = parse("path /x { write() { return " + data + "; }}");
       var gen = new bolt.Generator(symbols);
       // Make sure local Schema initialized.
-      var json = gen.generateRules();
+      var json = <any> gen.generateRules();
       assert.equal(json['rules']['x']['.write'], expect);
     });
   });
@@ -435,7 +431,7 @@ suite("Rules Generator Tests", function() {
       logger.silent();
       let symbols = parse(data);
       let gen = new bolt.Generator(symbols);
-      let lastError;
+      let lastError: string;
 
       try {
         gen.generateRules();

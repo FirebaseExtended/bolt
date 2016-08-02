@@ -1,3 +1,5 @@
+// Compiled using typings@0.6.8
+// Source: https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/d6dd320291705694ba8e1a79497a908e9f5e6617/mocha/mocha.d.ts
 // Type definitions for mocha 2.2.5
 // Project: http://mochajs.org/
 // Definitions by: Kazi Manzur Rashid <https://github.com/kazimanzurrashid/>, otiai10 <https://github.com/otiai10>, jt000 <https://github.com/jt000>, Vadim Macagon <https://github.com/enlight>
@@ -49,6 +51,10 @@ declare function before(action: () => void): void;
 
 declare function before(action: (done: MochaDone) => void): void;
 
+declare function before(description: string, action: () => void): void;
+
+declare function before(description: string, action: (done: MochaDone) => void): void;
+
 declare function setup(action: () => void): void;
 
 declare function setup(action: (done: MochaDone) => void): void;
@@ -56,6 +62,10 @@ declare function setup(action: (done: MochaDone) => void): void;
 declare function after(action: () => void): void;
 
 declare function after(action: (done: MochaDone) => void): void;
+
+declare function after(description: string, action: () => void): void;
+
+declare function after(description: string, action: (done: MochaDone) => void): void;
 
 declare function teardown(action: () => void): void;
 
@@ -65,6 +75,10 @@ declare function beforeEach(action: () => void): void;
 
 declare function beforeEach(action: (done: MochaDone) => void): void;
 
+declare function beforeEach(description: string, action: () => void): void;
+
+declare function beforeEach(description: string, action: (done: MochaDone) => void): void;
+
 declare function suiteSetup(action: () => void): void;
 
 declare function suiteSetup(action: (done: MochaDone) => void): void;
@@ -72,6 +86,10 @@ declare function suiteSetup(action: (done: MochaDone) => void): void;
 declare function afterEach(action: () => void): void;
 
 declare function afterEach(action: (done: MochaDone) => void): void;
+
+declare function afterEach(description: string, action: () => void): void;
+
+declare function afterEach(description: string, action: (done: MochaDone) => void): void;
 
 declare function suiteTeardown(action: () => void): void;
 
@@ -100,6 +118,12 @@ declare class Mocha {
     invert(): Mocha;
     ignoreLeaks(value: boolean): Mocha;
     checkLeaks(): Mocha;
+    /**
+     * Function to allow assertion libraries to throw errors directly into mocha.
+     * This is useful when running tests in a browser because window.onerror will
+     * only receive the 'message' attribute of the Error.
+     */
+    throwError(error: Error): void;
     /** Enables growl support. */
     growl(): Mocha;
     globals(value: string): Mocha;

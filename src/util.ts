@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-/// <reference path="typings/es6-promise.d.ts" />
-
-import Promise = require('promise');
-
-export function methods(ctor, obj: Object) {
-  extend(ctor.prototype, obj);
-}
-
+type Object = {[prop: string]: any};
 export function extend(dest: Object, ...srcs: Object[]): Object {
-  var i;
-  var source;
-  var prop;
+  var i: number;
+  var source: any;
+  var prop: string;
 
   if (dest === undefined) {
     dest = {};
@@ -42,23 +34,23 @@ export function extend(dest: Object, ...srcs: Object[]): Object {
   return dest;
 }
 
-export function copyArray(arg: any[]): any[] {
+export function copyArray(arg: ArrayLike<any>): any[] {
   return Array.prototype.slice.call(arg);
 }
 
 var baseTypes = ['number', 'string', 'boolean', 'array', 'function', 'date',
                  'regexp', 'arguments', 'undefined', 'null'];
 
-function internalType(value): string {
+function internalType(value: any): string {
   return Object.prototype.toString.call(value).match(/\[object (.*)\]/)[1].toLowerCase();
 }
 
-export function isType(value, type: string): boolean {
+export function isType(value: any, type: string): boolean {
   return typeOf(value) === type;
 }
 
 // Return one of the baseTypes as a string
-export function typeOf(value): string {
+export function typeOf(value: any): string {
   if (value === undefined) {
     return 'undefined';
   }
@@ -72,34 +64,33 @@ export function typeOf(value): string {
   return type;
 }
 
-export function isThenable(obj): boolean {
+export function isThenable(obj: any): boolean {
   return typeOf(obj) === 'object' && 'then' in obj && typeof(obj.then) === 'function';
 }
 
 // Converts a synchronous function to one allowing Promises
 // as arguments and returning a Promise value.
 //
-//   fn(a, b, c, ...):v => fn(aP, bP, cP, ...): Pv
-//
-// If none of the arguments are Thenables, then the wrapped
-// function returns a synchronous value (not wrapped in a Promise).
-export function maybePromise(fn: (...any) => any): (...any) => any {
-  return function(...args) {
-    var self = this;
-    if (!args.some(isThenable)) {
-      return fn.apply(self, args);
-    }
-
+//   fn(U, V, ...): T => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
+export function lift<T>(fn: (...args: any[]) => T)
+: (...args: any[]) => Promise<T> {
+  return function(...args: any[]): Promise<T> {
     return Promise.all(args)
-      .then(function(values) {
-        return fn.apply(self, values);
+      .then((values: any[]) => {
+        return fn.apply(undefined, values);
       });
   };
 }
 
-export var getProp = maybePromise(function(obj, prop) {
-  return obj[prop];
-});
+// Converts an asynchronous function to one allowing Promises
+// as arguments.
+//
+//   fn(U, V, ...): Promise<T> => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
+export let liftArgs: <T>
+  (fn: (...args: any[]) => Promise<T>) =>
+  ((...args: any[]) => Promise<T>) = lift;
+
+export let getProp = lift((obj, prop) => obj[prop]);
 
 export function ensureExtension(fileName: string, extension: string): string {
   if (fileName.indexOf('.') === -1) {
@@ -140,7 +131,7 @@ function deepExtend(target: Object, source: Object): void {
 
 // Quote all control characters, slash, single quotes, and non-ascii printables.
 var quotableCharacters = /[\u0000-\u001f\\\'\u007f-\uffff]/g;
-var specialQuotes = {
+var specialQuotes = <{[c: string]: string}> {
   '\'': '\\\'',
   '\b': '\\b',
   '\t': '\\t',
@@ -159,12 +150,12 @@ export function quoteString(s: string): string {
   return "'" + s + "'";
 }
 
-export function arrayIncludes(a: any[], e): boolean {
+export function arrayIncludes(a: any[], e: any): boolean {
   return a.indexOf(e) !== -1;
 }
 
 // Like Python list.extend
-export function extendArray(target, src) {
+export function extendArray(target: any[], src: any[]) {
   if (target === undefined) {
     target = [];
   }
@@ -172,7 +163,7 @@ export function extendArray(target, src) {
   return target;
 }
 
-export function or(target, src) {
+export function or(target: any, src: any) {
   if (target === undefined) {
     return false;
   }
@@ -230,7 +221,7 @@ export function deletePropName(obj: Object, name: string) {
 
 export function formatColumns(indent: number, lines: string[][]): string[] {
   let result: string[] = [];
-  let columnSize = [];
+  let columnSize = <number[]> [];
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];

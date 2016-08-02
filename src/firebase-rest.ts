@@ -15,16 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/// <reference path="typings/node.d.ts" />
-/// <reference path="typings/es6-promise.d.ts" />
-/// <reference path="typings/node-uuid.d.ts" />
-
-import Promise = require('promise');
 import https = require('https');
 import http = require('http');
-import util = require('./util');
+import * as util from './util';
 import querystring = require('querystring');
-import uuid = require('node-uuid');
+let uuid = require('node-uuid');
 var FirebaseTokenGenerator = require('firebase-token-generator');
 
 var FIREBASE_HOST = 'firebaseio.com';
@@ -33,30 +28,35 @@ var DEBUG_HEADER = 'x-firebase-auth-debug';
 export var RULES_LOCATION =  '/.settings/rules';
 export var TIMESTAMP = {".sv": "timestamp"};
 
-export function Client(appName, authToken?, uid?) {
-  this.appName = appName;
-  this.authToken = authToken;
-  this.uid = uid;
+type RequestOptions = {
+  method: string,
+  print?: string;
 }
 
-util.methods(Client, {
-  setDebug: function(debug) {
+export class Client {
+  private debug = false;
+
+  constructor(private appName: string,
+              private authToken?: string,
+              public uid?: string) {}
+
+  setDebug(debug?: boolean) {
     if (debug === undefined) {
       debug = true;
     }
     this.debug = debug;
     return this;
-  },
+  }
 
-  get: function(location) {
+  get(location: string): Promise<string> {
     return this.request({method: 'GET'}, location);
-  },
+  }
 
-  put: function(location, content) {
+  put(location: string, content: any): Promise<string> {
     return this.request({method: 'PUT', print: 'silent'}, location, content);
-  },
+  }
 
-  request: function(opt, path, content) {
+  request(opt: RequestOptions, path: string, content?: any) {
     var options = {
       hostname: this.appName + '.' + FIREBASE_HOST,
       path: path + '.json',
@@ -79,19 +79,19 @@ util.methods(Client, {
     content = util.prettyJSON(content);
 
     return request(options, content, this.debug)
-      .then(function(body) {
+      .then(function(body: string) {
         return body === '' ? null : JSON.parse(body);
       });
   }
-});
+}
 
 var ridNext = 0;
 
-function request(options, content, debug): Promise<string> {
+function request(options: any, content: any, debug: boolean): Promise<string> {
   ridNext += 1;
   var rid = ridNext;
 
-  function log(s) {
+  function log(s: string): void {
     if (debug) {
       console.log("Request<" + rid + ">: " + s);
     }
@@ -105,9 +105,9 @@ function request(options, content, debug): Promise<string> {
   return new Promise(function(resolve, reject) {
     // TODO: Why isn't this argument typed as per https.request?
     var req = https.request(options, function(res: http.ClientResponse) {
-      var chunks = [];
+      var chunks = <string[]>[];
 
-      res.on('data', function(body) {
+      res.on('data', function(body: string) {
         chunks.push(body);
       });
 
@@ -133,7 +133,7 @@ function request(options, content, debug): Promise<string> {
     }
     req.end();
 
-    req.on('error', function(error) {
+    req.on('error', function(error: Error) {
       log("Request error: " + error);
       reject(error);
     });
@@ -141,7 +141,7 @@ function request(options, content, debug): Promise<string> {
 }
 
 // opts { debug: Boolean, admin: Boolean }
-export function generateUidAuthToken(secret, opts) {
+export function generateUidAuthToken(secret: string, opts: any) {
   opts = util.extend({ debug: false, admin: false }, opts);
 
   var tokenGenerator = new FirebaseTokenGenerator(secret);
@@ -171,7 +171,7 @@ var lastPushTime = 0;
 // timestamp to prevent collisions with other clients.  We store the last characters we
 // generated because in the event of a collision, we'll use those same characters except
 // "incremented" by one.
-var lastRandChars = [];
+var lastRandChars = <number[]>[];
 
 export function generatePushID(): string {
   var now = new Date().getTime();
