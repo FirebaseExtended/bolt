@@ -16,6 +16,9 @@
 import * as fs from 'fs';
 import * as util from './util';
 
+const hasXMLHttpRequest =
+  typeof global !== 'undefined' && (<any> global)['XMLHttpRequest'] !== undefined;
+
 export interface ReadFileResult {
   content: string;
   url: string;
@@ -39,18 +42,14 @@ export function writeJSONFile(path: string, data: any): Promise<ReadFileResult> 
 }
 
 export function readFile(path: string): Promise<ReadFileResult> {
-  return request('GET', path) || readFS(path);
+  return hasXMLHttpRequest ? request('GET', path) : readFS(path);
 }
 
 export function writeFile(path: string, data: any): Promise<ReadFileResult> {
-  return request('PUT', path, data) || writeFS(path, data);
+  return hasXMLHttpRequest ? request('PUT', path, data) : writeFS(path, data);
 }
 
 function request(method: string, url: string, data?: any): Promise<ReadFileResult> {
-  if (!(<any> global).XMLHttpRequest) {
-    return undefined;
-  }
-
   return new Promise(function(resolve, reject) {
     let req = new XMLHttpRequest();
 

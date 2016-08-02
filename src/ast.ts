@@ -112,7 +112,7 @@ export class PathPart {
       label = '$' + label;
     }
     this.label = label;
-    this.variable = variable;
+    this.variable = <string> variable;
   }
 }
 
@@ -186,7 +186,7 @@ export interface Path {
   methods: { [name: string]: Method };
 };
 
-export interface Schema {
+export class Schema {
   derivedFrom: ExpType;
   properties: TypeParams;
   methods: { [name: string]: Method };
@@ -194,6 +194,10 @@ export interface Schema {
   // Generic parameters - if a Generic schema
   params?: string[];
   getValidator?: (params: Exp[]) => Object;
+
+  static isGeneric(schema: Schema): boolean {
+    return schema.params !== undefined && schema.params.length > 0;
+  }
 };
 
 export var string: (v: string) => ExpValue = valueGen('String');
@@ -629,7 +633,8 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
     outerPrecedence = 0;
   }
   var innerPrecedence = precedenceOf(exp);
-  var result: string;
+  var result = '';
+
   switch (exp.type) {
   case 'Boolean':
   case 'Number':
