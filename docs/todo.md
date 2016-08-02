@@ -3,7 +3,6 @@
 - Offline storage simulator (fake)
   - Enable online an offline tests for rules simulator
   - Make offline rest client fake
-- Remove use of util.methods (use TS class)
 
 # Language changes
 
