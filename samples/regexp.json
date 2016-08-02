@@ -25,6 +25,9 @@
     },
     "slug": {
       ".validate": "newData.isString() && newData.val().matches(/^([a-z0-9]+-)+[a-z0-9]+$/)"
+    },
+    "domain": {
+      ".validate": "newData.isString() && newData.val().matches(/^.+\\.(com|org|edu)$/)"
     }
   }
 }
