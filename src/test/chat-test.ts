@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {rulesSuite} from '../simulator';
+import {rulesSuite, RulesTest} from '../simulator';
 let secrets = require('../../auth-secrets');
 
 rulesSuite("Chat", function(test) {
@@ -22,7 +22,7 @@ rulesSuite("Chat", function(test) {
   test.database(secrets.APP, secrets.SECRET);
   test.rules('samples/chat');
 
-  function makeMikesRoom(rules) {
+  function makeMikesRoom(rules: RulesTest): RulesTest {
     return rules
       .as('mike')
       .at('/rooms/mikes-room')

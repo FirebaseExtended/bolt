@@ -178,7 +178,7 @@ interface Step {
   fn: () => Promise<any>;
 }
 
-class RulesTest {
+export class RulesTest {
   private lastError: string;
   private steps: Step[] = [];
   private failed = false;
