@@ -58,10 +58,7 @@ class RulesSuite {
   constructor(public suiteName: string,
               private fnSuite: SuiteFunction) {}
 
-  setDebug(debug) {
-    if (debug === undefined) {
-      debug = true;
-    }
+  setDebug(debug = true) {
     this.debug = debug;
     return this;
   }
@@ -112,10 +109,9 @@ class RulesSuite {
   }
 
   // Called when rules are generated and test database is known.
-  // Arg: [rulesJSON, true]
-  onRulesReady(prereq) {
-    this.rules = prereq[0];
-    return this.adminClient.put(rest.RULES_LOCATION, this.rules);
+  onRulesReady(prereq: Object[]) {
+    let rulesJSON = prereq[0];
+    return this.adminClient.put(rest.RULES_LOCATION, rulesJSON);
   }
 
   runTests() {

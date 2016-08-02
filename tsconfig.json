@@ -3,7 +3,7 @@
     "outDir": "lib",
     "rootDir": "src",
     "module": "commonjs",
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "preserveConstEnums": true,
     "inlineSourceMap": true,
     "noEmitOnError": true
