@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "path": {
+      ".validate": "newData.hasChildren(['num', 'str', 'any'])",
+      "num": {
+        ".validate": "newData.isNumber()"
+      },
+      "str": {
+        ".validate": "newData.isString()"
+      },
+      "any": {
+        ".validate": "true"
+      },
+      "$other": {
+        ".validate": "false"
+      },
+      ".read": "true",
+      ".write": "true"
+    }
+  }
+}
