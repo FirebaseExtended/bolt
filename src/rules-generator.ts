@@ -554,28 +554,46 @@ export class Generator {
     return union;
   }
 
+  // Convert expressions to text, and at the same time, apply pruning operations
+  // to remove no-op rules.
   convertExpressions(validator: Validator) {
     var methodThisIs = <{[prop: string]: string}> { '.validate': 'newData',
                                                     '.read': 'data',
                                                     '.write': 'newData' };
 
-    mapValidator(validator, function(value: ast.Exp[],
-                                     prop: string,
-                                     scope: ast.Params,
-                                     path: ast.PathTemplate) {
+    mapValidator(validator, (value: ast.Exp[],
+                             prop: string,
+                             scope: ast.Params,
+                             path: ast.PathTemplate) => {
       if (prop in methodThisIs) {
         let result = this.getExpressionText(ast.andArray(collapseHasChildren(value)),
                                             methodThisIs[prop],
                                             scope,
                                             path);
-        if (prop === '.validate' && result === 'true' ||
-            (prop === '.read' || prop === '.write') && result === 'false') {
+        // Remove no-op .read or .write rule.
+        if ((prop === '.read' || prop === '.write') && result === 'false') {
           return undefined;
         }
+
+        // Remove no-op .validate rule (but only in the case where the
+        // grand-parent does NOT have a wild-card property - otherwise, this is
+        // needed to not be elided to the wild-card validation rule - $other:
+        // "false").
+        if (prop === '.validate' && result === 'true') {
+          if (path.length() < 2) {
+            return undefined;
+          }
+          let grandParent = util.deepLookup(validator,
+                                            path.getLabels().slice(0, -1));
+          if (grandParent && grandParent['$other'] === undefined) {
+            return undefined;
+          }
+        }
+
         return result;
       }
       return value;
-    }.bind(this));
+    });
   }
 
   getExpressionText(exp: ast.Exp, thisIs: string, scope: ast.Params, path: ast.PathTemplate): string {

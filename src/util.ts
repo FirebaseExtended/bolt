@@ -126,6 +126,18 @@ function deepExtend(target: Object, source: Object): void {
   }
 }
 
+export function deepLookup(o: Object, path: string[]): Object | undefined {
+  let result = o;
+
+  for (let i = 0; i < path.length; i++) {
+    if (result === undefined) {
+      return undefined;
+    }
+    result = result[path[i]];
+  }
+  return result;
+}
+
 // Like JSON.stringify - but for single-quoted strings instead of double-quoted ones.
 // This just makes the compiled rules much easier to read.
 
