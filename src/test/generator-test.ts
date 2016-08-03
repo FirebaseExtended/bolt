@@ -20,6 +20,7 @@ import * as ast from '../ast';
 import * as fileio from '../file-io';
 import * as logger from '../logger';
 import * as helper from './test-helper';
+import {samples} from './sample-files';
 
 import * as chai from 'chai';
 chai.config.truncateThreshold = 1000;
@@ -70,24 +71,7 @@ suite("Rules Generator Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access",
-                 "userdoc",
-                 "mail",
-                 "type-extension",
-                 "children",
-                 "create-update-delete",
-                 "functional",
-                 "user-security",
-                 "generics",
-                 "groups",
-                 "multi-update",
-                 "chat",
-                 "serialized",
-                 "map-scalar",
-                 "regexp",
-                ];
-
-    helper.dataDrivenTest(files, function(filename) {
+    helper.dataDrivenTest(samples, function(filename) {
       filename = 'samples/' + filename + '.' + bolt.FILE_EXTENSION;
       return fileio.readFile(filename)
         .then(function(response) {

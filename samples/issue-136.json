@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "entity": {
+      "$entity": {
+        ".validate": "newData.hasChildren(['entityType']) && 'project|user'.contains(newData.child('entityType').val())",
+        "entityType": {
+          ".validate": "newData.isString()"
+        },
+        "$other": {
+          ".validate": "false"
+        }
+      }
+    }
+  }
+}

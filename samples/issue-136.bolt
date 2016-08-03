@@ -1,0 +1,9 @@
+type Entity {
+  entityType: String
+}
+
+path /entity/{entity} is Entity {
+  validate(){
+    "project|user".includes(this.entityType)
+  }
+}

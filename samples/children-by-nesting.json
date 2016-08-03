@@ -1,9 +1,21 @@
 {
   "rules": {
     "parents": {
-      "$parent": {
-        "$child": {
-          ".validate": "newData.child('age').isNumber()"
+      "$key1": {
+        ".validate": "newData.hasChildren()",
+        "children": {
+          "$key2": {
+            ".validate": "newData.hasChildren(['age'])",
+            "age": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": "false"
+            }
+          }
+        },
+        "$other": {
+          ".validate": "false"
         }
       }
     }
