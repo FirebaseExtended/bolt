@@ -22,14 +22,16 @@
               ".validate": "false"
             },
             ".write": "data.val() == null && (auth != null && $key2 == auth.uid)"
-          }
+          },
+          ".validate": "newData.hasChildren()"
         },
         "$other": {
           ".validate": "false"
         },
         ".write": "data.val() == null || data.val() != null && newData.val() != null && (auth != null && data.child('creator').val() == auth.uid) || data.val() != null && newData.val() == null && (auth != null && data.child('creator').val() == auth.uid)",
         ".read": "data.child('members').child(auth.uid).val() != null && !(data.child('members').child(auth.uid).child('isBanned').val() == true) || auth != null && data.child('creator').val() == auth.uid"
-      }
+      },
+      ".validate": "newData.hasChildren()"
     },
     "posts": {
       "$roomid": {

@@ -12,12 +12,14 @@
             "$other": {
               ".validate": "false"
             }
-          }
+          },
+          ".validate": "newData.hasChildren()"
         },
         "$other": {
           ".validate": "false"
         }
-      }
+      },
+      ".validate": "newData.hasChildren()"
     }
   }
 }
