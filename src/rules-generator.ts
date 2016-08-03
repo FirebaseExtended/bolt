@@ -237,6 +237,7 @@ export class Generator {
   // type Map<Key, Value> => {
   //   $key: {
   //     '.validate': $key instanceof Key and this instanceof Value;
+  //   '.validate': 'newData.hasChildren()'
   // }
   // Key must derive from String
   getMapValidator(params: ast.Exp[]): Validator {
@@ -249,6 +250,7 @@ export class Generator {
     let validator = <Validator> {};
     let index = this.uniqueKey();
     validator[index] = <Validator> {};
+    extendValidator(validator, this.ensureValidator(ast.typeType('Object')));
 
     // First validate the key (omit terminal String type validation).
     while (keyType.name !== 'String') {
@@ -479,7 +481,8 @@ export class Generator {
   }
 
   isNullableType(type: ast.ExpType): boolean {
-    let result = this.symbols.isDerivedFrom(type, 'Null') || this.symbols.isDerivedFrom(type, 'Map');
+    let result = this.symbols.isDerivedFrom(type, 'Null') ||
+      this.symbols.isDerivedFrom(type, 'Map');
     return result;
   }
 
@@ -853,6 +856,7 @@ export class Generator {
       return ast.snapshotVariable('root');
     }
 
+    // TODO(koss): Remove this special case if JSON supports newRoot instead.
     // 'newData' case - traverse to root via parent()'s.
     let result: ast.Exp = ast.snapshotVariable('newData');
     for (let i = 0; i < path.length(); i++) {

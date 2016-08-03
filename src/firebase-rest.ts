@@ -40,10 +40,7 @@ export class Client {
               private authToken?: string,
               public uid?: string) {}
 
-  setDebug(debug?: boolean) {
-    if (debug === undefined) {
-      debug = true;
-    }
+  setDebug(debug = true) {
     this.debug = debug;
     return this;
   }
@@ -93,7 +90,7 @@ function request(options: any, content: any, debug: boolean): Promise<string> {
 
   function log(s: string): void {
     if (debug) {
-      console.log("Request<" + rid + ">: " + s);
+      console.error("Request<" + rid + ">: " + s);
     }
   }
 
@@ -114,13 +111,16 @@ function request(options: any, content: any, debug: boolean): Promise<string> {
       res.on('end', function() {
         var result: string = chunks.join('');
         log("Result (" + res.statusCode + "): '" + result + "'");
+        let message = "Status = " + res.statusCode + " " + result;
+
+        // Dump debug information if present for both successful and failed requests.
+        if (res.headers[DEBUG_HEADER]) {
+          let formattedHeader = res.headers[DEBUG_HEADER].split(' /').join('\n  /');
+          log(formattedHeader);
+          message += "\n" + formattedHeader;
+        }
+
         if (Math.floor(res.statusCode / 100) !== 2) {
-          let message = "Status = " + res.statusCode + " " + result;
-          if (res.headers[DEBUG_HEADER]) {
-            let formattedHeader = res.headers[DEBUG_HEADER].split(' /').join('\n  /');
-            log(formattedHeader);
-            message += "\n" + formattedHeader;
-          }
           reject(new Error(message));
         } else {
           resolve(result);
