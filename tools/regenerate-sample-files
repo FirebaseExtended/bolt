@@ -1,0 +1,17 @@
+#!/bin/bash
+# regenerate-sample-files --- Recreate the sample-files.ts file for test.
+
+set -e
+
+DEST="$PROJ_DIR/src/test/sample-files.ts"
+
+echo "export let samples = [" > "$DEST"
+
+cd "$PROJ_DIR/samples"
+
+for file in *.bolt; do
+  base="${file%.*}"
+  echo "  \"$base\"," >> $DEST
+done
+
+echo "];" >> $DEST

@@ -20,6 +20,7 @@ import * as logger from '../logger';
 import * as ast from '../ast';
 import * as bolt from '../bolt';
 import * as helper from './test-helper';
+import {samples} from './sample-files';
 
 let parser = require('../rules-parser');
 let parse = parser.parse;
@@ -426,9 +427,7 @@ suite("Rules Parser Tests", function() {
   });
 
   suite("Sample files", function() {
-    var files = ["all_access", "userdoc", "mail", "children", "create-update-delete"];
-
-    helper.dataDrivenTest(files, function(data) {
+    helper.dataDrivenTest(samples, function(data) {
       var filename = 'samples/' + data + '.' + bolt.FILE_EXTENSION;
       return readFile(filename)
         .then(function(response) {
