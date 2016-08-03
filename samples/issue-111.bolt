@@ -1,0 +1,10 @@
+type MyType {
+  num: Number;
+  str: String;
+  any: Any;
+}
+
+path /path is MyType {
+  read() { true }
+  write() { true }
+}
