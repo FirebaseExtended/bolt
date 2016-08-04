@@ -2,6 +2,7 @@
   "rules": {
     "parent": {
       "someKey": {
+        ".validate": "true",
         ".write": "false"
       },
       "$all_other_keys": {

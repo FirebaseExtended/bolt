@@ -61,7 +61,7 @@ let INVALID_KEY_REGEX = /[\[\].#$\/\u0000-\u001F\u007F]/;
    '.write': ast.Exp[] | string;
    '.validate': ast.Exp[] | string;
    '.indexOn': string[];
-   '$$scope': { [variable: string]: string }
+   '.scope': { [variable: string]: string }
 */
 export type ValidatorValue = ast.Exp | ast.Exp[] | string | string[] | Validator;
 export interface Validator {
@@ -155,7 +155,7 @@ export class Generator {
       throw new Error(errors.generateFailed + this.errorCount + " errors.");
     }
 
-    util.deletePropName(this.rules, '$$scope');
+    util.deletePropName(this.rules, '.scope');
     util.pruneEmptyChildren(this.rules);
 
     return {
@@ -498,7 +498,7 @@ export class Generator {
     var exp: ast.ExpValue;
 
     extendValidator(location, this.ensureValidator(path.isType));
-    location['$$scope'] = path.template.getScope();
+    location['.scope'] = path.template.getScope();
 
     this.extendValidationMethods(location, path.methods);
 
@@ -569,6 +569,24 @@ export class Generator {
                                                     '.read': 'data',
                                                     '.write': 'newData' };
 
+    function hasWildcardSibling(path: ast.PathTemplate): boolean {
+      let parts = path.getLabels();
+      let childPart = parts.pop();
+      let parent = util.deepLookup(validator, parts);
+      if (parent === undefined) {
+        return false;
+      }
+      for (let prop of Object.keys(parent)) {
+        if (prop === childPart) {
+          continue;
+        }
+        if (prop[0] === '$') {
+          return true;
+        }
+      }
+      return false;
+    }
+
     mapValidator(validator, (value: ast.Exp[],
                              prop: string,
                              scope: ast.Params,
@@ -578,22 +596,16 @@ export class Generator {
                                             methodThisIs[prop],
                                             scope,
                                             path);
-        // Remove no-op .read or .write rule.
+        // Remove no-op .read or .write rule if not sibling wildcard props.
         if ((prop === '.read' || prop === '.write') && result === 'false') {
-          return undefined;
-        }
-
-        // Remove no-op .validate rule (but only in the case where the
-        // grand-parent does NOT have a wild-card property - otherwise, this is
-        // needed to not be elided to the wild-card validation rule - $other:
-        // "false").
-        if (prop === '.validate' && result === 'true') {
-          if (path.length() < 2) {
+          if (!hasWildcardSibling(path)) {
             return undefined;
           }
-          let grandParent = util.deepLookup(validator,
-                                            path.getLabels().slice(0, -1));
-          if (grandParent && grandParent['$other'] === undefined) {
+        }
+
+        // Remove no-op .validate rule if no sibling wildcard props.
+        if (prop === '.validate' && result === 'true') {
+          if (!hasWildcardSibling(path)) {
             return undefined;
           }
         }
@@ -952,8 +964,8 @@ export function mapValidator(v: Validator,
   if (!path) {
     path = new ast.PathTemplate();
   }
-  if ('$$scope' in v) {
-    scope = <ast.Params> v['$$scope'];
+  if ('.scope' in v) {
+    scope = <ast.Params> v['.scope'];
   }
   for (var prop in v) {
     if (!v.hasOwnProperty(prop)) {
