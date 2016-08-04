@@ -1,0 +1,11 @@
+path /parent {
+  read() { auth !== null }
+
+  /someKey {
+    write() { false }
+  }
+
+  /{all_other_keys} {
+    write() { auth !== null }
+  }
+}

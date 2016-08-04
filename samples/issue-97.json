@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "parent": {
+      "someKey": {
+        ".write": "false"
+      },
+      "$all_other_keys": {
+        ".write": "auth != null"
+      },
+      ".read": "auth != null"
+    }
+  }
+}
