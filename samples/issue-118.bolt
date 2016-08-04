@@ -1,0 +1,15 @@
+type Something {
+  scalar: Number;
+  scalarOrNull: Number | Null;
+  array: Number[];
+  arrayOrNull: Number[] | Null;
+  arrayOrScalar: Number[] | Number;
+
+  map: Map<String, Number>;
+  mapOrScalar: Map<String, Number> | Number;
+}
+
+path /path is Something {
+  read() { true }
+  write() { true }
+}

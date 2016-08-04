@@ -4,4 +4,23 @@
 set -e
 
 cd $PROJ_DIR/samples
-diff <(firebase-bolt < $1.bolt | flatten-json.py) <(flatten-json.py < $1.json)
+
+files=()
+
+if [[ "$1" == "" ]]; then
+  echo "Usage: compare-sample --all | <base-name>"
+  exit 1
+fi
+
+if [[ "$1" == "--all" ]]; then
+  for file in *.bolt; do
+    files+=(${file%%.bolt})
+  done
+else
+  files+=("$1")
+fi
+
+for file in "${files[@]}"; do
+  echo "Comparing firebase-bolt $file.bolt ~ $file.json:"
+  diff <(firebase-bolt < "$file.bolt" | flatten-json.py) <(flatten-json.py < "$file.json") || true
+done

@@ -13,7 +13,8 @@
         "$other": {
           ".validate": "false"
         }
-      }
+      },
+      ".validate": "newData.hasChildren()"
     },
     "products": {
       "$key2": {
@@ -27,7 +28,8 @@
         "$other": {
           ".validate": "false"
         }
-      }
+      },
+      ".validate": "newData.hasChildren()"
     },
     "$other": {
       ".validate": "false"

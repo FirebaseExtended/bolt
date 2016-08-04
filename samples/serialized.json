@@ -16,6 +16,7 @@
           ".validate": "newData.isNumber() && (data.val() == null && newData.val() == 1 || newData.val() == data.val() + 1)"
         }
       },
+      ".validate": "newData.hasChildren()",
       ".read": "true"
     }
   }

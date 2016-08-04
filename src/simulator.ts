@@ -259,6 +259,7 @@ export class RulesTest {
   as(username: string): RulesTest {
     var client = this.suite.ensureUser(username);
     this.queue('as', arguments, () => {
+      client.setDebug(this.suite.debug);
       this.client = client;
       return Promise.resolve();
     });

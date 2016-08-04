@@ -1,0 +1,2 @@
+fixed - Issue #118 Fix validation of Array, Map, and Null types (and their unions).
+fixed - Issue #111 Use of Any generating incorrect rules.

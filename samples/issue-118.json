@@ -1,0 +1,48 @@
+{
+  "rules": {
+    "path": {
+      ".validate": "newData.hasChildren(['scalar'])",
+      "scalar": {
+        ".validate": "newData.isNumber()"
+      },
+      "scalarOrNull": {
+        ".validate": "newData.isNumber()"
+      },
+      "array": {
+        "$key1": {
+          ".validate": "newData.isNumber()"
+        },
+        ".validate": "newData.hasChildren()"
+      },
+      "arrayOrNull": {
+        "$key1": {
+          ".validate": "newData.isNumber()"
+        },
+        ".validate": "newData.hasChildren()"
+      },
+      "arrayOrScalar": {
+        "$key1": {
+          ".validate": "newData.isNumber()"
+        },
+        ".validate": "newData.hasChildren() || newData.isNumber()"
+      },
+      "map": {
+        "$key1": {
+          ".validate": "newData.isNumber()"
+        },
+        ".validate": "newData.hasChildren()"
+      },
+      "mapOrScalar": {
+        "$key1": {
+          ".validate": "newData.isNumber()"
+        },
+        ".validate": "newData.hasChildren() || newData.isNumber()"
+      },
+      "$other": {
+        ".validate": "false"
+      },
+      ".read": "true",
+      ".write": "true"
+    }
+  }
+}

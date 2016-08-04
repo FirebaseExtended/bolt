@@ -199,8 +199,13 @@ export class Generator {
 
     registerAsCall('Object', 'hasChildren');
 
+    // Because of the way firebase treats Null values, there is no way to
+    // write a validation rule, that will EVER be called with this == null
+    // (firebase allows values to be deleted no matter their validation rules).
+    // So, comparing this == null will always return false -> that is what
+    // we do here, which will be optimized away if ORed with other validations.
     this.symbols.registerSchema('Null', ast.typeType('Any'), undefined, {
-      validate: ast.method(['this'], ast.eq(thisVar, ast.nullType()))
+      validate: ast.method(['this'], ast.boolean(false))
     });
 
     self.symbols.registerSchema('String', ast.typeType('Any'), undefined, {
@@ -237,6 +242,7 @@ export class Generator {
   // type Map<Key, Value> => {
   //   $key: {
   //     '.validate': $key instanceof Key and this instanceof Value;
+  //   '.validate': 'newData.hasChildren()'
   // }
   // Key must derive from String
   getMapValidator(params: ast.Exp[]): Validator {
@@ -249,6 +255,7 @@ export class Generator {
     let validator = <Validator> {};
     let index = this.uniqueKey();
     validator[index] = <Validator> {};
+    extendValidator(validator, this.ensureValidator(ast.typeType('Object')));
 
     // First validate the key (omit terminal String type validation).
     while (keyType.name !== 'String') {
@@ -479,7 +486,8 @@ export class Generator {
   }
 
   isNullableType(type: ast.ExpType): boolean {
-    let result = this.symbols.isDerivedFrom(type, 'Null') || this.symbols.isDerivedFrom(type, 'Map');
+    let result = this.symbols.isDerivedFrom(type, 'Null') ||
+      this.symbols.isDerivedFrom(type, 'Map');
     return result;
   }
 
@@ -853,6 +861,7 @@ export class Generator {
       return ast.snapshotVariable('root');
     }
 
+    // TODO(koss): Remove this special case if JSON supports newRoot instead.
     // 'newData' case - traverse to root via parent()'s.
     let result: ast.Exp = ast.snapshotVariable('newData');
     for (let i = 0; i < path.length(); i++) {
