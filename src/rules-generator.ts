@@ -596,7 +596,7 @@ export class Generator {
                                             methodThisIs[prop],
                                             scope,
                                             path);
-        // Remove no-op .read or .write rule if not sibling wildcard props.
+        // Remove no-op .read or .write rule if no sibling wildcard props.
         if ((prop === '.read' || prop === '.write') && result === 'false') {
           if (!hasWildcardSibling(path)) {
             return undefined;
