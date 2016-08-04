@@ -1,2 +1,3 @@
-fixed - Issue #118 Fix validation of Array, Map, and Null types (and their unions).
+fixed - Issue #97 .read/.write false not generated when siblings of wildcard children.
+fixed - Issue #118 Validation of Array, Map, and Null types (and their unions) incorrect.
 fixed - Issue #111 Use of Any generating incorrect rules.
