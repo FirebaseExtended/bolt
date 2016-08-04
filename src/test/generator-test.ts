@@ -177,7 +177,7 @@ suite("Rules Generator Tests", function() {
       [ 'Number', 'this.isNumber()'],
       [ 'Boolean', 'this.isBoolean()'],
       [ 'Object', 'this.hasChildren()'],
-      [ 'Null', 'this == null'],
+      [ 'Null', 'false'],
     ];
 
     helper.dataDrivenTest(tests, function(data, expect) {
@@ -246,7 +246,7 @@ suite("Rules Generator Tests", function() {
                  '$other': {'.validate': "false"}} },
       { data: "type T {x: Number|Null}",
         expect: {'.validate': "newData.hasChildren()",
-                 x: {'.validate': "newData.isNumber() || newData.val() == null"},
+                 x: {'.validate': "newData.isNumber()"},
                  '$other': {'.validate': "false"}} },
       { data: "type T {n: Number, validate() {return this.n < 7;}}",
         expect: {'.validate': "newData.hasChildren(['n']) && newData.child('n').val() < 7",
@@ -300,7 +300,8 @@ suite("Rules Generator Tests", function() {
       { data: "type X { a: Number, validate() { this.a == key() } } type T extends X[];",
         expect: {'$key1': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == $key1",
                            'a': {'.validate': "newData.isNumber()"},
-                           '$other': {'.validate': "false"}}
+                           '$other': {'.validate': "false"}},
+                 '.validate': "newData.hasChildren()"
                 } },
       { data: "type X { a: Number, validate() { this.a == key() } } type T { x: X }",
         expect: {'x': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == 'x'",

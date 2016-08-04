@@ -199,8 +199,13 @@ export class Generator {
 
     registerAsCall('Object', 'hasChildren');
 
+    // Because of the way firebase treats Null values, there is no way to
+    // write a validation rule, that will EVER be called with this == null
+    // (firebase allows values to be deleted no matter their validation rules).
+    // So, comparing this == null will always return false -> that is what
+    // we do here, which will be optimized away if ORed with other validations.
     this.symbols.registerSchema('Null', ast.typeType('Any'), undefined, {
-      validate: ast.method(['this'], ast.eq(thisVar, ast.nullType()))
+      validate: ast.method(['this'], ast.boolean(false))
     });
 
     self.symbols.registerSchema('String', ast.typeType('Any'), undefined, {

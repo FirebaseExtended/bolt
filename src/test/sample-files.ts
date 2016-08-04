@@ -8,6 +8,7 @@ export let samples = [
   "generics",
   "groups",
   "issue-111",
+  "issue-118",
   "issue-136",
   "mail",
   "map-scalar",

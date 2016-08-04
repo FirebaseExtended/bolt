@@ -22,7 +22,7 @@ rulesSuite("Type[] | Scalar - issue 118", function(test) {
 
   test("Scalar tests.", function(rules) {
     rules
-      .debug()
+      // .debug()
       .as('mike')
       .at('/path/scalar')
       .write(1)
@@ -43,7 +43,7 @@ rulesSuite("Type[] | Scalar - issue 118", function(test) {
 
   test("Array tests.", function(rules) {
     rules
-      .debug()
+      // .debug()
       .as('mike')
       .at('/path/scalar')
       .write(1)
@@ -77,6 +77,35 @@ rulesSuite("Type[] | Scalar - issue 118", function(test) {
       .succeeds("Write scalar to array or scalar.")
       .write([1])
       .succeeds("Write array to array or scalar.")
+    ;
+  });
+
+  test("Map tests.", function(rules) {
+    rules
+      // .debug()
+      .as('mike')
+      .at('/path/scalar')
+      .write(1)
+
+      .at('/path/map')
+      .write([1])
+      .succeeds("Write to map.")
+      .write(null)
+      .succeeds("Deleting whole map.")
+      .at('/path/map/key')
+      .write(1)
+      .succeeds("Write single entry to map.")
+      .at('/path/map')
+      .push(2)
+      .succeeds("Pushes value into map.")
+      .write("bogus")
+      .fails("Should not be able to write non-map to map.")
+
+      .at('/path/mapOrScalar')
+      .write(1)
+      .succeeds("Write scalar to map or scalar.")
+      .write({"key": 2})
+      .succeeds("Write map to map or scalar.")
     ;
   });
 });
