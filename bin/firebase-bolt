@@ -23,16 +23,19 @@ var parseArgs = require('minimist');
 var util = require('../lib/util');
 var bolt = require('../lib/bolt');
 var pkg = require('../package.json');
+var logger = require('../lib/logger');
 
 var VERSION_STRING = "Firebase Bolt v" + pkg.version;
+var DEBUG = false;
 
 var opts = {
-  boolean: ['version', 'help'],
+  boolean: ['version', 'help', 'debug'],
   string: ['output'],
   alias: {
     'v': 'version',
     'h': 'help',
     'o': 'output',
+    'd': 'debug'
   },
   unknown: function(flag) {
     if (flag[0] == '-') {
@@ -54,6 +57,11 @@ function main() {
   if (args.version) {
     console.log(VERSION_STRING);
     return;
+  }
+
+  if (args.debug) {
+    DEBUG = true;
+    logger.setDebug();
   }
 
   if (args.help) {
@@ -128,6 +136,7 @@ function usage(code) {
     ["-h --help", "Display this helpful message."],
     ["-o --output file", "Output to file.json."],
     ["-v --version", "Display Firebase Bolt version."],
+    ["-d --debug", "Display additional debugging information."],
     []
   ]).join('\n'));
 
@@ -156,6 +165,9 @@ function translateRules(input) {
   try {
     symbols = bolt.parse(input);
   } catch (e) {
+    if (DEBUG) {
+      log(e.stack);
+    }
     log(e.message, e.line, e.column);
     process.exit(1);
   }
@@ -164,6 +176,9 @@ function translateRules(input) {
     var gen = new bolt.Generator(symbols);
     rules = gen.generateRules();
   } catch (e) {
+    if (DEBUG) {
+      log(e.stack);
+    }
     log(e.message);
     process.exit(2);
   }
