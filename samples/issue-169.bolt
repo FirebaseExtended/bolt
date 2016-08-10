@@ -1,0 +1,5 @@
+path /test is Map<Test, String> {}
+
+type Test extends String {
+  validate() { prior(root) != null }
+}

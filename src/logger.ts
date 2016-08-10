@@ -18,6 +18,8 @@ let lastMessage: string | undefined;
 let errorCount: number;
 let silenceOutput: boolean;
 
+let DEBUG = false;
+
 let getContext = () => (<ErrorContext> {});
 
 reset();
@@ -27,6 +29,10 @@ export function reset() {
   lastMessage = undefined;
   errorCount = 0;
   silenceOutput = false;
+}
+
+export function setDebug(debug = true) {
+  DEBUG = debug;
 }
 
 export function silent(f = true) {
@@ -52,6 +58,10 @@ export function error(s: string) {
   lastError = lastMessage;
   if (!silenceOutput) {
     console.error(lastError);
+    if (DEBUG) {
+      let e = new Error("Stack trace");
+      console.error(e.stack);
+    }
   }
   errorCount += 1;
 }

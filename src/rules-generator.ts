@@ -288,7 +288,11 @@ export class Generator {
     var key = ast.decodeExpression(type);
     if (!this.validators[key]) {
       this.validators[key] = {'.validate': ast.literal('***TYPE RECURSION***') };
+
+      let allowSave = this.allowUndefinedFunctions;
+      this.allowUndefinedFunctions = true;
       this.validators[key] = this.createValidator(type);
+      this.allowUndefinedFunctions = allowSave;
     }
     return this.validators[key];
   }
@@ -801,7 +805,7 @@ export class Generator {
       if (!this.allowUndefinedFunctions) {
         var funcName = ast.getMethodName(expCall);
         if (funcName !== '' && !(funcName in this.symbols.schema['String'].methods ||
-              util.arrayIncludes(snapshotMethods, funcName))) {
+                                 util.arrayIncludes(snapshotMethods, funcName))) {
           this.fatal(errors.undefinedFunction + ast.decodeExpression(expCall.ref));
         }
       }
