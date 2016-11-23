@@ -70,6 +70,6 @@
     "es6-promise": "^3.2.1",
     "firebase-token-generator": "^2.0.0",
     "minimist": "^1.2.0",
-    "node-uuid": "^1.4.3"
+    "uuid": "^3.0.0"
   }
 }

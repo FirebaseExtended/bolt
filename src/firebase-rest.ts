@@ -19,7 +19,7 @@ import https = require('https');
 import http = require('http');
 import * as util from './util';
 import querystring = require('querystring');
-let uuid = require('node-uuid');
+let uuid = require('uuid');
 var FirebaseTokenGenerator = require('firebase-token-generator');
 
 var FIREBASE_HOST = 'firebaseio.com';
