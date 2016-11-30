@@ -1,1 +1,0 @@
-fixed - Issue #169 Did not allow prior() function in type validation.
