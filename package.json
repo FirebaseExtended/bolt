@@ -1,7 +1,7 @@
 {
   "name": "firebase-bolt",
   "description": "Firebase Bolt Security and Modeling Language Compiler",
-  "version": "0.0.0",
+  "version": "0.8.2",
   "author": "Firebase (https://firebase.google.com/)",
   "main": "lib/bolt.js",
   "homepage": "https://github.com/firebase/bolt",
