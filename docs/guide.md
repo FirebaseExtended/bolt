@@ -51,7 +51,7 @@ Use the Bolt compiler to convert this to Firebase JSON-formatted rules:
 }
 ```
 
-In general, Firebase `read` and `write` expresses grant acceess to data based on the authentication
+In general, Firebase `read` and `write` expresses grant access to data based on the authentication
 state of the user, while `validate` expressions enforce data types and the schema of data
 you allow to be saved in the database.
 
