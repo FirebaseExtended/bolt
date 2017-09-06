@@ -1,13 +1,15 @@
 # Firebase Security and Rules Using the Bolt Compiler
 
-Firebase is secured using a JSON-formatted [Security and
-Rules](https://www.firebase.com/docs/security/guide/understanding-security.html) language. It
+Firebase Realtime Database is secured using a JSON-formatted [Rules
+language](https://firebase.google.com/docs/database/security/). It
 is a powerful feature of Firebase, but can be error prone to write by hand.
 
 The Bolt compiler helps developers express the schema and authorization rules for their
 database using a familiar JavaScript-like language. The complete [language
 reference](language.md) describes the syntax. This guide introduces the concepts and
 features of Bolt along with a cookbook of common recipies.
+
+Note that Bolt only generates rules for the Firebase Realtime Database, not Firebase Cloud Storage.
 
 # Getting Started
 
@@ -19,13 +21,17 @@ using the [Node Package Manager](https://nodejs.org/en/download/):
 You can use the Bolt compiler to compile the examples in this guide, and inspect the output
 JSON.
 
-## Default Firebase Permissions
+## Default Firebase Realtime Database Permissions
 
-When you first create a Firebase app, you get a default rule set that allows everyone to read
-and write all data. This makes it easy to test your code, but is unsafe for production apps
-since anyone can read and overwrite any data saved by your app. In Bolt, these default
-permissions can be written as:
-
+When you first create a Firebase app, you get a default rule set that allows all authenticated users to read
+and write all Realtime Database data. In Bolt, these default permissions can be written as:
+```javascript
+path / {
+  read() { true }
+  write() { true }
+}
+```
+During the early stages of testing, many developers may open database access to unauthenticated requests. This makes it easy to test your code, but is unsafe for production apps since anyone can read and overwrite any data saved by your app. In Bolt, these open-access permissions can be written as: 
 [all_access.bolt](../samples/all_access.bolt)
 ```javascript
 path / {
@@ -38,7 +44,7 @@ The `read() { true }` and `write() { true }` methods allow everyone to read and 
 (and all children under this location). You can also use more complex expressions instead of
 `true`.  When the expression evaluates to `true` the read or write operation is allowed.
 
-Use the Bolt compiler to convert this to Firebase JSON-formatted rules:
+Use the Bolt compiler to convert this to Firebase Realtime Database JSON-formatted rules:
 
     $ firebase-bolt < all_access.bolt
 
@@ -51,40 +57,48 @@ Use the Bolt compiler to convert this to Firebase JSON-formatted rules:
 }
 ```
 
-In general, Firebase `read` and `write` expresses grant access to data based on the authentication
+In general, `read` and `write` expressions are used to grant access to data based on the authentication
 state of the user, while `validate` expressions enforce data types and the schema of data
 you allow to be saved in the database.
 
 It is important to keep in mind that, unless specified by a read or write expression, no permission
 will be granted to your database; a read/write rule will grant access to the data stored
-at a path location (and **ALL** its children).  To determine if a location is readable (writable) - you can
-look to see if **ANY** of the read (write) expressions at that location or higher evaluate to `true` (i.e.
-the effect is a boolean **OR** of all the parent read (write) expressions).
+at a path location (and **ALL** its children - a nested rule cannot revoke permission).  To determine if 
+a location is readable (writable) - you can look to see if **ANY** of the read (write) expressions 
+at that location or higher evaluate to `true` (i.e.the effect is a boolean **OR** of all the parent read 
+(write) expressions).
 
 Validatation rules are treated differently - all applicable validation rules at the written
 location (and higher) must evaluate to `true` in order for the write to be permitted (i.e., the
 effect is a boolean **AND** of all the parent validate expressions).
 
 For a more complete description of the way rules are evaluated, see the [Firebase Security and
-Rules Quickstart](https://www.firebase.com/docs/security/quickstart.html).
+Rules Quickstart](https://firebase.google.com/docs/database/security/).
 
 ## How to Use Bolt in Your Application
 
-Bolt is not (yet) integrated into the online [Firebase Security and Rules
-Dashboard](https://www.firebase.com/account/). There are two ways to use Bolt to define rules
+Bolt is not integrated into the online [Firebase Realtime Database Rules
+Dashboard](https://console.firebase.google.com/). There are two ways to use Bolt to define rules
 for your application:
 
 1. Use the firebase-bolt command line tool to generate a JSON file from your Bolt file, and
    then copy and paste the result into the Dashboard _Security and Rules_ section.
-2. Use the [Firebase Command Line](https://www.firebase.com/docs/hosting/command-line-tool.html)
-   tool.  If you have _firebase-bolt_ installed on your computer, you can set the `rules` property
-   in your [firebase.json](https://www.firebase.com/docs/hosting/guide/full-config.html) file
-   to the name of your Bolt file.  When you issue the `firebase deploy` command, it will
-   read and compile your Bolt file and upload the compiled JSON to your Firebase application.
+2. Use the [Firebase Command Line](https://firebase.google.com/docs/cli/)
+   tool.  If you have _firebase-bolt_ installed on your computer, you can set the `database`>`rules` property
+   in your firebase.json file to the name of your Bolt file:
+   ```
+   {
+        "database": {
+            "rules": "rules.bolt"
+        }
+    }
+   ```
+   When you issue the `firebase deploy` command, it will
+   read and compile your Bolt file and upload the compiled JSON to your Firebase application. 
 
 ## Data Validation
 
-The Firebase database is "schemaless" - which means that, unless you specify otherwise, any
+The Firebase Realtime Database is "schemaless" - which means that, unless you specify otherwise, any
 type or structure of data can be written anywhere in the database. By specifying a specific
 schema, you can catch coding errors early, and prevent malicious programs from writing data
 that you don't expect.
@@ -317,7 +331,7 @@ face in securing their Firebase databases.
 
 ## Dealing with Timestamps
 
-You can write timestamps (Unix time in milliseconds) in Firebase data and ensure that whenever
+You can write timestamps (Unix time in milliseconds) in Firebase Realtime Database and ensure that whenever
 a time is written, it exactly matches the (trusted) server time (independent of the clock on
 the client device).
 
@@ -334,7 +348,7 @@ type Post {
 ```
 
 Each time the Post is written, modified must be set to the current time (using
-[ServerValue.TIMESTAMP](https://www.firebase.com/docs/web/api/servervalue/timestamp.html)).
+[ServerValue.TIMESTAMP](https://firebase.google.com/docs/reference/js/firebase.database.ServerValue)).
 
 A handy way to express this is to use a user-defined type for the CurrentTimestamp:
 
@@ -474,7 +488,7 @@ initial(value, init) { value == (prior(value) == null ? init : prior(value)) }
 ## Authenticated Chat Example
 
 Compare to [JSON Authenticated Chat
-Rules](https://www.firebase.com/docs/security/guide/user-security.html#section-revisiting-advanced-example).
+Rules](https://firebase.google.com/docs/database/security/user-security#section-revisiting-advanced-example).
 
 ```javascript
 //
