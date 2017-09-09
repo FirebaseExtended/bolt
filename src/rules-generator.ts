@@ -423,17 +423,17 @@ export class Generator {
 
     // imp.alias is the alias to apply to the imports
     // schemaName.namespace is the alias applied to the type
-    if(!schema) {
+    if (!schema) {
       lSymbols.imports
         .sort(function(x, y) {
-          return x.alias ? 1: 0;
+          return x.alias ? 1 : 0;
         }).map( imp => {
-        if(imp.alias == schemaName.namespace) {
-          if(imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length == 0) {
+        if (imp.alias === schemaName.namespace) {
+          if (imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length === 0) {
             schema = imp.symbols.schema[schemaName.name];
-            if(schema) {
+            if (schema) {
               let derivedValidator = ref.createValidatorFromSchema(schema, imp.symbols);
-              return extendValidator(derivedValidator, this.ensureValidator(schema.derivedFrom,imp.symbols));
+              return extendValidator(derivedValidator, this.ensureValidator(schema.derivedFrom, imp.symbols));
             }
           }
         }
@@ -442,8 +442,8 @@ export class Generator {
 
     // Fall back to generics if it get's to that.
     // Question: Will this break the generic test below?
-    if(!schema) {
-      if(builtinSchemaNames.indexOf(schemaName.name) >=0 ){
+    if (!schema) {
+      if (builtinSchemaNames.indexOf(schemaName.name) >= 0 ) {
         schema = this.symbols.schema[schemaName.name];
       }
     }
@@ -484,7 +484,7 @@ export class Generator {
 
     if (!(schema.derivedFrom.type === 'type' &&
           (<ast.ExpSimpleType> schema.derivedFrom).name === 'Any')) {
-      extendValidator(validator, this.ensureValidator(schema.derivedFrom,lSymbols));
+      extendValidator(validator, this.ensureValidator(schema.derivedFrom, lSymbols));
     }
 
     let requiredProperties = <string[]> [];
@@ -507,7 +507,7 @@ export class Generator {
       if (propName[0] !== '$' && !this.isNullableType(propType)) {
         requiredProperties.push(propName);
       }
-      extendValidator(<Validator> validator[propName], this.ensureValidator(propType,lSymbols));
+      extendValidator(<Validator> validator[propName], this.ensureValidator(propType, lSymbols));
     });
 
     if (wildProperties > 1 || wildProperties === 1 && requiredProperties.length > 0) {
@@ -545,7 +545,7 @@ export class Generator {
     var exp: ast.ExpValue;
     var lSymbols = this.symbols;
 
-    extendValidator(location, this.ensureValidator(path.isType,lSymbols));
+    extendValidator(location, this.ensureValidator(path.isType, lSymbols));
     location['.scope'] = path.template.getScope();
 
     this.extendValidationMethods(location, path.methods);

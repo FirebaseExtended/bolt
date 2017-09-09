@@ -1,24 +1,10 @@
-let path = require('path');
 let rulesParser = require('./rules-parser');
 let fs = require('fs');
-let id = 0;
 /*
   Imports file parser for split file systems
   Note: Using a modified ES6 syntax to include imports
 */
 export function parseWithImports(filename: string) {
-  let baseSymbols: {
-    functions: any[],
-    schema: any[],
-    paths: any[],
-    imports: any[]
-  } = {
-      functions: [],
-      schema: [],
-      paths: [],
-      imports: []
-    };
-
   // creating a stream through which each file will pass
   let contents = fs.readFileSync(filename, "utf8");
   return parserWrapper(contents, filename);
@@ -51,7 +37,7 @@ function getNextFilenameFromContextAndImport(current: string, nextImport: any) {
   var currentFn = current.split('/');
   var nextFn = nextImport.split('/');
   let result = '';
-  if (nextFn[0] != '.' && nextFn[0] != '..') { // global reference
+  if (nextFn[0] !== '.' && nextFn[0] !== '..') { // global reference
     result = './node_modules/' + nextImport + '/index.bolt';
   } else {
     // import {./something} -> ['.','something'] -> ''

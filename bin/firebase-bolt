@@ -172,7 +172,7 @@ function readFile(f, callback) {
   });
 }
 
-function translateRules(input){
+function translateRules(input) {
   var symbols;
 
   try {
@@ -201,7 +201,7 @@ function translateRulesWithImports(inFile) {
     process.exit(1);
   }
 }
-function continueTranslateRules(symbols){
+function continueTranslateRules(symbols) {
   var rules;
   try {
     var gen = new bolt.Generator(symbols);

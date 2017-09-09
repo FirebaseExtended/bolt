@@ -508,7 +508,7 @@ export function method(params: string[], body: Exp): Method {
     body: body
   };
 }
-export function typeTypeNamespaced(typeName: string, namespace: string){
+export function typeTypeNamespaced(typeName: string, namespace: string) {
   return { type: "type", valueType: "type", name: typeName, namespace: namespace};
 }
 
