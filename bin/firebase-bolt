@@ -82,6 +82,8 @@ function main() {
       if (args.output !== undefined) {
         writeTranslation(util.ensureExtension(args.output, 'json'), data);
       } else {
+        // Note: Not sure but this will more than likely break some form of
+        // compatability
         console.log(translateRules(data));
       }
     });
@@ -106,13 +108,25 @@ function main() {
       log("Could not read file: " + inFile);
       process.exit(1);
     }
-    writeTranslation(outFile, data);
+    writeTranslationWithImports(outFile, data, inFile);
+  });
+}
+/**
+* Depricated: Use writeTranslation still needs to be maintained as we have the
+* ability to write the translation from STDIN not just the file system.
+* ??? Global modules should still be supported from std in.
+*/
+function writeTranslation(outFile, data, inFile) {
+  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
+    if (err2) {
+      log("Could not write file: " + outFile);
+      process.exit(1);
+    }
   });
 }
 
-function writeTranslation(outFile, data) {
-  log("Generating " + outFile + "...");
-  fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
+function writeTranslationWithImports(outFile, data, inFile) {
+  fs.writeFile(outFile, translateRulesWithImports(inFile) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
       process.exit(1);
@@ -158,12 +172,12 @@ function readFile(f, callback) {
   });
 }
 
-function translateRules(input) {
+function translateRules(input){
   var symbols;
-  var rules;
 
   try {
     symbols = bolt.parse(input);
+    return continueTranslateRules(symbols);
   } catch (e) {
     if (DEBUG) {
       log(e.stack);
@@ -171,7 +185,24 @@ function translateRules(input) {
     log(e.message, e.line, e.column);
     process.exit(1);
   }
+}
 
+function translateRulesWithImports(inFile) {
+  var symbols;
+
+  try {
+    symbols = bolt.parse(inFile);
+    return continueTranslateRules(symbols);
+  } catch (e) {
+    if (DEBUG) {
+      log(e.stack);
+    }
+    log(e.message, e.line, e.column);
+    process.exit(1);
+  }
+}
+function continueTranslateRules(symbols){
+  var rules;
   try {
     var gen = new bolt.Generator(symbols);
     rules = gen.generateRules();

@@ -33,6 +33,56 @@ suite("Rules Parser Tests", function() {
     assert.ok(result instanceof ast.Symbols);
   });
 
+  suite("Imports", function(){
+    var tests = [
+      { data: "import * from 'foo'",
+        expect: {
+          filename: ast.string('foo') ,
+          alias: ast.string(''),
+          scope: ast.boolean(true)
+        }
+      },
+      { data: "import * from '../../foo/bar'",
+        expect: {
+          filename: ast.string('../../foo/bar'),
+          alias: ast.string(''),
+          scope: ast.boolean(false)
+        }
+      },
+      { data: "import {SomeType} from './foo/bar'",
+        expect: {
+          filename: ast.string('./foo/bar'),
+          alias: ast.string(''),
+          scope: ast.boolean(false)
+        }
+      },
+      { data: "import * as lol from './foo/bar'",
+        expect: {
+          filename: ast.string('./foo/bar'),
+          alias: ast.string('lol'),
+          scope: ast.boolean(false)
+        }
+      },
+      { data: "import {SomeType} as lol from './foo-bar'",
+        expect: {
+          filename: ast.string('./foo-bar'),
+          alias: ast.string('lol'),
+          scope: ast.boolean(false)
+        }
+      }
+    ];
+    helper.dataDrivenTest(tests, function(data, expect) {
+      console.log("******!!");
+      var result = parse(data);
+      console.log("******!!");
+      console.log(result);
+      assert.deepEqual(result.imports[0].filename, expect.filename.value);
+      assert.deepEqual(result.imports[0].alias, expect.alias.value);
+      assert.deepEqual(result.imports[0].scope, expect.scope.value);
+
+    });
+  });
+
   suite("Function Samples", function() {
     var tests: helper.ObjectSpec[] = [
       { data: "function f() { return true; }",

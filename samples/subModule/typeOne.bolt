@@ -1,0 +1,25 @@
+import {TypeTwo} from './typeTwo'
+
+
+type SampleOne extends TypeTwo {
+	validate() { true }
+}
+type TypeOne extends String {
+	validate() { true }
+}
+type Alpha extends String {
+  validate() { this.test(/^[a-zA-Z]*$/) }
+}
+
+type Alphanumeric {
+  validate() { this.test(/^[a-zA-Z0-9]*$/) }
+	alphaValue: String
+}
+
+type Ascii extends String {
+  validate() { this.test(/^[\x00-\x7F]+$/) }
+}
+
+type Secondary extends String {
+   validate() { true }
+}

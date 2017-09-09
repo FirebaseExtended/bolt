@@ -91,7 +91,7 @@ gulp.task('ts-compile', ['build-peg'], function() {
       .pipe(gulp.dest(LIB_DIR));
 });
 
-gulp.task('build', ['ts-compile', 'browserify-bolt']);
+gulp.task('build', ['build-peg', 'ts-compile', 'browserify-bolt']);
 
 gulp.task('build-peg', function() {
   return gulp.src('src/rules-parser.pegjs')

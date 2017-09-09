@@ -1,0 +1,8 @@
+
+type TypeTwo extends String {
+  validate() { this.test(/^[a-z]*$/) }
+}
+
+type Fourth extends String {
+  validate() { this.test(/^4$/)}
+}
