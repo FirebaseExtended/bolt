@@ -15,10 +15,11 @@
  */
 import {assert} from 'chai';
 import * as helper from './test-helper';
-
 import * as bolt from '../bolt';
-let parse = bolt.parse;
 import * as ast from '../ast';
+
+let rulesParser = require('../rules-parser');
+let parse = rulesParser.parse;
 
 suite("Abstract Syntax Tree (AST)", function() {
   suite("Left Associative Operators (AND OR)", function() {

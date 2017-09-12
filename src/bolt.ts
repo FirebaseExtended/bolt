@@ -20,13 +20,15 @@ if (typeof Promise === 'undefined') {
 }
 
 let parser = require('./imports-parser');
+let rulesParser = require('./rules-parser');
 import * as generator from './rules-generator';
 import * as astImport from './ast';
 
 export let FILE_EXTENSION = 'bolt';
 
 export let ast = astImport;
-export let parse = parser.parseWithImports;
+export let parseWithImports = parser.parseWithImports;
+export let parse = rulesParser.parse;
 export let Generator = generator.Generator;
 export let decodeExpression = ast.decodeExpression;
 export let generate = generator.generate;

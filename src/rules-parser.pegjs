@@ -311,11 +311,14 @@ TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; }
 
 NamespacedIdentifier = namespace:(Identifier ".")? id:Identifier {
   if(namespace){
-    namespace = namespace[0];
-  }
-  return {
-    namespace: namespace,
-    id: id
+    return {
+      namespace: namespace[0],
+      id: id
+    }
+  } else {
+    return {
+      id: id
+    }
   }
 }
 

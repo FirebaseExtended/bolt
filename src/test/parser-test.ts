@@ -37,49 +37,54 @@ suite("Rules Parser Tests", function() {
     var tests = [
       { data: "import * from 'foo'",
         expect: {
-          filename: ast.string('foo') ,
-          alias: ast.string(''),
-          scope: ast.boolean(true)
+          filename: ast.string('foo'),
+          alias: ast.nullType(),
+          identifiers: ast.array([])
         }
       },
       { data: "import * from '../../foo/bar'",
         expect: {
           filename: ast.string('../../foo/bar'),
-          alias: ast.string(''),
-          scope: ast.boolean(false)
+          alias: ast.nullType(),
+          identifiers: ast.array([])
         }
       },
       { data: "import {SomeType} from './foo/bar'",
         expect: {
           filename: ast.string('./foo/bar'),
-          alias: ast.string(''),
-          scope: ast.boolean(false)
+          alias: ast.nullType(),
+          identifiers: ast.array(['SomeType'])
         }
       },
       { data: "import * as lol from './foo/bar'",
         expect: {
           filename: ast.string('./foo/bar'),
           alias: ast.string('lol'),
-          scope: ast.boolean(false)
+          identifiers: ast.array([])
         }
       },
       { data: "import {SomeType} as lol from './foo-bar'",
         expect: {
           filename: ast.string('./foo-bar'),
           alias: ast.string('lol'),
-          scope: ast.boolean(false)
+          identifiers: ast.array(['SomeType'])
         }
       }
     ];
     helper.dataDrivenTest(tests, function(data, expect) {
-      console.log("******!!");
       var result = parse(data);
-      console.log("******!!");
-      console.log(result);
       assert.deepEqual(result.imports[0].filename, expect.filename.value);
-      assert.deepEqual(result.imports[0].alias, expect.alias.value);
-      assert.deepEqual(result.imports[0].scope, expect.scope.value);
+      assert.isArray(result.imports[0].identifiers);
+      assert.equal(result.imports[0].identifiers.length, expect.identifiers.value.length);
 
+      result.imports[0].identifiers.map( (x: any, index: number) => {
+        assert.deepEqual(expect.identifiers.value[index], x);
+      });
+      if (result.imports[0].alias) {
+       assert.deepEqual(result.imports[0].alias, expect.alias.value);
+     } else {
+       assert.isUndefined(expect.alias.value);
+     }
     });
   });
 

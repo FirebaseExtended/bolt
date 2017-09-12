@@ -116,7 +116,7 @@ function main() {
 * ability to write the translation from STDIN not just the file system.
 * ??? Global modules should still be supported from std in.
 */
-function writeTranslation(outFile, data, inFile) {
+function writeTranslation(outFile, data) {
   fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
@@ -191,7 +191,7 @@ function translateRulesWithImports(inFile) {
   var symbols;
 
   try {
-    symbols = bolt.parse(inFile);
+    symbols = bolt.parseWithImports(inFile);
     return continueTranslateRules(symbols);
   } catch (e) {
     if (DEBUG) {

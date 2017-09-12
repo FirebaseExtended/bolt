@@ -508,8 +508,13 @@ export function method(params: string[], body: Exp): Method {
     body: body
   };
 }
+
 export function typeTypeNamespaced(typeName: string, namespace: string) {
-  return { type: "type", valueType: "type", name: typeName, namespace: namespace};
+  if (namespace) {
+    return { type: "type", valueType: "type", name: typeName, namespace: namespace};
+  } else {
+    return { type: "type", valueType: "type", name: typeName}; // backwards compatability for tests
+  }
 }
 
 export function typeType(typeName: string): ExpSimpleType {
