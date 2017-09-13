@@ -1,5 +1,5 @@
 import {TypeTwo} from './typeTwo'
-
+import {Email} as global from 'firebase-bolt-validation'
 
 type SampleOne extends TypeTwo {
 	validate() { true }
@@ -11,9 +11,8 @@ type Alpha extends String {
   validate() { this.test(/^[a-zA-Z]*$/) }
 }
 
-type Alphanumeric {
-  validate() { this.test(/^[a-zA-Z0-9]*$/) }
-	alphaValue: String
+type Alphanumeric extends global.Email {
+	
 }
 
 type Ascii extends String {

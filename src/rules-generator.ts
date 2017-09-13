@@ -428,8 +428,8 @@ export class Generator {
         .sort(function(x, y) {
           return x.alias ? 1 : 0;
         }).map( imp => {
-        if (imp.alias === schemaName.namespace || (!imp.alias && !schemaName.namespace)) {
-          if (imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length === 0) {
+        if (imp.alias === schemaName.namespace || (!imp.alias && !schemaName.namespace)) { // namespace match
+          if (imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length === 0) { // identifier list match
             schema = imp.symbols.schema[schemaName.name];
             if (schema) {
               let derivedValidator = ref.createValidatorFromSchema(schema, imp.symbols);
