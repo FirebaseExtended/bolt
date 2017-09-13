@@ -72,7 +72,6 @@ function main() {
     log("Can only compile a single file.");
     usage(1);
   }
-
   // Read Bolt file from stdin
   if (args._.length === 0) {
     if (process.stdin.isTTY) {
@@ -117,6 +116,7 @@ function main() {
 * ??? Global modules should still be supported from std in.
 */
 function writeTranslation(outFile, data) {
+  log("Generating " + outFile + "...");
   fs.writeFile(outFile, translateRules(data) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
@@ -126,6 +126,7 @@ function writeTranslation(outFile, data) {
 }
 
 function writeTranslationWithImports(outFile, data, inFile) {
+  log("Generating " + outFile + "...");
   fs.writeFile(outFile, translateRulesWithImports(inFile) + '\n', 'utf8', function(err2) {
     if (err2) {
       log("Could not write file: " + outFile);
