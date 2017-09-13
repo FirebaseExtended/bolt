@@ -428,7 +428,7 @@ export class Generator {
         .sort(function(x, y) {
           return x.alias ? 1 : 0;
         }).map( imp => {
-        if (imp.alias === schemaName.namespace) {
+        if (imp.alias === schemaName.namespace || (!imp.alias && !schemaName.namespace)) {
           if (imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length === 0) {
             schema = imp.symbols.schema[schemaName.name];
             if (schema) {
@@ -448,7 +448,7 @@ export class Generator {
       }
     }
     if (!schema) {
-      throw new Error(errors.noSuchType + schemaName);
+      throw new Error(errors.noSuchType + schemaName.name);
     }
 
     if (ast.Schema.isGeneric(schema)) {

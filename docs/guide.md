@@ -310,6 +310,61 @@ isCurrentUser(uid) { auth != null && auth.uid == uid }
 }
 ```
 
+## Imports
+
+Local & Global type imports are supported.
+
+### Global Module
+
+    import * from {'module'}
+
+Each modules is assumed to have an entry point under the 'node_modules/firebase-bolt-module/index.bolt' filename and will be processed from here.
+
+Example usages of global modules
+
+    $npm install 'firebase-bolt-validation'
+
+    import {'firebase-bolt-validation'}
+
+### Local Modules
+
+    import * from {'./module'}
+    import * as valTypes from {'./validation-types'}
+    import {foo} from {'./bar'}
+
+### Examples
+
+
+```javascript
+  // Module.bolt
+  import * from {'./Foo'}
+  import {Foo} from {'./Foo'}
+  import * as alias form {'./Foo'}
+
+  type Test extends Bar {
+    validate() { this.test(/^[0-9]*$/) }
+  }
+
+  type Example extends alias.Bar {
+    id: String
+  }
+
+  // Note: No duplicate import detection
+  type ExampleWithRestrictions extends Foo {
+    id: string
+  }
+
+  // Foo.bolt
+  type Bar {
+    validate() {this.test(/^[a-z0-9]$/) }
+    child: String
+  }
+
+  type Foo {
+    when: String
+  }
+```
+
 # Bolt Cookbook
 
 The rest of this guide will provide sample recipes to solve typical problems that developers
