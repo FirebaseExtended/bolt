@@ -21,7 +21,8 @@ import argparse
 import webbrowser
 import json
 
-HOST='firebaseio.com'
+HOST = "firebaseio.com"
+
 
 def main():
   parser = argparse.ArgumentParser()
@@ -30,24 +31,25 @@ def main():
 
   try:
     with open(args.file) as f:
-      print("Secrets file, {filename} already exists.".format(filename=args.file))
+      print(
+          "Secrets file, {filename} already exists.".format(filename=args.file))
       return
   except IOError:
     print("{0} does not exist.".format(args.file))
     app_name = raw_input("Firebase app: ")
-    secrets_url = 'https://console.firebase.google.com/project/{app}/settings/database'.format(app=app_name)
+    secrets_url = "https://console.firebase.google.com/project/{app}/settings/serviceaccounts/databasesecrets".format(
+        app=app_name)
     print("Copy app secret from %s ..." % secrets_url)
     webbrowser.open(secrets_url)
-    print("(if using Firebase 2.0 database, find app secret at: https://{app}.{host}?page=Admin)"\
+    print("(if using Firebase 2.0 database, find app secret at: "
+          "https://{app}.{host}?page=Admin)"\
           .format(app=app_name, host=HOST))
     secret = raw_input("Firebase Secret: ")
-    data = {
-      'APP': app_name,
-      'SECRET': secret
-    }
-    with open(args.file, 'w') as f:
-      f.write("module.exports = {json};\n".format(json=json.dumps(data, indent=2, separators=(',', ': '))))
+    data = {"APP": app_name, "SECRET": secret}
+    with open(args.file, "w") as f:
+      f.write("module.exports = {json};\n".format(
+          json=json.dumps(data, indent=2, separators=(",", ": "))))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   main()
