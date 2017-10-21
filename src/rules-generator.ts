@@ -16,8 +16,10 @@
 import * as util from './util';
 import * as ast from './ast';
 import {warn, error} from './logger';
-let parser = require('./rules-parser');
+import { parseWithImports } from './imports-parser';
 import {parseExpression} from './parse-util';
+
+let parser = require('./rules-parser');
 
 var errors = {
   badIndex: "The index function must return a String or an array of Strings.",
@@ -87,7 +89,7 @@ var writeAliases = <{ [method: string]: ast.Exp }> {
 //   json = bolt.generate(bolt-text)
 export function generate(symbols: string | ast.Symbols): Validator {
   if (typeof symbols === 'string') {
-    symbols = parser.parse(symbols);
+    symbols = parser.parse(parseWithImports(symbols));
   }
   var gen = new Generator(<ast.Symbols> symbols);
   return gen.generateRules();
@@ -246,20 +248,21 @@ export class Generator {
   // }
   // Key must derive from String
   getMapValidator(params: ast.Exp[]): Validator {
+    let lSymbols = this.symbols;
     let keyType = <ast.ExpSimpleType> params[0];
     let valueType = <ast.ExpType> params[1];
-    if (keyType.type !== 'type' || !this.symbols.isDerivedFrom(keyType, 'String')) {
+    if (keyType.type !== 'type' || !lSymbols.isDerivedFrom(keyType, 'String')) {
       throw new Error(errors.invalidMapKey + "  (" + ast.decodeExpression(keyType) + " does not)");
     }
 
     let validator = <Validator> {};
     let index = this.uniqueKey();
     validator[index] = <Validator> {};
-    extendValidator(validator, this.ensureValidator(ast.typeType('Object')));
+    extendValidator(validator, this.ensureValidator(ast.typeType('Object'), lSymbols));
 
     // First validate the key (omit terminal String type validation).
     while (keyType.name !== 'String') {
-      let schema = this.symbols.schema[keyType.name];
+      let schema = lSymbols.schema[keyType.name];
       if (schema.methods['validate']) {
         let exp = this.partialEval(schema.methods['validate'].body, {'this': ast.literal(index)});
         extendValidator(<Validator> validator[index], <Validator> {'.validate': [exp]});
@@ -267,7 +270,7 @@ export class Generator {
       keyType = <ast.ExpSimpleType> schema.derivedFrom;
     }
 
-    extendValidator(<Validator> validator[index], this.ensureValidator(valueType));
+    extendValidator(<Validator> validator[index], this.ensureValidator(valueType, lSymbols));
     return validator;
   }
 
@@ -284,29 +287,29 @@ export class Generator {
   }
 
   // Ensure we have a definition for a validator for the given schema.
-  ensureValidator(type: ast.ExpType): Validator {
+  ensureValidator(type: ast.ExpType, lSymbols: ast.Symbols): Validator {
     var key = ast.decodeExpression(type);
     if (!this.validators[key]) {
       this.validators[key] = {'.validate': ast.literal('***TYPE RECURSION***') };
 
       let allowSave = this.allowUndefinedFunctions;
       this.allowUndefinedFunctions = true;
-      this.validators[key] = this.createValidator(type);
+      this.validators[key] = this.createValidator(type, lSymbols);
       this.allowUndefinedFunctions = allowSave;
     }
     return this.validators[key];
   }
 
-  createValidator(type: ast.ExpType): Validator {
+  createValidator(type: ast.ExpType, lSymbols: ast.Symbols): Validator {
     switch (type.type) {
     case 'type':
-      return this.createValidatorFromSchemaName((<ast.ExpSimpleType> type).name);
+      return this.createValidatorFromSchemaNameNamespaced((<ast.ExpSimpleType> type), lSymbols);
 
     case 'union':
       let union = <Validator> {};
       (<ast.ExpUnionType> type).types.forEach((typePart: ast.ExpType) => {
         // Make a copy
-        var singleType = extendValidator({}, this.ensureValidator(typePart));
+        var singleType = extendValidator({}, this.ensureValidator(typePart, lSymbols));
         mapValidator(singleType, ast.andArray);
         extendValidator(union, singleType);
       });
@@ -347,7 +350,7 @@ export class Generator {
 
     // Expand generics and generate validator from schema.
     schema = this.replaceGenericsInSchema(schema, bindings);
-    return this.createValidatorFromSchema(schema);
+    return this.createValidatorFromSchema(schema, this.symbols);
   }
 
   replaceGenericsInSchema(schema: ast.Schema, bindings: ast.TypeParams): ast.Schema {
@@ -414,8 +417,48 @@ export class Generator {
     return expandedMethod;
   }
 
-  createValidatorFromSchemaName(schemaName: string): Validator {
-    var schema = this.symbols.schema[schemaName];
+  createValidatorFromSchemaNameNamespaced(schemaName: ast.ExpSimpleType, lSymbols: ast.Symbols): Validator {
+    var schema = lSymbols.schema[schemaName.name];
+    let ref = this;
+
+    // imp.alias is the alias to apply to the imports
+    // schemaName.namespace is the alias applied to the type
+    if (!schema) {
+      lSymbols.imports
+        .sort(function(x, y) {
+          return x.alias ? 1 : 0;
+        }).map( imp => {
+        if (imp.alias === schemaName.namespace || (!imp.alias && !schemaName.namespace)) { // namespace match
+          if (imp.identifiers.indexOf(schemaName.name) >= 0 || imp.identifiers.length === 0) { // identifier list match
+            schema = imp.symbols.schema[schemaName.name];
+            if (schema) {
+              let derivedValidator = ref.createValidatorFromSchema(schema, imp.symbols);
+              return extendValidator(derivedValidator, this.ensureValidator(schema.derivedFrom, imp.symbols));
+            }
+          }
+        }
+      });
+    }
+
+    // Fall back to generics if it get's to that.
+    // Question: Will this break the generic test below?
+    if (!schema) {
+      if (builtinSchemaNames.indexOf(schemaName.name) >= 0 ) {
+        schema = this.symbols.schema[schemaName.name];
+      }
+    }
+    if (!schema) {
+      throw new Error(errors.noSuchType + schemaName.name);
+    }
+
+    if (ast.Schema.isGeneric(schema)) {
+      throw new Error(errors.noSuchType + schemaName + " used as non-generic type.");
+    }
+
+    return this.createValidatorFromSchema(schema, lSymbols);
+  }
+  createValidatorFromSchemaName(schemaName: string, lSymbols: ast.Symbols): Validator {
+    var schema = lSymbols.schema[schemaName];
 
     if (!schema) {
       throw new Error(errors.noSuchType + schemaName);
@@ -425,14 +468,14 @@ export class Generator {
       throw new Error(errors.noSuchType + schemaName + " used as non-generic type.");
     }
 
-    return this.createValidatorFromSchema(schema);
+    return this.createValidatorFromSchema(schema, lSymbols);
   }
 
-  createValidatorFromSchema(schema: ast.Schema): Validator {
+  createValidatorFromSchema(schema: ast.Schema, lSymbols: ast.Symbols): Validator {
     var hasProps = Object.keys(schema.properties).length > 0 &&
       !this.isCollectionSchema(schema);
 
-    if (hasProps && !this.symbols.isDerivedFrom(schema.derivedFrom, 'Object')) {
+    if (hasProps && !lSymbols.isDerivedFrom(schema.derivedFrom, 'Object')) {
       this.fatal(errors.nonObject + " (is " + ast.decodeExpression(schema.derivedFrom) + ")");
       return {};
     }
@@ -441,7 +484,7 @@ export class Generator {
 
     if (!(schema.derivedFrom.type === 'type' &&
           (<ast.ExpSimpleType> schema.derivedFrom).name === 'Any')) {
-      extendValidator(validator, this.ensureValidator(schema.derivedFrom));
+      extendValidator(validator, this.ensureValidator(schema.derivedFrom, lSymbols));
     }
 
     let requiredProperties = <string[]> [];
@@ -464,7 +507,7 @@ export class Generator {
       if (propName[0] !== '$' && !this.isNullableType(propType)) {
         requiredProperties.push(propName);
       }
-      extendValidator(<Validator> validator[propName], this.ensureValidator(propType));
+      extendValidator(<Validator> validator[propName], this.ensureValidator(propType, lSymbols));
     });
 
     if (wildProperties > 1 || wildProperties === 1 && requiredProperties.length > 0) {
@@ -500,8 +543,9 @@ export class Generator {
     var i: number;
     var location = <Validator> util.ensureObjectPath(this.rules, path.template.getLabels());
     var exp: ast.ExpValue;
+    var lSymbols = this.symbols;
 
-    extendValidator(location, this.ensureValidator(path.isType));
+    extendValidator(location, this.ensureValidator(path.isType, lSymbols));
     location['.scope'] = path.template.getScope();
 
     this.extendValidationMethods(location, path.methods);

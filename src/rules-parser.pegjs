@@ -84,7 +84,29 @@ start = _ Statements _ {
 
 Statements = rules:(Statement _)*
 
-Statement = f:Function / p:Path / s:Schema
+Statement = i:Import / f:Function / p:Path / s:Schema
+
+AliasName "aliasname definition" = "as" _ name:Identifier {
+  return name;
+}
+
+GlobalImport "global import" = "*" {
+  return [];
+}
+
+SpecificImports "specific import" = "{" _ identifiers:IdentifierList _ "}"
+{
+  return identifiers;
+}
+
+
+Import "import definition" = "import" _ identifiers:(GlobalImport / SpecificImports)? _ alias:(AliasName)? _"from" _"'" _ filePath:FilePath _ "'"  {
+  symbols.registerImport(identifiers, alias, filePath);
+}
+
+FilePath "file path" = start:[a-zA-Z\.] rest:([a-zA-Z_\.\\\/0-9\- ])+  {
+  return start + rest.join("");
+}
 
 Function "function definition" = func:FunctionStart body:FunctionBody? {
   if (func.name === null) {
@@ -287,19 +309,32 @@ TypeExpression  = head:SingleType tail:(_ "|" _ type:SingleType { return type; }
   return ast.unionType(tail);
 }
 
+NamespacedIdentifier = namespace:(Identifier ".")? id:Identifier {
+  if(namespace){
+    return {
+      namespace: namespace[0],
+      id: id
+    }
+  } else {
+    return {
+      id: id
+    }
+  }
+}
+
 // Type, Type[], or Type<X, ... >
 // where Type[] === Map<String, Type>
-SingleType = type:Identifier opt:("\[\]" {return {isMap: true}; }
+SingleType = type:NamespacedIdentifier opt:("\[\]" {return {isMap: true}; }
                                   / "<" _ types:TypeList ">" {return {types: types};})? _ {
-  type = ensureUpperCase(type, "Type names");
+  ensureUpperCase(type.id, "Type names");
   if (!opt) {
-    return ast.typeType(type);
+    return ast.typeTypeNamespaced(type.id, type.namespace);
   }
   if (opt.isMap) {
-    return ast.genericType('Map', [ast.typeType('String'),
-                                   ast.typeType(type)]);
+    return ast.genericType('Map', [ast.typeType('String', null),
+                                   ast.typeTypeNamespaced(type.id, type.namespace)]);
   }
-  return ast.genericType(type, opt.types);
+  return ast.genericType(type.id, opt.types);
 }
 
 TypeList = head:TypeExpression tail:(_ "," _ type:TypeExpression { return type; })* _ {

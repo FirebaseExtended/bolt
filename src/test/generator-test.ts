@@ -183,7 +183,7 @@ suite("Rules Generator Tests", function() {
     helper.dataDrivenTest(tests, function(data, expect) {
       var symbols = parse("path / {}");
       var gen = new bolt.Generator(symbols);
-      gen.ensureValidator(ast.typeType(data));
+      gen.ensureValidator(ast.typeType(data), symbols);
 
       var terms = <ast.Exp[]> gen.validators[data]['.validate'];
       var result = bolt.decodeExpression(ast.andArray(terms));

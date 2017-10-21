@@ -43,6 +43,7 @@
     "browserify": "^11.0.1",
     "del": "^2.0.2",
     "eslint": "^1.1.0",
+    "firebase-bolt-validation": "0.0.3",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.0.0",
     "gulp-mocha": "^2.1.3",
