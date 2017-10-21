@@ -195,6 +195,21 @@ and the `path` keyword can also be omitted.
 
     /users/{uid} is User;
 
+Paths statments can be nested:
+
+```javascript
+path /users {
+  // Anyone can read the list of users and read a their information.
+  read() { true }
+
+  /{uid} is User {
+      // Authenticated user can write their own information.
+      write() { auth != null && auth.uid == uid }
+  }
+}
+```
+
+
 ## Write Aliases
 
 A common pattern is to have distinct rules for allowing writes to a location that represent,
