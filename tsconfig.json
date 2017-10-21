@@ -4,7 +4,7 @@
     "rootDir": "src",
     "module": "commonjs",
     "noImplicitAny": true,
-    "strictNullChecks": true,
+    "strictNullChecks": false,
     "preserveConstEnums": true,
     "inlineSourceMap": true,
     "noEmitOnError": true

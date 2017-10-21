@@ -88,7 +88,7 @@ export function lift<T>(fn: (...args: any[]) => T)
 //   fn(U, V, ...): Promise<T> => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
 export let liftArgs: <T>
   (fn: (...args: any[]) => Promise<T>) =>
-  ((...args: any[]) => Promise<T>) = lift;
+  ((...args: any[]) => Promise<T>) = <any>lift;
 
 export let getProp = lift((obj, prop) => obj[prop]);
 
