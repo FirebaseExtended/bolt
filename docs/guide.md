@@ -27,8 +27,8 @@ When you first create a Firebase app, you get a default rule set that allows all
 and write all Realtime Database data. In Bolt, these default permissions can be written as:
 ```javascript
 path / {
-  read() { true }
-  write() { true }
+  read() { auth != null }
+  write() { auth != null }
 }
 ```
 During the early stages of testing, many developers may open database access to unauthenticated requests. This makes it easy to test your code, but is unsafe for production apps since anyone can read and overwrite any data saved by your app. In Bolt, these open-access permissions can be written as: 
