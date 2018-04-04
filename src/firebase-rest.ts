@@ -25,8 +25,10 @@ var FirebaseTokenGenerator = require('firebase-token-generator');
 var FIREBASE_HOST = 'firebaseio.com';
 var DEBUG_HEADER = 'x-firebase-auth-debug';
 
-export var RULES_LOCATION =  '/.settings/rules';
-export var TIMESTAMP = {".sv": "timestamp"};
+export var RULES_LOCATION = '/.settings/rules';
+export var TIMESTAMP = {
+  '.sv': 'timestamp'
+};
 
 type RequestOptions = {
   method: string,
@@ -36,9 +38,9 @@ type RequestOptions = {
 export class Client {
   private debug = false;
 
-  constructor(private appName: string,
-              private authToken?: string,
-              public uid?: string) {}
+  constructor(
+      private appName: string, private authToken?: string,
+      public uid?: string) {}
 
   setDebug(debug = true) {
     this.debug = debug;
@@ -75,10 +77,9 @@ export class Client {
 
     content = util.prettyJSON(content);
 
-    return request(options, content, this.debug)
-      .then(function(body: string) {
-        return body === '' ? null : JSON.parse(body);
-      });
+    return request(options, content, this.debug).then(function(body: string) {
+      return body === '' ? null : JSON.parse(body);
+    });
   }
 }
 
@@ -90,13 +91,13 @@ function request(options: any, content: any, debug: boolean): Promise<string> {
 
   function log(s: string): void {
     if (debug) {
-      console.error("Request<" + rid + ">: " + s);
+      console.error('Request<' + rid + '>: ' + s);
     }
   }
 
-  log("Request: " + util.prettyJSON(options));
+  log('Request: ' + util.prettyJSON(options));
   if (content) {
-    log("Body: '" + content + "'");
+    log('Body: \'' + content + '\'');
   }
 
   return new Promise(function(resolve, reject) {
@@ -110,17 +111,19 @@ function request(options: any, content: any, debug: boolean): Promise<string> {
 
       res.on('end', function() {
         var result: string = chunks.join('');
-        log("Result (" + res.statusCode + "): '" + result + "'");
-        let message = "Status = " + res.statusCode + " " + result;
+        log('Result (' + res.statusCode + '): \'' + result + '\'');
+        let message = 'Status = ' + res.statusCode + ' ' + result;
 
-        // Dump debug information if present for both successful and failed requests.
+        // Dump debug information if present for both successful and failed
+        // requests.
         if (res.headers[DEBUG_HEADER]) {
-          let formattedHeader = res.headers[DEBUG_HEADER].split(' /').join('\n  /');
+          let formattedHeader =
+              res.headers[DEBUG_HEADER].split(' /').join('\n  /');
           log(formattedHeader);
-          message += "\n" + formattedHeader;
+          message += '\n' + formattedHeader;
         }
 
-        if (Math.floor(res.statusCode / 100) !== 2) {
+        if (res.statusCode && Math.floor(res.statusCode / 100) !== 2) {
           reject(new Error(message));
         } else {
           resolve(result);
@@ -134,7 +137,7 @@ function request(options: any, content: any, debug: boolean): Promise<string> {
     req.end();
 
     req.on('error', function(error: Error) {
-      log("Request error: " + error);
+      log('Request error: ' + error);
       reject(error);
     });
   });
@@ -142,35 +145,41 @@ function request(options: any, content: any, debug: boolean): Promise<string> {
 
 // opts { debug: Boolean, admin: Boolean }
 export function generateUidAuthToken(secret: string, opts: any) {
-  opts = util.extend({ debug: false, admin: false }, opts);
+  opts = util.extend({debug: false, admin: false}, opts);
 
   var tokenGenerator = new FirebaseTokenGenerator(secret);
   var uid = uuid.v4();
-  var token = tokenGenerator.createToken({ uid: uid }, opts);
-  return { uid: uid, token: token };
+  var token = tokenGenerator.createToken({uid: uid}, opts);
+  return {uid: uid, token: token};
 }
 
 /**
- * Fancy ID generator that creates 20-character string identifiers with the following properties:
+ * Fancy ID generator that creates 20-character string identifiers with the
+ * following properties:
  *
  * 1. They're based on timestamp so that they sort *after* any existing ids.
- * 2. They contain 72-bits of random data after the timestamp so that IDs won't collide with other clients' IDs.
- * 3. They sort *lexicographically* (so the timestamp is converted to characters that will sort properly).
- * 4. They're monotonically increasing.  Even if you generate more than one in the same timestamp, the
- *    latter ones will sort after the former ones.  We do this by using the previous random bits
- *    but "incrementing" them by 1 (only in the case of a timestamp collision).
+ * 2. They contain 72-bits of random data after the timestamp so that IDs won't
+ * collide with other clients' IDs.
+ * 3. They sort *lexicographically* (so the timestamp is converted to characters
+ * that will sort properly).
+ * 4. They're monotonically increasing.  Even if you generate more than one in
+ * the same timestamp, the latter ones will sort after the former ones.  We do
+ * this by using the previous random bits but "incrementing" them by 1 (only in
+ * the case of a timestamp collision).
  */
 
 // Modeled after base64 web-safe chars, but ordered by ASCII.
-var PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+var PUSH_CHARS =
+    '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
 
-// Timestamp of last push, used to prevent local collisions if you push twice in one ms.
+// Timestamp of last push, used to prevent local collisions if you push twice in
+// one ms.
 var lastPushTime = 0;
 
-// We generate 72-bits of randomness which get turned into 12 characters and appended to the
-// timestamp to prevent collisions with other clients.  We store the last characters we
-// generated because in the event of a collision, we'll use those same characters except
-// "incremented" by one.
+// We generate 72-bits of randomness which get turned into 12 characters and
+// appended to the timestamp to prevent collisions with other clients.  We store
+// the last characters we generated because in the event of a collision, we'll
+// use those same characters except "incremented" by one.
 var lastRandChars = <number[]>[];
 
 export function generatePushID(): string {
@@ -181,7 +190,8 @@ export function generatePushID(): string {
   var timeStampChars = new Array(8);
   for (var i = 7; i >= 0; i--) {
     timeStampChars[i] = PUSH_CHARS.charAt(now % 64);
-    // NOTE: Can't use << here because javascript will convert to int and lose the upper bits.
+    // NOTE: Can't use << here because javascript will convert to int and lose
+    // the upper bits.
     now = Math.floor(now / 64);
   }
   if (now !== 0) {
@@ -195,7 +205,8 @@ export function generatePushID(): string {
       lastRandChars[i] = Math.floor(Math.random() * 64);
     }
   } else {
-    // If the timestamp hasn't changed since last push, use the same random number, except incremented by 1.
+    // If the timestamp hasn't changed since last push, use the same random
+    // number, except incremented by 1.
     for (i = 11; i >= 0 && lastRandChars[i] === 63; i--) {
       lastRandChars[i] = 0;
     }

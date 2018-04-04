@@ -4,8 +4,8 @@
 [![NPM Version](https://badge.fury.io/js/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 [![NPM Downloads](http://img.shields.io/npm/dm/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 
-Bolt is an experimental security and rules compiler for Firebase.  It is currently
-in beta.  The language definition is converging, but not yet finalized.  We welcome
+Bolt is an experimental security and rules compiler for Firebase Realtime Database (not for Firebase Cloud Storage). 
+It is currently in beta.  The language definition is converging, but not yet finalized.  We welcome
 experimentation, but ask that you hand-verify the resulting JSON output before
 using with production applications.
 
@@ -28,8 +28,9 @@ Execute the Bolt compiler from the command line:
 
     $ firebase-bolt rules.bolt
 
-Will create a rules.json which you can then upload via the [firebase command
-line](https://www.firebase.com/docs/hosting/command-line-tool.html):
+Will create a rules.json which you can then upload via the [Firebase Web Console](https://console.firebase.google.com/)
+or the [Firebase command
+line](https://firebase.google.com/docs/cli):
 
     $ firebase deploy
 

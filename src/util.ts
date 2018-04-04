@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-type Object = {[prop: string]: any};
+type Object = {
+  [prop: string]: any
+};
 export function extend(dest: Object, ...srcs: Object[]): Object {
   var i: number;
   var source: any;
@@ -38,11 +40,15 @@ export function copyArray(arg: ArrayLike<any>): any[] {
   return Array.prototype.slice.call(arg);
 }
 
-var baseTypes = ['number', 'string', 'boolean', 'array', 'function', 'date',
-                 'regexp', 'arguments', 'undefined', 'null'];
+var baseTypes = [
+  'number', 'string', 'boolean', 'array', 'function', 'date', 'regexp',
+  'arguments', 'undefined', 'null'
+];
 
 function internalType(value: any): string {
-  return Object.prototype.toString.call(value).match(/\[object (.*)\]/)[1].toLowerCase();
+  return Object.prototype.toString.call(value)
+      .match(/\[object (.*)\]/)[1]
+      .toLowerCase();
 }
 
 export function isType(value: any, type: string): boolean {
@@ -65,30 +71,30 @@ export function typeOf(value: any): string {
 }
 
 export function isThenable(obj: any): boolean {
-  return typeOf(obj) === 'object' && 'then' in obj && typeof(obj.then) === 'function';
+  return typeOf(obj) === 'object' && 'then' in obj &&
+      typeof (obj.then) === 'function';
 }
 
 // Converts a synchronous function to one allowing Promises
 // as arguments and returning a Promise value.
 //
 //   fn(U, V, ...): T => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
-export function lift<T>(fn: (...args: any[]) => T)
-: (...args: any[]) => Promise<T> {
+export function lift<T>(fn: (...args: any[]) => T): (...args: any[]) =>
+    Promise<T> {
   return function(...args: any[]): Promise<T> {
-    return Promise.all(args)
-      .then((values: any[]) => {
-        return fn.apply(undefined, values);
-      });
+    return Promise.all(args).then((values: any[]) => {
+      return fn.apply(undefined, values);
+    });
   };
 }
 
 // Converts an asynchronous function to one allowing Promises
 // as arguments.
 //
-//   fn(U, V, ...): Promise<T> => fn(U | Promise<U>, V | Promise<V>, ...): Promise<T>
-export let liftArgs: <T>
-  (fn: (...args: any[]) => Promise<T>) =>
-  ((...args: any[]) => Promise<T>) = lift;
+//   fn(U, V, ...): Promise<T> => fn(U | Promise<U>, V | Promise<V>, ...):
+//   Promise<T>
+export let liftArgs: <T>(fn: (...args: any[]) => Promise<T>) =>
+    ((...args: any[]) => Promise<T>) = <any>lift;
 
 export let getProp = lift((obj, prop) => obj[prop]);
 
@@ -114,7 +120,7 @@ function deepExtend(target: Object, source: Object): void {
     }
 
     if (target[prop] !== undefined) {
-      throw new Error("Property overwrite: " + prop);
+      throw new Error('Property overwrite: ' + prop);
     }
 
     if (isType(source[prop], 'object')) {
@@ -126,7 +132,7 @@ function deepExtend(target: Object, source: Object): void {
   }
 }
 
-export function deepLookup(o: Object, path: string[]): Object | undefined {
+export function deepLookup(o: Object, path: string[]): Object|undefined {
   let result = o;
 
   for (let i = 0; i < path.length; i++) {
@@ -138,12 +144,12 @@ export function deepLookup(o: Object, path: string[]): Object | undefined {
   return result;
 }
 
-// Like JSON.stringify - but for single-quoted strings instead of double-quoted ones.
-// This just makes the compiled rules much easier to read.
+// Like JSON.stringify - but for single-quoted strings instead of double-quoted
+// ones. This just makes the compiled rules much easier to read.
 
 // Quote all control characters, slash, single quotes, and non-ascii printables.
 var quotableCharacters = /[\u0000-\u001f\\\'\u007f-\uffff]/g;
-var specialQuotes = <{[c: string]: string}> {
+var specialQuotes = <{[c: string]: string}>{
   '\'': '\\\'',
   '\b': '\\b',
   '\t': '\\t',
@@ -159,7 +165,7 @@ export function quoteString(s: string): string {
     }
     return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
   });
-  return "'" + s + "'";
+  return '\'' + s + '\'';
 }
 
 export function arrayIncludes(a: any[], e: any): boolean {
@@ -193,7 +199,8 @@ export function ensureObjectPath(obj: Object, parts: string[]): Object {
   return obj;
 }
 
-// Remove all empty, '{}',  children and undefined - returns true iff obj is empty.
+// Remove all empty, '{}',  children and undefined - returns true iff obj is
+// empty.
 export function pruneEmptyChildren(obj: Object): boolean {
   if (obj === undefined) {
     return true;
@@ -233,7 +240,7 @@ export function deletePropName(obj: Object, name: string) {
 
 export function formatColumns(indent: number, lines: string[][]): string[] {
   let result: string[] = [];
-  let columnSize = <number[]> [];
+  let columnSize = <number[]>[];
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -249,8 +256,8 @@ export function formatColumns(indent: number, lines: string[][]): string[] {
   var s: string;
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
-    let sep = "";
-    s = "";
+    let sep = '';
+    s = '';
     for (let j = 0; j < line.length; j++) {
       if (j === 0) {
         s = prefix;
@@ -260,7 +267,7 @@ export function formatColumns(indent: number, lines: string[][]): string[] {
       } else {
         s += sep + fillString(line[j], columnSize[j]);
       }
-      sep = "  ";
+      sep = '  ';
     }
     result.push(s);
   }
