@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-type Object = {
+export type Object = {
   [prop: string]: any
 };
 export function extend(dest: Object, ...srcs: Object[]): Object {

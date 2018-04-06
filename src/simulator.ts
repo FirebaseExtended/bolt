@@ -43,7 +43,7 @@ export function rulesSuite(suiteName: string, fnSuite: SuiteFunction) {
   new RulesSuite(suiteName, fnSuite).run();
 }
 
-class RulesSuite {
+export class RulesSuite {
   public  debug = false;
   private users = <{[name: string]: rest.Client}>{};
   private tests = <RulesTest[]>[];
