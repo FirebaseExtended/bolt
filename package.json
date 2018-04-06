@@ -4,6 +4,7 @@
   "version": "0.8.2",
   "author": "Firebase (https://firebase.google.com/)",
   "main": "lib/bolt.js",
+  "types": "lib/bolt.d.ts",
   "homepage": "https://github.com/firebase/bolt",
   "repository": {
     "type": "git",

@@ -30,7 +30,7 @@ export var TIMESTAMP = {
   '.sv': 'timestamp'
 };
 
-type RequestOptions = {
+export type RequestOptions = {
   method: string,
   print?: string;
 }

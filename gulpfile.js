@@ -84,11 +84,14 @@ gulp.task('ts-compile', ['build-peg'], function() {
     // the version built into gulp-typescript.
     typescript: require('typescript')
   });
-  return tsProject.src()
+  var tsResult = tsProject.src()
       .pipe(sourcemaps.init())
-      .pipe(ts(tsProject))
-      .pipe(sourcemaps.write())
-      .pipe(gulp.dest(LIB_DIR));
+      .pipe(ts(tsProject));
+
+  return merge([
+    tsResult.pipe(sourcemaps.write()).pipe(gulp.dest(LIB_DIR)),
+    tsResult.dts.pipe(gulp.dest(LIB_DIR)),
+  ]);
 });
 
 gulp.task('build', ['ts-compile', 'browserify-bolt']);
