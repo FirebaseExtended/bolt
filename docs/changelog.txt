@@ -1,1 +1,1 @@
--added - PR #227 include typescript declaration files
+feature - PR #227 include typescript declaration files
