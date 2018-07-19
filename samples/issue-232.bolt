@@ -1,0 +1,27 @@
+function isAuth() {
+  (auth != null);
+}
+
+function isUser(user) {
+  isAuth() && (user == auth.uid);
+}
+
+function isAdmin() {
+  isAuth() && (root.child('admins').child(auth.uid).val() != null);
+}
+
+path /users/{key1} {
+  read() {
+    isUser(key1) || isAdmin();
+  }
+}
+
+path /profile/{key1} {
+  create() {
+    isUser(key1);
+  }
+
+  update() {
+    isUser(key1);
+  }
+}

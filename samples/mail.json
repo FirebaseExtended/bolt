@@ -4,7 +4,7 @@
       "$userid": {
         "inbox": {
           "$msg": {
-            ".validate": "newData.hasChildren(['from', 'to', 'message']) && data.val() == null && (auth != null && auth.uid == newData.child('from').val())",
+            ".validate": "((newData.hasChildren(['from', 'to', 'message']) && data.val() == null) && (auth != null && auth.uid == newData.child('from').val()))",
             "from": {
               ".validate": "newData.isString()"
             },
@@ -17,13 +17,13 @@
             "$other": {
               ".validate": "false"
             },
-            ".read": "auth != null && auth.uid == $userid",
-            ".write": "data.val() == null || auth != null && auth.uid == $userid"
+            ".read": "(auth != null && auth.uid == $userid)",
+            ".write": "(data.val() == null || (auth != null && auth.uid == $userid))"
           }
         },
         "outbox": {
           "$msg": {
-            ".validate": "newData.hasChildren(['from', 'to', 'message']) && data.val() == null && (auth != null && auth.uid == newData.child('from').val())",
+            ".validate": "((newData.hasChildren(['from', 'to', 'message']) && data.val() == null) && (auth != null && auth.uid == newData.child('from').val()))",
             "from": {
               ".validate": "newData.isString()"
             },
@@ -36,8 +36,8 @@
             "$other": {
               ".validate": "false"
             },
-            ".read": "auth != null && auth.uid == $userid",
-            ".write": "auth != null && auth.uid == $userid"
+            ".read": "(auth != null && auth.uid == $userid)",
+            ".write": "(auth != null && auth.uid == $userid)"
           }
         }
       }

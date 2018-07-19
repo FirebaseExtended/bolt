@@ -2,7 +2,7 @@
   "rules": {
     "test": {
       "$key1": {
-        ".validate": "root.val() != null && newData.isString()"
+        ".validate": "(root.val() != null && newData.isString())"
       },
       ".validate": "newData.hasChildren()"
     }

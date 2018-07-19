@@ -705,6 +705,11 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
         decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
         decodeExpression(expOp.args[2], innerPrecedence);
     }
+
+    if ((innerPrecedence >= outerPrecedence) && ((expOp.op === '&&') || (expOp.op === '||'))) {
+      result = '(' + result + ')';
+    }
+
     break;
 
   case 'type':

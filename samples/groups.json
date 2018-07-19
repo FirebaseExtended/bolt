@@ -2,10 +2,10 @@
   "rules": {
     "groups": {
       "$gid": {
-        ".validate": "newData.hasChildren() && members != null",
+        ".validate": "(newData.hasChildren() && members != null)",
         "members": {
           "$key1": {
-            ".validate": "newData.hasChildren(['uid', 'name']) && $key1.length == 1 && $key1 >= '0' && $key1 <= '9'",
+            ".validate": "(((newData.hasChildren(['uid', 'name']) && $key1.length == 1) && $key1 >= '0') && $key1 <= '9')",
             "uid": {
               ".validate": "newData.isString()"
             },
