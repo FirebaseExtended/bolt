@@ -153,7 +153,7 @@ To access properties of a type in an expression, use the `this` variable  (e.g. 
     "posts": {
       ".read": "true",
       "$id": {
-        ".validate": "newData.hasChildren(['message', 'from']) && newData.child('message').val().length <= 140",
+        ".validate": "(newData.hasChildren(['message', 'from']) && newData.child('message').val().length <= 140)",
         "message": {
           ".validate": "newData.isString()"
         },
@@ -203,7 +203,7 @@ type Person {
       ".validate": "newData.isBoolean()"
     },
     "extra": {
-      ".validate": "newData.hasChildren() || newData.val() == null"
+      ".validate": "newData.hasChildren()"
     },
     "$other": {
       ".validate": "false"
@@ -252,7 +252,7 @@ This example compiles to:
       "$id": {
         ".validate": "newData.hasChildren(['name', 'isAdmin'])",
         "name": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 32"
+          ".validate": "((newData.isString() && newData.val().length > 0) && newData.val().length <= 32)"
         },
         "isAdmin": {
           ".validate": "newData.isBoolean()"
@@ -266,7 +266,7 @@ This example compiles to:
       "$id": {
         ".validate": "newData.hasChildren(['name', 'creator'])",
         "name": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 32"
+          ".validate": "((newData.isString() && newData.val().length > 0) && newData.val().length <= 32)"
         },
         "creator": {
           ".validate": "newData.isString()"
@@ -311,13 +311,13 @@ isCurrentUser(uid) { auth != null && auth.uid == uid }
           ".validate": "newData.isString()"
         },
         "age": {
-          ".validate": "newData.isNumber() || newData.val() == null"
+          ".validate": "newData.isNumber()"
         },
         "$other": {
           ".validate": "false"
         },
         ".read": "true",
-        ".write": "auth != null && auth.uid == $userid"
+        ".write": "(auth != null && auth.uid == $userid)"
       }
     }
   }
@@ -409,10 +409,10 @@ Note the special function `prior(ref)` - returns the previous value stored at a 
           ".validate": "newData.isString()"
         },
         "modified": {
-          ".validate": "newData.isNumber() && newData.val() == now"
+          ".validate": "(newData.isNumber() && newData.val() == now)"
         },
         "created": {
-          ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data.val())"
+          ".validate": "(newData.isNumber() && newData.val() == (data.val() == null ? now : data.val()))"
         },
         "$other": {
           ".validate": "false"
@@ -472,10 +472,10 @@ initial(value, init) { value == (prior(value) == null ? init : prior(value)) }
           ".validate": "false"
         },
         "modified": {
-          ".validate": "newData.isNumber() && newData.val() == now"
+          ".validate": "(newData.isNumber() && newData.val() == now)"
         },
         "created": {
-          ".validate": "newData.isNumber() && newData.val() == (data.val() == null ? now : data.val())"
+          ".validate": "(newData.isNumber() && newData.val() == (data.val() == null ? now : data.val()))"
         },
         ".read": "true",
         ".write": "true"
@@ -561,36 +561,37 @@ createOnly(value) { prior(value) == null && value != null }
       "$key1": {
         ".validate": "newData.isString()"
       },
+      ".validate": "newData.hasChildren()",
       ".read": "auth != null"
     },
     "members": {
       "$room_id": {
-        ".read": "auth != null && root.child('members').child($room_id).child(auth.uid).val() != null",
+        ".read": "(auth != null && root.child('members').child($room_id).child(auth.uid).val() != null)",
         "$user_id": {
-          ".validate": "newData.val().length > 0 && newData.val().length < 20",
-          ".write": "auth != null && auth.uid == $user_id"
+          ".validate": "(newData.val().length > 0 && newData.val().length < 20)",
+          ".write": "(auth != null && auth.uid == $user_id)"
         }
       }
     },
     "messages": {
       "$room_id": {
         ".validate": "root.child('room_names').child($room_id).val() != null",
-        ".read": "auth != null && root.child('members').child($room_id).child(auth.uid).val() != null",
+        ".read": "(auth != null && root.child('members').child($room_id).child(auth.uid).val() != null)",
         "$message_id": {
           ".validate": "newData.hasChildren(['name', 'message', 'timestamp'])",
           "name": {
-            ".validate": "newData.val().length > 0 && newData.val().length < 20"
+            ".validate": "(newData.val().length > 0 && newData.val().length < 20)"
           },
           "message": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 50"
+            ".validate": "((newData.isString() && newData.val().length > 0) && newData.val().length < 50)"
           },
           "timestamp": {
-            ".validate": "newData.isNumber() && newData.val() == now"
+            ".validate": "(newData.isNumber() && newData.val() == now)"
           },
           "$other": {
             ".validate": "false"
           },
-          ".write": "data.val() == null && newData.val() != null && (auth != null && root.child('members').child($room_id).child(auth.uid).val() != null)"
+          ".write": "((data.val() == null && newData.val() != null) && (auth != null && root.child('members').child($room_id).child(auth.uid).val() != null))"
         }
       }
     }
