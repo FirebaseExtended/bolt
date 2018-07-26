@@ -2,13 +2,13 @@
   "rules": {
     ".validate": "newData.hasChildren(['time', 'name', 'url'])",
     "time": {
-      ".validate": "newData.isNumber() && newData.val() >= 0"
+      ".validate": "(newData.isNumber() && newData.val() >= 0)"
     },
     "name": {
-      ".validate": "newData.isString() && newData.val().length > 0"
+      ".validate": "(newData.isString() && newData.val().length > 0)"
     },
     "url": {
-      ".validate": "newData.isString() && newData.val().beginsWith('http')"
+      ".validate": "(newData.isString() && newData.val().beginsWith('http'))"
     },
     "$other": {
       ".validate": "false"

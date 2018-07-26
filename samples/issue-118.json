@@ -24,7 +24,7 @@
         "$key1": {
           ".validate": "newData.isNumber()"
         },
-        ".validate": "newData.hasChildren() || newData.isNumber()"
+        ".validate": "(newData.hasChildren() || newData.isNumber())"
       },
       "map": {
         "$key1": {
@@ -36,7 +36,7 @@
         "$key1": {
           ".validate": "newData.isNumber()"
         },
-        ".validate": "newData.hasChildren() || newData.isNumber()"
+        ".validate": "(newData.hasChildren() || newData.isNumber())"
       },
       "$other": {
         ".validate": "false"

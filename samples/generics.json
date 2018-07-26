@@ -3,7 +3,7 @@
     ".validate": "newData.hasChildren()",
     "users": {
       "$key1": {
-        ".validate": "newData.hasChildren(['name', 'age']) && $key1.length == 20",
+        ".validate": "(newData.hasChildren(['name', 'age']) && $key1.length == 20)",
         "name": {
           ".validate": "newData.isString()"
         },
@@ -18,9 +18,9 @@
     },
     "products": {
       "$key2": {
-        ".validate": "newData.hasChildren(['id', 'cost']) && $key2.length <= 20 && $key2 == newData.child('id').val()",
+        ".validate": "((newData.hasChildren(['id', 'cost']) && $key2.length <= 20) && $key2 == newData.child('id').val())",
         "id": {
-          ".validate": "newData.isString() && newData.val().length <= 20"
+          ".validate": "(newData.isString() && newData.val().length <= 20)"
         },
         "cost": {
           ".validate": "newData.isNumber()"

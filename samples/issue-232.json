@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "users": {
+      "$key1": {
+        ".read": "((auth != null && $key1 == auth.uid) || (auth != null && root.child('admins').child(auth.uid).val() != null))"
+      }
+    },
+    "profile": {
+      "$key1": {
+        ".write": "((data.val() == null && (auth != null && $key1 == auth.uid)) || ((data.val() != null && newData.val() != null) && (auth != null && $key1 == auth.uid)))"
+      }
+    }
+  }
+}

@@ -2,13 +2,13 @@
   "rules": {
     "secret": {
       "$uid": {
-        ".validate": "newData.isString() && newData.parent().parent().child('users').child($uid).val() != null",
-        ".read": "auth != null && auth.uid == $uid"
+        ".validate": "(newData.isString() && newData.parent().parent().child('users').child($uid).val() != null)",
+        ".read": "(auth != null && auth.uid == $uid)"
       }
     },
     "users": {
       "$uid": {
-        ".validate": "newData.hasChildren(['name']) && newData.parent().parent().child('secret').child($uid).val() != null",
+        ".validate": "(newData.hasChildren(['name']) && newData.parent().parent().child('secret').child($uid).val() != null)",
         "name": {
           ".validate": "newData.isString()"
         },

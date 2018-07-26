@@ -42,10 +42,10 @@ suite("Rules Generator Tests", function() {
         expect: { rules: {".write": "data.val() == null"} }
       },
       { data: "path / { update() { true }}",
-        expect: { rules: {".write": "data.val() != null && newData.val() != null"} }
+        expect: { rules: {".write": "(data.val() != null && newData.val() != null)"} }
       },
       { data: "path / { delete() { true }}",
-        expect: { rules: {".write": "data.val() != null && newData.val() == null"} }
+        expect: { rules: {".write": "(data.val() != null && newData.val() == null)"} }
       },
       { data: "path / {read() { true }}",
         expect: { rules: {".read": "true"} }
@@ -114,7 +114,7 @@ suite("Rules Generator Tests", function() {
       { f: "", x: "this.foo.parent()", expect: "newData.child('foo').parent().val() == true" },
       { f: "",
         x: "this.foo || this.bar",
-        expect: "newData.child('foo').val() == true || newData.child('bar').val() == true"},
+        expect: "(newData.child('foo').val() == true || newData.child('bar').val() == true)"},
       // TODO: Don't support snapshot functions beyond parent.
       // TODO: Should warn user not to use Firebase builtins!
       // { f: "", x: "this.isString()", expect: "newData.child('isString').val() == true" },
@@ -200,12 +200,12 @@ suite("Rules Generator Tests", function() {
       { data: "type T extends String {}",
         expect: {'.validate': "newData.isString()"} },
       { data: "type T extends String { validate() { return this.length > 0; } }",
-        expect: {'.validate': "newData.isString() && newData.val().length > 0"} },
+        expect: {'.validate': "(newData.isString() && newData.val().length > 0)"} },
       { data: "type NonEmpty extends String { validate() { return this.length > 0; } } \
             type T { prop: NonEmpty }",
         expect: {'.validate': "newData.hasChildren(['prop'])",
                  prop: {
-                   '.validate': 'newData.isString() && newData.val().length > 0'
+                   '.validate': '(newData.isString() && newData.val().length > 0)'
                  },
                  '$other': {'.validate': "false"}
                 } },
@@ -227,7 +227,7 @@ suite("Rules Generator Tests", function() {
                  '$other': {'.validate': "false"}} },
       { data: "type T {x: Number|String}",
         expect: {'.validate': "newData.hasChildren(['x'])",
-                 x: {'.validate': "newData.isNumber() || newData.isString()"},
+                 x: {'.validate': "(newData.isNumber() || newData.isString())"},
                  '$other': {'.validate': "false"}} },
 
       { data: "type T { $key: Number }",
@@ -249,13 +249,13 @@ suite("Rules Generator Tests", function() {
                  x: {'.validate': "newData.isNumber()"},
                  '$other': {'.validate': "false"}} },
       { data: "type T {n: Number, validate() {return this.n < 7;}}",
-        expect: {'.validate': "newData.hasChildren(['n']) && newData.child('n').val() < 7",
+        expect: {'.validate': "(newData.hasChildren(['n']) && newData.child('n').val() < 7)",
                  n: {'.validate': "newData.isNumber()"},
                  '$other': {'.validate': "false"}} },
       { data: "type Bigger extends Number {validate() { return this > prior(this); }}" +
         "type T { ts: Bigger }",
         expect: {'.validate': "newData.hasChildren(['ts'])",
-                 ts: {'.validate': "newData.isNumber() && newData.val() > data.val()"},
+                 ts: {'.validate': "(newData.isNumber() && newData.val() > data.val())"},
                  '$other': {'.validate': "false"}} },
       { data: "type T {a: String, b: String, c: String}",
         expect: {'.validate': "newData.hasChildren(['a', 'b', 'c'])",
@@ -283,7 +283,7 @@ suite("Rules Generator Tests", function() {
       { data: "type SmallString extends String { validate() { this.length < 32 } } " +
               "type T {x: Map<SmallString, Number>}",
         expect: {'.validate': "newData.hasChildren()",
-                 x: {'$key1': {'.validate': "$key1.length < 32 && newData.isNumber()"},
+                 x: {'$key1': {'.validate': "($key1.length < 32 && newData.isNumber())"},
                      '.validate': "newData.hasChildren()" },
                  '$other': {'.validate': "false"}} },
       { data: "type M extends Map<String, Number>; type T { x: M }",
@@ -298,13 +298,13 @@ suite("Rules Generator Tests", function() {
                  '$other': {'.validate': "false"}} },
 
       { data: "type X { a: Number, validate() { this.a == key() } } type T extends X[];",
-        expect: {'$key1': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == $key1",
+        expect: {'$key1': {'.validate': "(newData.hasChildren(['a']) && newData.child('a').val() == $key1)",
                            'a': {'.validate': "newData.isNumber()"},
                            '$other': {'.validate': "false"}},
                  '.validate': "newData.hasChildren()"
                 } },
       { data: "type X { a: Number, validate() { this.a == key() } } type T { x: X }",
-        expect: {'x': {'.validate': "newData.hasChildren(['a']) && newData.child('a').val() == 'x'",
+        expect: {'x': {'.validate': "(newData.hasChildren(['a']) && newData.child('a').val() == 'x')",
                        'a': {'.validate': "newData.isNumber()"},
                        '$other': {'.validate': "false"}},
                  '$other': {'.validate': "false"},
@@ -313,7 +313,7 @@ suite("Rules Generator Tests", function() {
 
       { data: "type T extends String { validate() { root == 'new' && prior(root) == 'old' } }" +
               "path /t/x is Any { read() { root == 'old' } }",
-        expect: {'.validate': "newData.isString() && newData.parent().val() == 'new' && root.val() == 'old'",
+        expect: {'.validate': "((newData.isString() && newData.parent().val() == 'new') && root.val() == 'old')",
                  'x': {'.read': "root.val() == 'old'"}
                 } },
     ];

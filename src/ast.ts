@@ -699,12 +699,17 @@ export function decodeExpression(exp: Exp, outerPrecedence?: number): string {
         // down on the right hand side to force () for right-associating
         // operations.
         decodeExpression(expOp.args[1], innerPrecedence + 1);
+
+        if ((innerPrecedence >= outerPrecedence) && ((expOp.op === '&&') || (expOp.op === '||'))) {
+          result = '(' + result + ')';
+        }
     } else if (expOp.args.length === 3) {
       result =
         decodeExpression(expOp.args[0], innerPrecedence) + ' ? ' +
         decodeExpression(expOp.args[1], innerPrecedence) + ' : ' +
         decodeExpression(expOp.args[2], innerPrecedence);
     }
+
     break;
 
   case 'type':
