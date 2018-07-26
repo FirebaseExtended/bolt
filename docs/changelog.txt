@@ -1,0 +1,1 @@
+fixed - Issue #232 and #230. Add grouping operator to rules output to enforce the correct evaluation in expressions.
