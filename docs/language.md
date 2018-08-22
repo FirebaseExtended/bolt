@@ -31,6 +31,7 @@ A (user-defined) type statement describes a value that can be stored in the Fire
 type MyType [extends BaseType] {
   property1: Type,
   property2: Type,
+  $wildcardProp: Type
   ...
 
   validate() { <validation expression> }
@@ -54,6 +55,12 @@ Property names in type statements should be valid Identifiers (see below).  If y
 to use any other character in a property name, you can enclose them in quotes (note
 that Firebase allows any character in a path *except* for `.`, `$`, `#`, `[`, `[`, `/`,
 or control characters).
+
+When a type statement contains a wildcard property, i.e. a property starting with the 
+`$`-character, the value is allowed to have an arbitrary number of extra properties. When
+there is no wildcard property, the value can only have the properties defined in the
+type statement. A type can have at most one wildcard property.
+
 
 Built-in base types are also similar to JavaScript types:
 
