@@ -13,6 +13,7 @@ export let samples = [
   "issue-169",
   "issue-232",
   "issue-97",
+  "issue-212",
   "mail",
   "map-scalar",
   "multi-update",
