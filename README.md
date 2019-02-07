@@ -1,6 +1,6 @@
 # ![Bolt Icon](docs/images/flash.png) Bolt Compiler
 
-[![Build Status](https://travis-ci.org/firebase/bolt.svg?branch=master)](https://travis-ci.org/firebase/bolt)
+[![Build Status](https://travis-ci.org/FirebaseExtended/bolt.svg?branch=master)](https://travis-ci.org/FirebaseExtended/bolt)
 [![NPM Version](https://badge.fury.io/js/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 [![NPM Downloads](http://img.shields.io/npm/dm/firebase-bolt.svg)](https://npmjs.org/package/firebase-bolt)
 
@@ -11,7 +11,7 @@ using with production applications.
 
 Otherwise, we'd love to have feedback from early adopters.  You can email questions
 to firebase-talk@googlegroups.com using "Bolt" in the subject line, or post bugs
-on our [Issue Tracker](https://github.com/firebase/bolt/issues).
+on our [Issue Tracker](https://github.com/FirebaseExtended/bolt/issues).
 
 # Language Definition
 
