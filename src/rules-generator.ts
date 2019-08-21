@@ -483,7 +483,7 @@ export class Generator {
         return v[0] === '$';
     });
 
-    if (hasProps && !hasWildProps ) {
+    if (hasProps && !hasWildProps) {
       validator['$other'] = {};
       extendValidator(<Validator> validator['$other'],
                       <Validator> {'.validate': ast.boolean(false)});
