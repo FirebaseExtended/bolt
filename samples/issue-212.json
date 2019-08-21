@@ -11,6 +11,9 @@
       "any": {
         ".validate": "true"
       },
+      "$extras": {
+        ".validate": "newData.isString()"
+      },
       ".read": "true",
       ".write": "true"
     },
