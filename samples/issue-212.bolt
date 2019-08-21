@@ -2,7 +2,7 @@ type MyType {
   num: Number;
   str: String;
   any: Any;
-  $extras: Any;
+  $extras: String;
 }
 
 type AnyMap {
