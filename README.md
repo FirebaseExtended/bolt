@@ -13,6 +13,16 @@ Otherwise, we'd love to have feedback from early adopters.  You can email questi
 to firebase-talk@googlegroups.com using "Bolt" in the subject line, or post bugs
 on our [Issue Tracker](https://github.com/FirebaseExtended/bolt/issues).
 
+
+## Status
+
+![Status: Frozen](https://img.shields.io/badge/Status-Frozen-yellow)
+
+This repository is no longer under active development. No new features will be added and issues are not actively triaged. Pull Requests which fix bugs are welcome and will be reviewed on a best-effort basis.
+
+If you maintain a fork of this repository that you believe is healthier than the official version, we may consider recommending your fork. Please open a Pull Request if you believe that is the case.
+
+
 # Language Definition
 
   - [Guide to Using Firebase Bolt](docs/guide.md) - Introduction to using Bolt.
