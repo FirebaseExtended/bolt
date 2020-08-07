@@ -448,6 +448,7 @@ export class Generator {
     let wildProperties = 0;
     Object.keys(schema.properties).forEach((propName) => {
       if (propName[0] === '$') {
+        delete validator.$other;
         wildProperties += 1;
         if (INVALID_KEY_REGEX.test(propName.slice(1))) {
           this.fatal(errors.invalidPropertyName + propName);
@@ -467,7 +468,7 @@ export class Generator {
       extendValidator(<Validator> validator[propName], this.ensureValidator(propType));
     });
 
-    if (wildProperties > 1 || wildProperties === 1 && requiredProperties.length > 0) {
+    if (wildProperties > 1) {
       this.fatal(errors.invalidWildChildren);
     }
 
@@ -478,7 +479,11 @@ export class Generator {
     }
 
     // Disallow $other properties by default
-    if (hasProps) {
+    let hasWildProps = Object.keys(validator).some((v) => {
+        return v[0] === '$';
+    });
+
+    if (hasProps && !hasWildProps) {
       validator['$other'] = {};
       extendValidator(<Validator> validator['$other'],
                       <Validator> {'.validate': ast.boolean(false)});

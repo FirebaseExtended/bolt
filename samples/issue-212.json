@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "path": {
+      ".validate": "newData.hasChildren(['num', 'str', 'any'])",
+      "num": {
+        ".validate": "newData.isNumber()"
+      },
+      "str": {
+        ".validate": "newData.isString()"
+      },
+      "any": {
+        ".validate": "true"
+      },
+      "$extras": {
+        ".validate": "newData.isString()"
+      },
+      ".read": "true",
+      ".write": "true"
+    },
+    "other": {
+      ".validate": "newData.hasChildren(['name'])",
+      "name": {
+        ".validate": "newData.isString()"
+      },
+      ".read": "true"
+    },
+    "another": {
+      ".validate": "newData.hasChildren(['name'])",
+      "name": {
+        ".validate": "newData.isString()"
+      },
+      "$other": {
+        ".validate": "false"
+      },
+      ".read": "true"
+    },
+    "anotherWithExtras": {
+      ".validate": "newData.hasChildren(['name'])",
+      "name": {
+        ".validate": "newData.isString()"
+      },
+      ".read": "true"
+    }
+  }
+}
